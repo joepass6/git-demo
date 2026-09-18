@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!78 &1
+TagManager:
+  serializedVersion: 2
+  tags:
+  - PrefabObject
+  - fish
+  - Obstacle
+  - SpawnArea
+  - SnailDetailPanel
+  - coral
+  layers:
+  - Default
+  - TransparentFX
+  - Ignore Raycast
+  - fanzi
+  - Water
+  - UI
+  - fish
+  - "\u6587\u5B57"
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  m_SortingLayers:
+  - name: Default
+    uniqueID: 0
+    locked: 0
+  - name: back ground
+    uniqueID: 1544775287
+    locked: 0
+  - name: Platform
+    uniqueID: 824719113
+    locked: 0
+  - name: coral
+    uniqueID: 2767862833
+    locked: 0
+  - name: "\u6587\u5B57"
+    uniqueID: 1104307213
+    locked: 0
+  - name: fish
+    uniqueID: 3487823941
+    locked: 0
+  - name: "\u6389\u843D\u7269"
+    uniqueID: 1998856379
+    locked: 0
