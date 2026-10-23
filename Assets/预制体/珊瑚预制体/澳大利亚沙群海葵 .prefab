@@ -4937,20 +4937,28 @@ MonoBehaviour:
   spawnArea: {fileID: 0}
   spawnAreaTag: SpawnArea
   spawnEntries:
-  - prefab: {fileID: 4842934446307366073, guid: 3d1e973f12b9f3a49b63b0a08166f72b, type: 3}
+  - kindId: 0
+    prefab: {fileID: 4842934446307366073, guid: 3d1e973f12b9f3a49b63b0a08166f72b, type: 3}
     weight: 0
-  - prefab: {fileID: 4842934446307366073, guid: 69be3ce0d8f953740b110a1db7cf119e, type: 3}
+  - kindId: 0
+    prefab: {fileID: 4842934446307366073, guid: 69be3ce0d8f953740b110a1db7cf119e, type: 3}
     weight: 0
-  - prefab: {fileID: 4842934446307366073, guid: 840ce7c53c5fdcf4db56abc585df763b, type: 3}
+  - kindId: 0
+    prefab: {fileID: 4842934446307366073, guid: 840ce7c53c5fdcf4db56abc585df763b, type: 3}
     weight: 0
-  - prefab: {fileID: 4842934446307366073, guid: fc8addbca45836c4291ba636f9f18654, type: 3}
+  - kindId: 0
+    prefab: {fileID: 4842934446307366073, guid: fc8addbca45836c4291ba636f9f18654, type: 3}
     weight: 100
   spawnCount: 1
+  bonusDestroyTime: 0
+  bonusDropCount: 0
   respawnInterval: 0.5
   spawnOffset: 0.5
   uiPanelTag: SnailDetailPanel
   closeOtherPanels: 1
   popupOffset: {x: 136.9, y: 30.5}
+  clickDarkenAmount: 0.45
+  clickFlashDuration: 0.25
 --- !u!70 &587422250314943838
 CapsuleCollider2D:
   m_ObjectHideFlags: 0

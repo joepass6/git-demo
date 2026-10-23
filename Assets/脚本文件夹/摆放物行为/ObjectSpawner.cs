@@ -9,6 +9,12 @@ using System.Collections.Generic;
 /// </summary>
 public class ObjectSpawner : MonoBehaviour
 {
+    // ===== 全局实例集合（供 RockCapacity 等遍历所有珊瑚生成器）=====
+    static readonly HashSet<ObjectSpawner> s_all = new HashSet<ObjectSpawner>();
+    public static System.Collections.Generic.IEnumerable<ObjectSpawner> AllSpawners => s_all;
+    void Awake() { s_all.Add(this); }
+    void OnDestroy() { s_all.Remove(this); }
+
     /// <summary>
     /// 生成物体的条目配置（预制件+概率权重）
     /// </summary>

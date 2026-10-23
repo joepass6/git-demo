@@ -8,6 +8,9 @@ using UnityEngine;
 /// </summary>
 public class HoverTooltip : MonoBehaviour
 {
+    /// <summary>任意 HoverTooltip 被鼠标进入时触发（教程用）</summary>
+    public static event System.Action<HoverTooltip> OnHoverEnter;
+
     [Header("设置")]
     [Tooltip("拖入要显示的弹窗UI物体")]
     public GameObject tooltipUI;
@@ -67,6 +70,7 @@ public class HoverTooltip : MonoBehaviour
         {
             isMouseOver = true;
             ShowTooltip();
+            OnHoverEnter?.Invoke(this);
         }
         else if (!mouseInside && isMouseOver)
         {

@@ -5,6 +5,9 @@ using System.Collections.Generic;
 
 public class DropItem : MonoBehaviour
 {
+    /// <summary>掉落物被玩家拾取时触发（教程用）</summary>
+    public static event System.Action<DropItem> OnItemCollected;
+
     [Header("物品设置")]
     public string itemType = "珊瑚";
     public int stackCount = 1;
@@ -27,6 +30,11 @@ public class DropItem : MonoBehaviour
     private static Dictionary<string, List<TextMeshProUGUI>> _counters = new Dictionary<string, List<TextMeshProUGUI>>();
 
     public static void RegisterCounter(string type, TextMeshProUGUI text)
+    {
+        RegisterCounter(type, text, null);
+    }
+
+    public static void RegisterCounter(string type, TextMeshProUGUI text, string format)
     {
         if (string.IsNullOrEmpty(type) || text == null) return;
         if (!_counters.ContainsKey(type)) _counters[type] = new List<TextMeshProUGUI>();

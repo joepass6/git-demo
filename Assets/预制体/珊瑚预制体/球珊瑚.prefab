@@ -4937,15 +4937,21 @@ MonoBehaviour:
   spawnArea: {fileID: 0}
   spawnAreaTag: SpawnArea
   spawnEntries:
-  - prefab: {fileID: 4842934446307366073, guid: 7f5628f2f6be85b42b8caa271b63ffc6, type: 3}
+  - kindId: 0
+    prefab: {fileID: 4842934446307366073, guid: 7f5628f2f6be85b42b8caa271b63ffc6, type: 3}
     weight: 40
-  - prefab: {fileID: 4842934446307366073, guid: c7ac56396861a3e449925b5d9d7ce9c9, type: 3}
+  - kindId: 0
+    prefab: {fileID: 4842934446307366073, guid: c7ac56396861a3e449925b5d9d7ce9c9, type: 3}
     weight: 40
-  - prefab: {fileID: 4842934446307366073, guid: 775a12823ed341a48bbeede4f3747159, type: 3}
+  - kindId: 0
+    prefab: {fileID: 4842934446307366073, guid: 775a12823ed341a48bbeede4f3747159, type: 3}
     weight: 15
-  - prefab: {fileID: 4842934446307366073, guid: e44d0d2a19d4c4a4f88921bc25eb75c1, type: 3}
+  - kindId: 0
+    prefab: {fileID: 4842934446307366073, guid: e44d0d2a19d4c4a4f88921bc25eb75c1, type: 3}
     weight: 5
   spawnCount: 1
+  bonusDestroyTime: 0
+  bonusDropCount: 0
   respawnInterval: 0.5
   spawnOffset: 0.5
   uiPanelTag: SnailDetailPanel
@@ -4982,7 +4988,7 @@ CapsuleCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
   m_Offset: {x: -0.0000000026709692, y: -0.022405716}

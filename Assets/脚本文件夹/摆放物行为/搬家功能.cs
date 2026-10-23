@@ -35,6 +35,7 @@ public class MoveSystem : MonoBehaviour
 
     MonoBehaviour[] conflictScripts; // 搬家期间临时禁用的运动脚本
     int skipFrames;
+    GameObject currentHoverRock;     // 当前悬停的石头
 
     // ==================== 静态入口（推荐用这个） ====================
     /// <summary>
@@ -126,6 +127,11 @@ public class MoveSystem : MonoBehaviour
         DisableConflictScripts();
         HideInfoPanel();
 
+        // ===== RockCapacity 联动 =====
+        RockCapacity.EnsureAll(placementTag);
+        RockCapacity.SetCarryIgnore(gameObject); // 搬家期间不要把自己算在石头容量里
+        RockCapacity.RefreshAll(placementTag);
+
         skipFrames = 3;
         isMoveMode = true;
         isInMoveMode = true;
@@ -148,6 +154,16 @@ public class MoveSystem : MonoBehaviour
         }
         EnableConflictScripts();
         ShowInfoPanel();
+
+        // ===== RockCapacity 联动：隐藏 UI + 描边 + 取消 carryIgnore + 重算 =====
+        if (currentHoverRock != null)
+        {
+            RockCapacity.SetVisible(currentHoverRock, false);
+            RockCapacity.SetOutline(currentHoverRock, false);
+            currentHoverRock = null;
+        }
+        RockCapacity.SetCarryIgnore(null);
+        RockCapacity.RefreshAll(placementTag);
     }
 
     // ==================== 冲突脚本（运动类）临时禁用 ====================
@@ -261,6 +277,9 @@ public class MoveSystem : MonoBehaviour
         UpdateSpawnerPos();
         if (skipFrames > 0) { skipFrames--; return; }
 
+        // ===== RockCapacity：每帧追踪悬停的石头 =====
+        UpdateHoverRock();
+
         if (Input.GetMouseButtonDown(1))
         {
             transform.position = originalPosition;
@@ -274,6 +293,43 @@ public class MoveSystem : MonoBehaviour
             if (UnityEngine.EventSystems.EventSystem.current != null
                 && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return;
             TryPlace();
+        }
+    }
+
+    /// <summary>每帧 OverlapBox 找当前悬停的 placementTag 石头</summary>
+    void UpdateHoverRock()
+    {
+        GameObject newRock = null;
+        Collider2D[] myCols = GetComponentsInChildren<Collider2D>();
+        HashSet<Collider2D> checkedOthers = new HashSet<Collider2D>();
+
+        foreach (var col in myCols)
+        {
+            if (col == null) continue;
+            Collider2D[] overlaps = Physics2D.OverlapBoxAll(col.bounds.center, col.bounds.size, 0f);
+            foreach (var other in overlaps)
+            {
+                if (checkedOthers.Contains(other)) continue;
+                checkedOthers.Add(other);
+                if (other.transform.IsChildOf(transform) || other.gameObject == gameObject) continue;
+                if (other.CompareTag(placementTag)) { newRock = other.gameObject; break; }
+            }
+            if (newRock != null) break;
+        }
+
+        if (newRock != currentHoverRock)
+        {
+            if (currentHoverRock != null)
+            {
+                RockCapacity.SetVisible(currentHoverRock, false);
+                RockCapacity.SetOutline(currentHoverRock, false);
+            }
+            if (newRock != null)
+            {
+                RockCapacity.SetVisible(newRock, true);
+                RockCapacity.SetOutline(newRock, true);
+            }
+            currentHoverRock = newRock;
         }
     }
 
@@ -297,7 +353,8 @@ public class MoveSystem : MonoBehaviour
             if (hit != null) break;
         }
 
-        if (hit != null)
+        // ====== 关键修复：搬家放置也必须检查石头容量 ======
+        if (hit != null && RockCapacity.IsAvailable(hit.gameObject))
         {
             Debug.Log("[MoveSystem] 放置成功: 接触 " + hit.gameObject.name);
             isMoveMode = false;
@@ -306,6 +363,14 @@ public class MoveSystem : MonoBehaviour
             if (rb != null) { rb.isKinematic = rbWasKinematic; rb.simulated = rbWasSimulated; }
             EnableConflictScripts();
             ShowInfoPanel();
+            // 刷新容量统计（SetCarryIgnore(null) 之后立刻重算）
+            RockCapacity.SetCarryIgnore(null);
+            RockCapacity.RefreshAll(placementTag);
+        }
+        else if (hit != null)
+        {
+            // 碰到了石头但满了 → 不取消搬家，让用户继续找别的石头
+            Debug.LogWarning("[MoveSystem] 这块石头已满! 继续搬找别的石头: " + hit.gameObject.name);
         }
         else
         {

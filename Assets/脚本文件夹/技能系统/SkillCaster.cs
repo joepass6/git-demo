@@ -14,6 +14,35 @@ namespace SkillSystem
     /// </summary>
     public class SkillCaster : MonoBehaviour
     {
+        /// <summary>珊瑚踩石头时的紧贴容差（世界单位）</summary>
+        public const float RockTouchTolerance = 0.05f;
+
+        /// <summary>检测珊瑚压着的所有 placementTag 物体（OverlapBox 命中所有 placementTag Collider2D）</summary>
+        public static List<GameObject> DetectRocksUnder(GameObject coral, string placementTag, float tolerance)
+        {
+            var result = new List<GameObject>();
+            if (coral == null || string.IsNullOrEmpty(placementTag)) return result;
+            var seen = new HashSet<Collider2D>();
+            foreach (var c in coral.GetComponentsInChildren<Collider2D>())
+            {
+                if (c == null) continue;
+                Vector2 center = c.bounds.center;
+                Vector2 size = (Vector2)c.bounds.size + Vector2.one * tolerance * 2f;
+                foreach (var other in Physics2D.OverlapBoxAll(center, size, 0f))
+                {
+                    if (other == null || seen.Contains(other)) continue;
+                    seen.Add(other);
+                    if (other.transform.IsChildOf(coral.transform) || other.gameObject == coral) continue;
+                    if (other.CompareTag(placementTag))
+                    {
+                        var go = other.attachedRigidbody != null ? other.attachedRigidbody.gameObject : other.gameObject;
+                        if (!result.Contains(go)) result.Add(go);
+                    }
+                }
+            }
+            return result;
+        }
+
         [Tooltip("要施放的技能定义资产（右键创建：珊瑚牧歌/技能定义）")]
         public SkillDefinition skill;
 

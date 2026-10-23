@@ -147,9 +147,8 @@ public class DesktopWindowController : MonoBehaviour
 
 #if !UNITY_EDITOR
         MakeProcessDpiAware();
+        FixCanvasScalers(); // 编辑器里让 Unity 自己管 ScaleWithScreenSize，不要碰
 #endif
-
-        FixCanvasScalers();
         CenterCameraOnTarget();
         FitWindowToTarget();
 
@@ -590,6 +589,8 @@ public class DesktopWindowController : MonoBehaviour
             clockFollower.worldOffset = ClockTargetWorldOffset() + clockNudgeOffset;
 
         // 定期刷新 Canvas 缓存（运行时新建的 UI 也能被捕获），然后强制置顶
+        // 只有透明桌面窗口版需要，编辑器里让 Unity 自己管
+#if !UNITY_EDITOR
         canvasCacheRefreshTimer += Time.deltaTime;
         if (canvasCacheRefreshTimer >= CanvasCacheRefreshInterval)
         {
@@ -597,6 +598,7 @@ public class DesktopWindowController : MonoBehaviour
             RefreshCanvasCache();
             EnsureCanvasesOnTop(null);
         }
+#endif
     }
 
     // ==================== 每帧上屏 ====================

@@ -8,6 +8,14 @@ using System.Collections.Generic;
 /// </summary>
 public class 鱼运动 : MonoBehaviour
 {
+    // ===== 掉宝图鉴（appearedFishNames + RegisterFish 已在下方定义，这里只补掉宝侧）=====
+    static readonly HashSet<string> droppedFishNames = new HashSet<string>();
+    public static event System.Action<鱼运动> OnDropProduced;
+
+    public static void RegisterFishDrop(string name) { if(!string.IsNullOrEmpty(name)) droppedFishNames.Add(name); }
+    public static bool HasFishDropped(string name) { return !string.IsNullOrEmpty(name) && droppedFishNames.Contains(name); }
+    public static void ResetCodex() { appearedFishNames.Clear(); droppedFishNames.Clear(); }
+
     [Header("移动设置")]
     [Tooltip("鱼的移动速度")]
     public float moveSpeed = 2f;

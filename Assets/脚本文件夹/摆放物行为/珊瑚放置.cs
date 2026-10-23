@@ -11,6 +11,9 @@ using SkillSystem;
 /// </summary>
 public class DragAndPlaceSystem : MonoBehaviour
 {
+    /// <summary>珊瑚放置成功时触发（参数=刚实例化的真实珊瑚物体，教程用）</summary>
+    public static event System.Action<GameObject> OnCoralPlaced;
+
     [Header("设置")]
     [Tooltip("要摆放的物品预制体")]
     public GameObject prefabToSpawn;
@@ -53,6 +56,7 @@ public class DragAndPlaceSystem : MonoBehaviour
     private Camera mainCam;
     private bool canPlace = true;
     private bool isDragging = false;
+    private GameObject currentHoverRock; // 当前预览体正悬停的石头（用于切换 SetVisible/SetOutline）
 
     // ===== 桌面窗口拖动排除（DesktopWindowController 调用）=====
     // 图标可能没开 Raycast Target，EventSystem 射线扫不到，所以这里直接登记实例供窗口脚本查询
@@ -80,6 +84,10 @@ public class DragAndPlaceSystem : MonoBehaviour
     {
         Debug.Log("[DragAndPlace] Start 启动!");
 
+        // 自动给所有带 placementTag 的物体补 RockCapacity 组件
+        RockCapacity.EnsureAll(placementTag);
+        RockCapacity.RefreshAll(placementTag);
+
         // 初始化目标Image和原始颜色
         if (targetImage == null) targetImage = GetComponent<Image>();
         if (targetImage != null) originalImageColor = targetImage.color;
@@ -103,6 +111,9 @@ public class DragAndPlaceSystem : MonoBehaviour
             Vector3 worldPos = mainCam.ScreenToWorldPoint(Input.mousePosition);
             currentDragObject.transform.position = new Vector3(worldPos.x, worldPos.y, 0);
 
+            // ===== 每帧检测悬停的石头，通知 RockCapacity 显示 UI + 描边 =====
+            UpdateHoverRock();
+
             // 鼠标松开 → 尝试放置
             if (Input.GetMouseButtonUp(0))
             {
@@ -116,6 +127,64 @@ public class DragAndPlaceSystem : MonoBehaviour
             {
                 BeginDrag();
             }
+        }
+    }
+
+    /// <summary>
+    /// 预览体每帧 OverlapBox，找当前悬停的 placementTag 石头。
+    /// 切换石头时自动 SetVisible/SetOutline。
+    /// </summary>
+    void UpdateHoverRock()
+    {
+        GameObject newRock = null;
+
+        Collider2D[] myCols = currentDragObject.GetComponentsInChildren<Collider2D>();
+        HashSet<Collider2D> checkedOthers = new HashSet<Collider2D>();
+        if (myCols.Length > 0)
+        {
+            foreach (var col in myCols)
+            {
+                if (col == null) continue;
+                Collider2D[] overlaps = Physics2D.OverlapBoxAll(col.bounds.center, col.bounds.size, 0f);
+                foreach (var other in overlaps)
+                {
+                    if (checkedOthers.Contains(other)) continue;
+                    checkedOthers.Add(other);
+                    if (other.transform.IsChildOf(currentDragObject.transform) || other.gameObject == currentDragObject) continue;
+                    if (other.CompareTag(placementTag)) { newRock = other.gameObject; break; }
+                }
+                if (newRock != null) break;
+            }
+        }
+        else
+        {
+            // 兜底：SpriteRenderer bounds
+            SpriteRenderer sr = currentDragObject.GetComponentInChildren<SpriteRenderer>();
+            if (sr != null)
+            {
+                Collider2D[] hits = Physics2D.OverlapAreaAll(sr.bounds.min, sr.bounds.max);
+                foreach (var other in hits)
+                {
+                    if (other.transform.IsChildOf(currentDragObject.transform) || other.gameObject == currentDragObject) continue;
+                    if (other.CompareTag(placementTag)) { newRock = other.gameObject; break; }
+                }
+            }
+        }
+
+        // 切换了石头
+        if (newRock != currentHoverRock)
+        {
+            if (currentHoverRock != null)
+            {
+                RockCapacity.SetVisible(currentHoverRock, false);
+                RockCapacity.SetOutline(currentHoverRock, false);
+            }
+            if (newRock != null)
+            {
+                RockCapacity.SetVisible(newRock, true);
+                RockCapacity.SetOutline(newRock, true);
+            }
+            currentHoverRock = newRock;
         }
     }
 
@@ -305,6 +374,14 @@ public class DragAndPlaceSystem : MonoBehaviour
         Debug.Log("[DragAndPlace] EndDrag 结束拖拽!");
         isDragging = false;
 
+        // ===== 隐藏 RockCapacity 的容量提示和描边 =====
+        if (currentHoverRock != null)
+        {
+            RockCapacity.SetVisible(currentHoverRock, false);
+            RockCapacity.SetOutline(currentHoverRock, false);
+            currentHoverRock = null;
+        }
+
         // 松开后恢复原本颜色
         RestoreColor();
 
@@ -361,7 +438,16 @@ public class DragAndPlaceSystem : MonoBehaviour
             }
         }
 
-        if (target != null && canPlace)
+        // ====== 关键修复：成功判定必须同时满足三个条件 ======
+        // 1. target != null（碰到了石头）
+        // 2. canPlace（玩家珊瑚道具数量够）
+        // 3. RockCapacity.IsAvailable(target)（目标石头还有空位，没满！）
+        bool hasRoom = target != null && RockCapacity.IsAvailable(target.gameObject);
+        bool allPass = target != null && canPlace && hasRoom;
+
+        Debug.Log($"[DragAndPlace] 放置判定: target={target?.name}, canPlace={canPlace}, hasRoom={hasRoom}, pass={allPass}");
+
+        if (allPass)
         {
             Debug.Log($"[DragAndPlace] 放置成功! 目标: {target.name}");
 
@@ -387,10 +473,19 @@ public class DragAndPlaceSystem : MonoBehaviour
             {
                 coralCountText.text = newCount.ToString();
             }
+
+            // 7. 刷新所有石头的容量统计（第一次放置也必须扣减）
+            RockCapacity.RefreshAll(placementTag);
         }
         else
         {
-            Debug.LogWarning("[DragAndPlace] 放置失败，销毁预览");
+            // 区分失败原因，方便 Console 排查
+            if (target == null)
+                Debug.LogWarning("[DragAndPlace] 放置失败: 没碰到石头");
+            else if (!canPlace)
+                Debug.LogWarning("[DragAndPlace] 放置失败: 珊瑚道具数量不足");
+            else if (!hasRoom)
+                Debug.LogWarning("[DragAndPlace] 放置失败: 石头已满! 目标=" + target.name);
             Destroy(currentDragObject);
         }
 

@@ -12,6 +12,9 @@ using System;
 /// </summary>
 public class LocalTimeManager : MonoBehaviour
 {
+    /// <summary>时间按钮被点击时触发（参数=第几个按钮，教程用）</summary>
+    public static event System.Action<int> OnButtonClicked;
+
     // ==================== 单例 ====================
     public static LocalTimeManager Instance;
 

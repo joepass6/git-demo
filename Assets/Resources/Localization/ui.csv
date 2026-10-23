@@ -1,0 +1,28 @@
+﻿﻿key,简体中文,繁体中文,English,德语,法语,西班牙语,俄语,日语,韩语
+转换,转换,轉換,Convert,Konvertieren,Convertir,Convertir,Конвертировать,変換,변환
+消耗100,消耗100,消耗100,Cost 100,Kosten 100,Coût 100,Costo 100,Стоимость 100,コスト100,비용 100
+拥有数量：0,拥有数量：0,擁有數量：0,Owned: 0,Besitz: 0,Possédé : 0,En propiedad: 0,В наличии: 0,所有数：0,보유 수: 0
+正式版解锁更多珊瑚,正式版解锁更多珊瑚,正式版解鎖更多珊瑚,Unlock more corals in the full version,Schalte mehr Korallen in der Vollversion frei,Débloquez plus de coraux dans la version complète,Desbloquea más corales en la versión completa,Разблокируйте больше кораллов в полной версии,フルバージョンでより多くのサンゴをアンロック,정식 버전에서 더 많은 산호를 잠금 해제하세요
+放大,放大,放大,Zoom In,Vergrößern,Agrandir,Acercar,Увеличить,拡大,확대
+缩小,缩小,縮小,Zoom Out,Verkleinern,Réduire,Alejar,Уменьшить,縮小,축소
+顺时针转,顺时针转,順時針轉,Rotate Clockwise,Im Uhrzeigersinn,Rotation horaire,Girar a la derecha,По часовой,時計回り,시계 방향
+翻转,翻转,翻轉,Flip,Spiegeln,Retourner,Voltear,Отразить,反転,뒤집기
+逆时针转,逆时针转,逆時針轉,Rotate Counterclockwise,Gegen den Uhrzeigersinn,Rotation antihoraire,Girar a la izquierda,Против часовой,反時計回り,반시계 방향
+关闭,关闭,關閉,Close,Schließen,Fermer,Cerrar,Закрыть,閉じる,닫기
+卖掉,卖掉,賣掉,Sell,Verkaufen,Vendre,Vender,Продать,売却,판매
+搬家,搬家,搬家,Move,Verschieben,Déplacer,Mover,Переместить,移動,이동
+音效音量,音效音量,音效音量,SFX Volume,SFX-Lautstärke,Volume des effets,Volumen de efectos,Громкость эффектов,効果音の音量,효과음 볼륨
+背景音量,背景音量,背景音量,Music Volume,Musik-Lautstärke,Volume de la musique,Volumen de música,Громкость музыки,音楽の音量,배경음악 볼륨
+清除存档,清除存档,清除存檔,Clear Save Data,Spielstand löschen,Effacer la sauvegarde,Borrar guardado,Удалить сохранение,セーブデータ削除,저장 데이터 삭제
+语言,语言,語言,Language,Sprache,Langue,Idioma,Язык,言語,언어
+感谢名单,感谢名单,感謝名單,Credits,Credits,Crédits,Créditos,Титры,クレジット,크레딧
+场上没有鱼！,场上没有鱼！,場上沒有魚！,No fish in the tank!,Keine Fische im Becken!,Aucun poisson dans le bassin !,¡No hay peces en el tanque!,В аквариуме нет рыб!,水槽に魚がいません！,수조에 물고기가 없습니다!
+加入玩家社区,加入玩家社区,加入玩家社群,Join the Community,Community beitreten,Rejoindre la communauté,Unirse a la comunidad,Вступить в сообщество,コミュニティに参加,커뮤니티 가입
+退出游戏,退出游戏,退出遊戲,Quit Game,Spiel beenden,Quitter le jeu,Salir del juego,Выйти из игры,ゲーム終了,게임 종료
+fz,放置,放置,Place,Platzieren,Placer,Colocar,Разместить,配置,배치
+现有数量：{0},现有数量：{0},現有數量：{0},Owned: {0},Besitz: {0},Possédé : {0},En propiedad: {0},В наличии: {0},所持数：{0},보유 수: {0}
+需要数量：{0},需要数量：{0},需要數量：{0},Required: {0},Benötigt: {0},Requis : {0},Necesario: {0},Требуется: {0},必要数：{0},필요 수: {0}
+拥有数量：{0},拥有数量：{0},擁有數量：{0},Owned: {0},Besitz: {0},Possédé : {0},En propiedad: {0},В наличии: {0},所有数：{0},보유 수: {0}
+可以放置{0},可以放置{0},可以放置{0},Can place {0},Verfügbar: {0},Placeable : {0},Disponible: {0},Можно разместить: {0},配置可能 {0},배치 가능 {0}
+已放置{0},已放置{0},已放置{0},Placed {0},Platziert: {0},Placé : {0},Colocado: {0},Размещено: {0},配置済み {0},배치 완료 {0}
+珊瑚调节,珊瑚调节,珊瑚調節,Adjust Coral,Koralle anpassen,Ajuster le corail,Ajustar coral,Настройка коралла,サンゴ調整,산호 조정

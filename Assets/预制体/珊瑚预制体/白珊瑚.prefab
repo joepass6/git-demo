@@ -4937,15 +4937,21 @@ MonoBehaviour:
   spawnArea: {fileID: 0}
   spawnAreaTag: SpawnArea
   spawnEntries:
-  - prefab: {fileID: 4842934446307366073, guid: 6165fafea4cf2fb4a9e27fe7cf1eb4c9, type: 3}
+  - kindId: 0
+    prefab: {fileID: 4842934446307366073, guid: 6165fafea4cf2fb4a9e27fe7cf1eb4c9, type: 3}
     weight: 0
-  - prefab: {fileID: 4842934446307366073, guid: 5149aa022d9479f45993ffd33a38f69d, type: 3}
+  - kindId: 0
+    prefab: {fileID: 4842934446307366073, guid: 5149aa022d9479f45993ffd33a38f69d, type: 3}
     weight: 0
-  - prefab: {fileID: 4842934446307366073, guid: 2dbe2c8e319ad854fae082a1a22e8f0d, type: 3}
+  - kindId: 0
+    prefab: {fileID: 4842934446307366073, guid: 2dbe2c8e319ad854fae082a1a22e8f0d, type: 3}
     weight: 0
-  - prefab: {fileID: 4842934446307366073, guid: ff53964a88e30fc4193b8f95b07e3da2, type: 3}
+  - kindId: 0
+    prefab: {fileID: 4842934446307366073, guid: ff53964a88e30fc4193b8f95b07e3da2, type: 3}
     weight: 100
   spawnCount: 1
+  bonusDestroyTime: 0
+  bonusDropCount: 0
   respawnInterval: 0.5
   spawnOffset: 0.5
   uiPanelTag: SnailDetailPanel

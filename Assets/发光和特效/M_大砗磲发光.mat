@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: "M_\u5927\u7817\u78F2\u53D1\u5149"
+  m_Shader: {fileID: 4800000, guid: 95c6b63424b24503a562d3382cb6efa9, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - <noninit>: 0
+    - _AlphaStrength: 0.6
+    - _Falloff: 3.2
+    - _Intensity: 1.2
+    - _PulseAmount: 0.8
+    - _PulseSpeed: 2.4
+    m_Colors:
+    - <noninit>: {r: NaN, g: 0, b: 0, a: 7.6e-44}
+    - _GlowColor: {r: 0.9716981, g: 0.94093233, b: 0.38042897, a: 1}
+  m_BuildTextureStacks: []
