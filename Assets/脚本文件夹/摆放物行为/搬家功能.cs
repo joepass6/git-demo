@@ -357,13 +357,22 @@ public class MoveSystem : MonoBehaviour
         if (hit != null && RockCapacity.IsAvailable(hit.gameObject))
         {
             Debug.Log("[MoveSystem] 放置成功: 接触 " + hit.gameObject.name);
+
+            // ===== 先清理白色描边 + UI + 恢复子物体（在 SetCarryIgnore 之前，避免容量判定还在忽略自己）=====
+            if (currentHoverRock != null)
+            {
+                RockCapacity.SetVisible(currentHoverRock, false);   // UI 隐藏 + HighlightChildren(false) 恢复子物体
+                RockCapacity.SetOutline(currentHoverRock, false);   // 撤白色描边
+                currentHoverRock = null;
+            }
+
             isMoveMode = false;
             isInMoveMode = false;
             if (activeMover == this) activeMover = null;
             if (rb != null) { rb.isKinematic = rbWasKinematic; rb.simulated = rbWasSimulated; }
             EnableConflictScripts();
             ShowInfoPanel();
-            // 刷新容量统计（SetCarryIgnore(null) 之后立刻重算）
+            // 刷新容量统计：先取消 carryIgnore（自己也算进去），再重算
             RockCapacity.SetCarryIgnore(null);
             RockCapacity.RefreshAll(placementTag);
         }
