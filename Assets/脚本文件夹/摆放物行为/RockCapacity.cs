@@ -156,6 +156,9 @@ public class RockCapacity : MonoBehaviour
         foreach (var sp in ObjectSpawner.AllSpawners)
         {
             if (sp == null) continue;
+            // ===== 关键：跳过 disabled 的！（拖拽预览体/UI 占位预制体 enabled=false）=====
+            if (!sp.enabled) continue;
+
             GameObject coralGo = sp.gameObject;
             if (!string.IsNullOrEmpty(coralTag) && !coralGo.CompareTag(coralTag)) continue;
             if (carryIgnore != null && (coralGo == carryIgnore || coralGo.transform.IsChildOf(carryIgnore.transform))) continue;

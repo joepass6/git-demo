@@ -7759,7 +7759,7 @@ GameObject:
   - component: {fileID: 153768460}
   m_Layer: 0
   m_Name: 032670ae95d6f376a42df75a6f98acce_12
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -7948,7 +7948,6 @@ GameObject:
   - component: {fileID: 158345529}
   - component: {fileID: 158345531}
   - component: {fileID: 158345530}
-  - component: {fileID: 158345532}
   m_Layer: 3
   m_Name: "\u5DE6\u4E8C\u77F3"
   m_TagString: Obstacle
@@ -8130,22 +8129,6 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 7
---- !u!114 &158345532
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 158345527}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e3bd69539b2fbf1418fc8ce0aecafb6a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxCapacity: 3
-  worldHeight: 0.45
-  worldTopOffset: 0.22
-  outlineScaleRatio: 0.09
 --- !u!1 &158452093
 GameObject:
   m_ObjectHideFlags: 0
@@ -9206,8 +9189,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u53EF\u653E\u7F6E"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 0}
-  m_sharedMaterial: {fileID: 0}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -40913,7 +40896,6 @@ GameObject:
   - component: {fileID: 540931668}
   - component: {fileID: 540931670}
   - component: {fileID: 540931669}
-  - component: {fileID: 540931671}
   m_Layer: 3
   m_Name: "\u5DE6\u5E95\u77F3"
   m_TagString: Obstacle
@@ -41082,22 +41064,6 @@ PolygonCollider2D:
       - {x: 0.32666996, y: -0.2971094}
       - {x: 0.5463965, y: -0.28490236}
   m_UseDelaunayMesh: 0
---- !u!114 &540931671
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 540931666}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e3bd69539b2fbf1418fc8ce0aecafb6a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxCapacity: 3
-  worldHeight: 0.45
-  worldTopOffset: 0.22
-  outlineScaleRatio: 0.09
 --- !u!1 &565718136
 GameObject:
   m_ObjectHideFlags: 0
@@ -44026,7 +43992,6 @@ GameObject:
   - component: {fileID: 723548455}
   - component: {fileID: 723548457}
   - component: {fileID: 723548456}
-  - component: {fileID: 723548458}
   m_Layer: 3
   m_Name: "\u53F3\u4E09\u77F3"
   m_TagString: Obstacle
@@ -44229,22 +44194,6 @@ PolygonCollider2D:
       - {x: 0.282006, y: -0.6021855}
       - {x: 0.37170812, y: -0.60260415}
   m_UseDelaunayMesh: 0
---- !u!114 &723548458
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 723548453}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e3bd69539b2fbf1418fc8ce0aecafb6a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxCapacity: 3
-  worldHeight: 0.45
-  worldTopOffset: 0.22
-  outlineScaleRatio: 0.09
 --- !u!1 &726383672
 GameObject:
   m_ObjectHideFlags: 0
@@ -45502,7 +45451,6 @@ GameObject:
   - component: {fileID: 821244659}
   - component: {fileID: 821244661}
   - component: {fileID: 821244660}
-  - component: {fileID: 821244662}
   m_Layer: 3
   m_Name: "\u5DE6\u4E94\u77F3"
   m_TagString: Obstacle
@@ -45677,22 +45625,6 @@ PolygonCollider2D:
       - {x: 0.1156345, y: -0.61820334}
       - {x: 0.16446263, y: -0.6792385}
   m_UseDelaunayMesh: 0
---- !u!114 &821244662
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 821244657}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e3bd69539b2fbf1418fc8ce0aecafb6a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxCapacity: 3
-  worldHeight: 0.45
-  worldTopOffset: 0.22
-  outlineScaleRatio: 0.09
 --- !u!1 &830209129
 GameObject:
   m_ObjectHideFlags: 0
@@ -52239,7 +52171,6 @@ GameObject:
   - component: {fileID: 1206154652}
   - component: {fileID: 1206154654}
   - component: {fileID: 1206154653}
-  - component: {fileID: 1206154655}
   m_Layer: 3
   m_Name: "\u53F3\u5E95\u77F3"
   m_TagString: Obstacle
@@ -52442,22 +52373,6 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 7
---- !u!114 &1206154655
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1206154650}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e3bd69539b2fbf1418fc8ce0aecafb6a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxCapacity: 3
-  worldHeight: 0.45
-  worldTopOffset: 0.22
-  outlineScaleRatio: 0.09
 --- !u!1 &1207488232
 GameObject:
   m_ObjectHideFlags: 0
@@ -55548,8 +55463,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -52.6, y: -8.6}
-  m_SizeDelta: {x: 200, y: 50}
+  m_AnchoredPosition: {x: -0.000015855, y: -18.758}
+  m_SizeDelta: {x: 39.0571, y: 37.516}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1309469051
 MonoBehaviour:
@@ -55574,7 +55489,7 @@ MonoBehaviour:
   m_text: 0
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f96eb889d5569cd49830c71f477db956, type: 2}
-  m_sharedMaterial: {fileID: 7897196273776949268, guid: f96eb889d5569cd49830c71f477db956, type: 2}
+  m_sharedMaterial: {fileID: 107132694338599451, guid: f96eb889d5569cd49830c71f477db956, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -55598,8 +55513,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 39.3
-  m_fontSizeBase: 39.3
+  m_fontSize: 39.12
+  m_fontSizeBase: 39.12
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -55634,7 +55549,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 111.93967, y: 19.307817, z: 6.6657867, w: 0}
+  m_margin: {x: -0.0793161, y: 0.7504358, z: -0.4197235, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -65029,7 +64944,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1543263584
 RectTransform:
   m_ObjectHideFlags: 0
@@ -73610,7 +73525,6 @@ GameObject:
   - component: {fileID: 1737639896}
   - component: {fileID: 1737639898}
   - component: {fileID: 1737639897}
-  - component: {fileID: 1737639899}
   m_Layer: 3
   m_Name: "\u53F3\u4E8C\u77F3"
   m_TagString: Obstacle
@@ -73778,22 +73692,6 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 7
---- !u!114 &1737639899
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1737639894}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e3bd69539b2fbf1418fc8ce0aecafb6a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxCapacity: 3
-  worldHeight: 0.45
-  worldTopOffset: 0.22
-  outlineScaleRatio: 0.09
 --- !u!1 &1738890461
 GameObject:
   m_ObjectHideFlags: 0
@@ -79431,7 +79329,6 @@ GameObject:
   - component: {fileID: 1810991608}
   - component: {fileID: 1810991610}
   - component: {fileID: 1810991609}
-  - component: {fileID: 1810991611}
   m_Layer: 3
   m_Name: "\u5DE6\u56DB\u77F3"
   m_TagString: Obstacle
@@ -79603,22 +79500,6 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 7
---- !u!114 &1810991611
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1810991606}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e3bd69539b2fbf1418fc8ce0aecafb6a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxCapacity: 3
-  worldHeight: 0.45
-  worldTopOffset: 0.22
-  outlineScaleRatio: 0.09
 --- !u!1 &1818833519
 GameObject:
   m_ObjectHideFlags: 0
@@ -92012,8 +91893,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u5DF2\u653E\u6EE1\uFF01"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 0}
-  m_sharedMaterial: {fileID: 0}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -94594,7 +94475,6 @@ GameObject:
   - component: {fileID: 2091482501}
   - component: {fileID: 2091482503}
   - component: {fileID: 2091482502}
-  - component: {fileID: 2091482504}
   m_Layer: 3
   m_Name: "\u5DE6\u4E09\u77F3"
   m_TagString: Obstacle
@@ -94784,22 +94664,6 @@ PolygonCollider2D:
       - {x: -0.17733425, y: -0.2528224}
       - {x: -0.10409206, y: -0.2528224}
   m_UseDelaunayMesh: 0
---- !u!114 &2091482504
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2091482499}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e3bd69539b2fbf1418fc8ce0aecafb6a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxCapacity: 3
-  worldHeight: 0.45
-  worldTopOffset: 0.22
-  outlineScaleRatio: 0.09
 --- !u!1 &2093881263
 GameObject:
   m_ObjectHideFlags: 0
@@ -95687,7 +95551,6 @@ GameObject:
   - component: {fileID: 2128026663}
   - component: {fileID: 2128026665}
   - component: {fileID: 2128026664}
-  - component: {fileID: 2128026666}
   m_Layer: 3
   m_Name: "\u5DE6\u516D\u77F3"
   m_TagString: Obstacle
@@ -95876,22 +95739,6 @@ PolygonCollider2D:
       - {x: -0.034282684, y: -0.36303428}
       - {x: 0.10746229, y: -0.36510652}
   m_UseDelaunayMesh: 0
---- !u!114 &2128026666
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2128026661}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e3bd69539b2fbf1418fc8ce0aecafb6a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxCapacity: 3
-  worldHeight: 0.45
-  worldTopOffset: 0.22
-  outlineScaleRatio: 0.09
 --- !u!1 &2129446283
 GameObject:
   m_ObjectHideFlags: 0
