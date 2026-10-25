@@ -4940,13 +4940,13 @@ MonoBehaviour:
   - kindId: 1
     prefab: {fileID: 4842934446307366073, guid: 1c600c896415cbb4485a7d597b5b36bf, type: 3}
     weight: 100
-  - kindId: 0
+  - kindId: 2
     prefab: {fileID: 4842934446307366073, guid: f9fea3af39589b747ab49df913712a2a, type: 3}
     weight: 0
-  - kindId: 0
+  - kindId: 3
     prefab: {fileID: 4842934446307366073, guid: 00f82a5371b009a4d9cd60ced59afd46, type: 3}
     weight: 0
-  - kindId: 0
+  - kindId: 4
     prefab: {fileID: 4842934446307366073, guid: 5840debbaa95f3f4cb6c7ccca235de68, type: 3}
     weight: 0
   spawnCount: 1

@@ -1,0 +1,766 @@
+[
+  {
+    "coralName": "竹笋凤凰螺",
+    "skillName": "技能_竹笋凤凰螺",
+    "effect1": {
+      "variable": "四号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "一号鱼概率",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "餐具",
+    "skillName": "技能_餐具",
+    "effect1": {
+      "variable": "二号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "一号鱼概率",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "餐叉海葵",
+    "skillName": "技能_餐叉海葵",
+    "effect1": {
+      "variable": "一号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "一号鱼概率",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "餐刀海葵",
+    "skillName": "技能_餐刀海葵",
+    "effect1": {
+      "variable": "二号鱼概率",
+      "amount": -2.0
+    },
+    "effect2": {
+      "variable": "一号鱼概率",
+      "amount": 2.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "猫尾海葵",
+    "skillName": "技能_猫尾海葵",
+    "effect1": {
+      "variable": "四号鱼概率",
+      "amount": -2.0
+    },
+    "effect2": {
+      "variable": "二号鱼概率",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "海菖蒲",
+    "skillName": "技能_海菖蒲",
+    "effect1": {
+      "variable": "三号鱼概率",
+      "amount": -2.0
+    },
+    "effect2": {
+      "variable": "二号鱼概率",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "千手佛海葵",
+    "skillName": "技能_千手佛海葵",
+    "effect1": {
+      "variable": "一号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "二号鱼概率",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "短须飞盘珊瑚",
+    "skillName": "技能_短须飞盘珊瑚",
+    "effect1": {
+      "variable": "鱼的存在时间",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "二号鱼概率",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "羽毛藻",
+    "skillName": "技能_羽毛藻",
+    "effect1": null,
+    "effect2": {
+      "variable": "二号鱼概率",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "盤状仙掌藻",
+    "skillName": "技能_盤状仙掌藻",
+    "effect1": {
+      "variable": "三号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "二号鱼概率",
+      "amount": 2.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "罗马柱",
+    "skillName": "技能_罗马柱",
+    "effect1": {
+      "variable": "一号鱼概率",
+      "amount": -2.0
+    },
+    "effect2": {
+      "variable": "二号鱼概率",
+      "amount": 2.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "白珊瑚",
+    "skillName": "技能_白珊瑚",
+    "effect1": {
+      "variable": "四号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "三号鱼概率",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "符文石",
+    "skillName": "技能_符文石",
+    "effect1": {
+      "variable": "四号鱼概率",
+      "amount": -2.0
+    },
+    "effect2": {
+      "variable": "三号鱼概率",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "大砗磲",
+    "skillName": "技能_大砗磲",
+    "effect1": {
+      "variable": "二号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "三号鱼概率",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "海膜",
+    "skillName": "技能_海膜",
+    "effect1": {
+      "variable": "鱼的存在时间",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "三号鱼概率",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "大榔头珊瑚",
+    "skillName": "技能_大榔头珊瑚",
+    "effect1": null,
+    "effect2": {
+      "variable": "三号鱼概率",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "澳洲球形海绵",
+    "skillName": "技能_澳洲球形海绵",
+    "effect1": {
+      "variable": "四号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "三号鱼概率",
+      "amount": 2.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "海带",
+    "skillName": "技能_海带",
+    "effect1": {
+      "variable": "二号鱼概率",
+      "amount": -2.0
+    },
+    "effect2": {
+      "variable": "三号鱼概率",
+      "amount": 2.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "气泡藻",
+    "skillName": "技能_气泡藻",
+    "effect1": {
+      "variable": "一号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "三号鱼概率",
+      "amount": 2.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "丛生管虫",
+    "skillName": "技能_丛生管虫",
+    "effect1": {
+      "variable": "一号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "三号鱼概率",
+      "amount": 2.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "澳大利亚沙群海葵",
+    "skillName": "技能_澳大利亚沙群海葵",
+    "effect1": {
+      "variable": "三号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "四号鱼概率",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "葡萄藻",
+    "skillName": "技能_葡萄藻",
+    "effect1": {
+      "variable": "三号鱼概率",
+      "amount": -2.0
+    },
+    "effect2": {
+      "variable": "四号鱼概率",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "瓣叶状珊瑚",
+    "skillName": "技能_瓣叶状珊瑚",
+    "effect1": {
+      "variable": "一号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "四号鱼概率",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "贩卖机",
+    "skillName": "技能_贩卖机",
+    "effect1": null,
+    "effect2": {
+      "variable": "四号鱼概率",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "雕像",
+    "skillName": "技能_雕像",
+    "effect1": {
+      "variable": "二号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "四号鱼概率",
+      "amount": 2.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "叉枝干星珊瑚",
+    "skillName": "技能_叉枝干星珊瑚",
+    "effect1": {
+      "variable": "二号鱼概率",
+      "amount": -2.0
+    },
+    "effect2": {
+      "variable": "四号鱼概率",
+      "amount": 2.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "雷达",
+    "skillName": "技能_雷达",
+    "effect1": {
+      "variable": "一号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "四号鱼概率",
+      "amount": 2.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "长须飞盘珊瑚",
+    "skillName": "技能_长须飞盘珊瑚",
+    "effect1": {
+      "variable": "一号鱼概率",
+      "amount": -2.0
+    },
+    "effect2": {
+      "variable": "四号鱼概率",
+      "amount": 2.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "竹子",
+    "skillName": "技能_竹子",
+    "effect1": {
+      "variable": "四号鱼概率",
+      "amount": -2.0
+    },
+    "effect2": {
+      "variable": "鱼的存在时间",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "火箭",
+    "skillName": "技能_火箭",
+    "effect1": {
+      "variable": "三号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "鱼的存在时间",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "球珊瑚",
+    "skillName": "技能_球珊瑚",
+    "effect1": {
+      "variable": "三号鱼概率",
+      "amount": -2.0
+    },
+    "effect2": {
+      "variable": "鱼的存在时间",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "火海葵",
+    "skillName": "技能_火海葵",
+    "effect1": {
+      "variable": "鱼的存在时间",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "鱼的存在时间",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "气泡珊瑚",
+    "skillName": "技能_气泡珊瑚",
+    "effect1": {
+      "variable": "四号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "掉落物数量",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "教堂",
+    "skillName": "技能_教堂",
+    "effect1": {
+      "variable": "三号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "掉落物数量",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "日本黑珊瑚",
+    "skillName": "技能_日本黑珊瑚",
+    "effect1": {
+      "variable": "二号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "掉落物数量",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "洞穴海参",
+    "skillName": "技能_洞穴海参",
+    "effect1": {
+      "variable": "一号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "掉落物数量",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "牧场",
+    "skillName": "技能_牧场",
+    "effect1": null,
+    "effect2": {
+      "variable": "掉落物数量",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "海盗帽",
+    "skillName": "技能_海盗帽",
+    "effect1": {
+      "variable": "四号鱼概率",
+      "amount": -2.0
+    },
+    "effect2": {
+      "variable": "鱼的数量",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "猫爪海葵",
+    "skillName": "技能_猫爪海葵",
+    "effect1": {
+      "variable": "三号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "鱼的数量",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "沉船",
+    "skillName": "技能_沉船",
+    "effect1": {
+      "variable": "二号鱼概率",
+      "amount": -2.0
+    },
+    "effect2": {
+      "variable": "鱼的数量",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "法维亚棘星珊瑚",
+    "skillName": "技能_法维亚棘星珊瑚",
+    "effect1": {
+      "variable": "一号鱼概率",
+      "amount": -2.0
+    },
+    "effect2": {
+      "variable": "鱼的数量",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "骨头",
+    "skillName": "技能_骨头",
+    "effect1": {
+      "variable": "一号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": {
+      "variable": "鱼的数量",
+      "amount": 1.0
+    },
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "面包海星",
+    "skillName": "技能_面包海星",
+    "effect1": {
+      "variable": "四号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": null,
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "寺庙",
+    "skillName": "技能_寺庙",
+    "effect1": {
+      "variable": "二号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": null,
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "多腕葵花海星",
+    "skillName": "技能_多腕葵花海星",
+    "effect1": {
+      "variable": "鱼的存在时间",
+      "amount": -1.0
+    },
+    "effect2": null,
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "图腾海葵",
+    "skillName": "技能_图腾海葵",
+    "effect1": {
+      "variable": "四号鱼概率",
+      "amount": -2.0
+    },
+    "effect2": null,
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "非洲馒头海星",
+    "skillName": "技能_非洲馒头海星",
+    "effect1": {
+      "variable": "三号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": null,
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "喷泉",
+    "skillName": "技能_喷泉",
+    "effect1": {
+      "variable": "三号鱼概率",
+      "amount": -2.0
+    },
+    "effect2": null,
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "信号塔",
+    "skillName": "技能_信号塔",
+    "effect1": {
+      "variable": "一号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": null,
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  },
+  {
+    "coralName": "深红海葵",
+    "skillName": "技能_深红海葵",
+    "effect1": {
+      "variable": "一号鱼概率",
+      "amount": -1.0
+    },
+    "effect2": null,
+    "target1": "同石头所有珊瑚",
+    "target2": "同石头所有珊瑚",
+    "targetName1": "",
+    "targetName2": ""
+  }
+]

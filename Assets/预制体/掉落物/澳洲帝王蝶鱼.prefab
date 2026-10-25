@@ -162,7 +162,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8fd4e90b4c3fe5e40abc2f8adb13890c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemType: "\u6389\u843D\u7269"
+  itemType: "\u6FB3\u6D32\u5E1D\u738B\u8776\u9C7C\u5B9D"
   stackCount: 1
   maxStack: 99
   countText: {fileID: 0}

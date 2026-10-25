@@ -4937,16 +4937,16 @@ MonoBehaviour:
   spawnArea: {fileID: 0}
   spawnAreaTag: SpawnArea
   spawnEntries:
-  - kindId: 0
+  - kindId: 1
     prefab: {fileID: 4842934446307366073, guid: 62e3d4bd8eadd8b41bac29697c006ac5, type: 3}
     weight: 50
-  - kindId: 0
+  - kindId: 2
     prefab: {fileID: 4842934446307366073, guid: fd94b80c0dbd8194e81d6d0a246a5531, type: 3}
     weight: 40
-  - kindId: 0
+  - kindId: 3
     prefab: {fileID: 4842934446307366073, guid: a3aa2df3507f64c4b92b504a1afaf479, type: 3}
     weight: 6
-  - kindId: 0
+  - kindId: 4
     prefab: {fileID: 4842934446307366073, guid: a6be286f6e2a172478887bc0ed257cba, type: 3}
     weight: 4
   spawnCount: 1

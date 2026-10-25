@@ -138,8 +138,10 @@ public class FishInfoPanelButtons : MonoBehaviour
             Debug.LogError("[FishInfoPanelButtons] moveButton 未设置！");
             return;
         }
-        moveButton.onClick = new Button.ButtonClickedEvent();
+        // 先移除同名listener避免重复（如果面板被多次打开）
+        moveButton.onClick.RemoveListener(OnMoveButtonClick);
         moveButton.onClick.AddListener(OnMoveButtonClick);
+        // 不重置 onClick，否则会清掉 AudioManager 加的按钮音效 listener
     }
 
     void BindSellButton()

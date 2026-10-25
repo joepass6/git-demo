@@ -539,17 +539,61 @@ public static class LocalizedTextBatchTool
         Debug.Log("[批量多语言] 已生成动态字体 " + assetPath);
     }
 
+    // ==================== batchmode 专用：一键跑完整流程 ====================
+
+    /// <summary>
+    /// batchmode 专用的完整流程：先挂组件 → 再自动匹配填 key → 保存全部
+    /// 命令行：Unity.exe -batchmode -quit -projectpath "D:\桌面游戏海洞" -executeMethod LocalizedTextBatchTool.BatchMode_AllInOne
+    /// </summary>
+    public static void BatchMode_AllInOne()
+    {
+        Debug.Log("=== [batchmode] 开始：挂 LocalizedText + 自动填 key ===");
+
+        // 打开主场景（batchmode 默认不加载）
+        string mainScenePath = "Assets/场景.unity";
+        Scene scene = default;
+        if (System.IO.File.Exists(mainScenePath))
+        {
+            scene = EditorSceneManager.OpenScene(mainScenePath, OpenSceneMode.Single);
+            Debug.Log($"[batchmode] 已打开场景: {scene.path}");
+        }
+
+        // Step 1: 挂组件（场景 + 预制体）
+        int sceneAdded = AddToOpenScenes();
+        int prefabAdded = AddToAllPrefabs();
+        AssetDatabase.SaveAssets();
+        if (scene.IsValid())
+        {
+            EditorSceneManager.SaveScene(scene);   // ← batchmode 必须显式 SaveScene！
+            Debug.Log($"[batchmode] 场景已保存: {scene.path}");
+        }
+        Debug.Log($"[batchmode] Step1 完成：场景挂 {sceneAdded}，预制体挂 {prefabAdded}");
+
+        // Step 2: 自动匹配填 key
+        AutoMatchKeys();
+
+        // Step 3: 保存全部
+        if (scene.IsValid()) EditorSceneManager.SaveScene(scene);  // AutoMatchKeys 也会标脏
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log("=== [batchmode] 全部完成，退出 ===");
+    }
+
     // ==================== 小工具 ====================
 
     static bool Confirm(string message)
     {
+        // batchmode 下没有用户交互，自动确认
+        if (Application.isBatchMode) return true;
         return EditorUtility.DisplayDialog("批量多语言", message, "继续", "取消");
     }
 
     static void Report(string title, string message)
     {
         Debug.Log($"[批量多语言] {message.Replace("\n", "，")}");
-        EditorUtility.DisplayDialog(title, message, "好");
+        // batchmode 下不弹对话框
+        if (!Application.isBatchMode)
+            EditorUtility.DisplayDialog(title, message, "好");
     }
 }
 #endif

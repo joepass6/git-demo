@@ -370,13 +370,35 @@ public class ObjectSpawner : MonoBehaviour
         }
     }
 
+    // 首次点击时保存的"真正原始颜色"（快速点击时不会被覆盖丢失）
+    List<Color> cachedOrigSrs = new List<Color>();
+    List<Color> cachedOrigImgs = new List<Color>();
+    bool cachedOrigInited = false;
+
     /// <summary>
     /// 点击选中效果：把珊瑚所有图片变暗一下，clickFlashDuration 秒后恢复
     /// </summary>
     void ShowClickFlash()
     {
-        if (flashCoroutine != null) StopCoroutine(flashCoroutine);
+        // 杀旧协程（如果有）
+        if (flashCoroutine != null) { StopCoroutine(flashCoroutine); flashCoroutine = null; }
+
+        // 先恢复颜色（防止 StopCoroutine 后颜色卡在变暗状态，下一次 ClickFlashRoutine 会保存变暗色当原始色）
+        RestoreCachedColors();
+
+        // 启动新闪烁
         flashCoroutine = StartCoroutine(ClickFlashRoutine());
+    }
+
+    void RestoreCachedColors()
+    {
+        if (!cachedOrigInited) return;
+        var srs = new List<SpriteRenderer>(GetComponentsInChildren<SpriteRenderer>(true));
+        for (int i = 0; i < srs.Count && i < cachedOrigSrs.Count; i++)
+            if (srs[i] != null) srs[i].color = cachedOrigSrs[i];
+        var imgs = new List<Image>(GetComponentsInChildren<Image>(true));
+        for (int i = 0; i < imgs.Count && i < cachedOrigImgs.Count; i++)
+            if (imgs[i] != null) imgs[i].color = cachedOrigImgs[i];
     }
 
     System.Collections.IEnumerator ClickFlashRoutine()
@@ -389,29 +411,35 @@ public class ObjectSpawner : MonoBehaviour
         // 兜底：珊瑚如果是UI物体则收集 Image
         List<Image> imgs = new List<Image>(GetComponentsInChildren<Image>(true));
 
-        // 保存原色并变暗（向黑色插值 clickDarkenAmount 比例）
-        List<Color> origSrs = new List<Color>(srs.Count);
-        for (int i = 0; i < srs.Count; i++)
+        // ===== 首次点击时缓存真正的原始颜色（之后永不覆盖）=====
+        if (!cachedOrigInited)
         {
-            if (srs[i] == null) { origSrs.Add(Color.white); continue; }
-            origSrs.Add(srs[i].color);
-            srs[i].color = Color.Lerp(origSrs[i], Color.black, clickDarkenAmount);
+            cachedOrigSrs.Clear();
+            for (int i = 0; i < srs.Count; i++)
+                cachedOrigSrs.Add(srs[i] != null ? srs[i].color : Color.white);
+            cachedOrigImgs.Clear();
+            for (int i = 0; i < imgs.Count; i++)
+                cachedOrigImgs.Add(imgs[i] != null ? imgs[i].color : Color.white);
+            cachedOrigInited = true;
         }
-        List<Color> origImgs = new List<Color>(imgs.Count);
-        for (int i = 0; i < imgs.Count; i++)
+
+        // 从缓存的原始颜色向黑插值（保证每次变暗前的基准色都是真正的原始色）
+        for (int i = 0; i < srs.Count && i < cachedOrigSrs.Count; i++)
         {
-            if (imgs[i] == null) { origImgs.Add(Color.white); continue; }
-            origImgs.Add(imgs[i].color);
-            imgs[i].color = Color.Lerp(origImgs[i], Color.black, clickDarkenAmount);
+            if (srs[i] != null) srs[i].color = Color.Lerp(cachedOrigSrs[i], Color.black, clickDarkenAmount);
+        }
+        for (int i = 0; i < imgs.Count && i < cachedOrigImgs.Count; i++)
+        {
+            if (imgs[i] != null) imgs[i].color = Color.Lerp(cachedOrigImgs[i], Color.black, clickDarkenAmount);
         }
 
         yield return new WaitForSeconds(clickFlashDuration);
 
-        // 恢复原色
-        for (int i = 0; i < srs.Count; i++)
-            if (srs[i] != null) srs[i].color = origSrs[i];
-        for (int i = 0; i < imgs.Count; i++)
-            if (imgs[i] != null) imgs[i].color = origImgs[i];
+        // 恢复真正的原始颜色（从缓存里拿）
+        for (int i = 0; i < srs.Count && i < cachedOrigSrs.Count; i++)
+            if (srs[i] != null) srs[i].color = cachedOrigSrs[i];
+        for (int i = 0; i < imgs.Count && i < cachedOrigImgs.Count; i++)
+            if (imgs[i] != null) imgs[i].color = cachedOrigImgs[i];
 
         flashCoroutine = null;
     }

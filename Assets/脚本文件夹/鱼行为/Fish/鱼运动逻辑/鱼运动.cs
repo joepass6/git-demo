@@ -285,6 +285,10 @@ public class 鱼运动 : MonoBehaviour
 
     private void OnMouseDown()
     {
+        // 点击鱼音效（直接调 AudioManager，没挂也不报错）
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.播放音效(AudioManager.Instance.鱼音效);
+
         if (enableParticle && allParticles.Count > 0)
         {
             int index = Random.Range(0, allParticles.Count);
@@ -375,6 +379,9 @@ public class 鱼运动 : MonoBehaviour
                 if (itemRb != null) itemRb.velocity = Vector2.down * fallSpeed;
             }
         }
+
+        // 通知外部（AudioManager 用这个播音效，教程也用）
+        OnDropProduced?.Invoke(this);
     }
 
     // ==================== 鱼信息接口 ====================

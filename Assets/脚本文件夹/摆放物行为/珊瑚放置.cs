@@ -14,6 +14,15 @@ public class DragAndPlaceSystem : MonoBehaviour
     /// <summary>珊瑚放置成功时触发（参数=刚实例化的真实珊瑚物体，教程用）</summary>
     public static event System.Action<GameObject> OnCoralPlaced;
 
+    /// <summary>
+    /// 供外部系统（如搬家 MoveSystem）触发放置成功事件的代理方法。
+    /// C# event 的 Invoke 只能在声明类内部调用，外部类用这个。
+    /// </summary>
+    public static void 触发放置事件(GameObject obj)
+    {
+        OnCoralPlaced?.Invoke(obj);
+    }
+
     [Header("设置")]
     [Tooltip("要摆放的物品预制体")]
     public GameObject prefabToSpawn;
@@ -56,6 +65,8 @@ public class DragAndPlaceSystem : MonoBehaviour
     private Camera mainCam;
     private bool canPlace = true;
     private bool isDragging = false;
+    /// <summary>是否有珊瑚正在被拖拽/携带（携带期间点击优先用于放置，不拾取掉落物）</summary>
+    public static bool IsCarryingObject { get; private set; }
     private GameObject currentHoverRock; // 当前预览体正悬停的石头（用于切换 SetVisible/SetOutline）
 
     // ===== 桌面窗口拖动排除（DesktopWindowController 调用）=====
@@ -319,6 +330,7 @@ public class DragAndPlaceSystem : MonoBehaviour
 
         Debug.Log("[DragAndPlace] BeginDrag 开始拖拽!");
         isDragging = true;
+        IsCarryingObject = true;
 
         // 拖动开始：数量不足时变红提示
         if (!canPlace)
@@ -373,6 +385,7 @@ public class DragAndPlaceSystem : MonoBehaviour
     {
         Debug.Log("[DragAndPlace] EndDrag 结束拖拽!");
         isDragging = false;
+        IsCarryingObject = false;
 
         // ===== 隐藏 RockCapacity 的容量提示和描边 =====
         if (currentHoverRock != null)
@@ -387,17 +400,16 @@ public class DragAndPlaceSystem : MonoBehaviour
 
         if (currentDragObject == null) return;
 
-        // 用物体的体积检测（和搬家功能一样）：碰到带 placementTag 的物体才能放置
+        // 用物体的体积检测：收集所有接触的 placementTag 石头（一个珊瑚可能同时压多块）
         Vector3 placePos = currentDragObject.transform.position;
-        Collider2D target = null;
         Collider2D[] myCols = currentDragObject.GetComponentsInChildren<Collider2D>();
         HashSet<Collider2D> checkedOthers = new HashSet<Collider2D>();
+        List<GameObject> allHitRocks = new List<GameObject>();
 
         Debug.Log($"[DragAndPlace] 体积检测: 位置={placePos}, 自身碰撞器数量={myCols.Length}");
 
         if (myCols.Length == 0)
         {
-            // 兜底：预制体没带Collider2D的话用SpriteRenderer包围盒退化成OverlapArea
             SpriteRenderer previewSr = currentDragObject.GetComponentInChildren<SpriteRenderer>();
             if (previewSr == null)
             {
@@ -407,65 +419,47 @@ public class DragAndPlaceSystem : MonoBehaviour
                 return;
             }
             Bounds b = previewSr.bounds;
-            Collider2D[] fallbackHits = Physics2D.OverlapAreaAll(b.min, b.max);
-            foreach (var other in fallbackHits)
-            {
-                if (checkedOthers.Contains(other)) continue;
-                checkedOthers.Add(other);
-                if (other.transform.IsChildOf(currentDragObject.transform) || other.gameObject == currentDragObject) continue;
-                if (other.CompareTag(placementTag)) { target = other; break; }
-            }
+            CollectHitRocks(Physics2D.OverlapAreaAll(b.min, b.max), currentDragObject, placementTag, checkedOthers, allHitRocks);
         }
         else
         {
             foreach (var col in myCols)
             {
                 if (col == null) continue;
-                Collider2D[] overlaps = Physics2D.OverlapBoxAll(col.bounds.center, col.bounds.size, 0f);
-                foreach (var other in overlaps)
-                {
-                    if (checkedOthers.Contains(other)) continue;
-                    checkedOthers.Add(other);
-                    if (other.transform.IsChildOf(currentDragObject.transform) || other.gameObject == currentDragObject) continue;
-                    if (other.CompareTag(placementTag))
-                    {
-                        target = other;
-                        Debug.Log($"[DragAndPlace] 命中目标: {target.name}");
-                        break;
-                    }
-                }
-                if (target != null) break;
+                CollectHitRocks(Physics2D.OverlapBoxAll(col.bounds.center, col.bounds.size, 0f),
+                    currentDragObject, placementTag, checkedOthers, allHitRocks);
             }
         }
 
-        // ====== 关键修复：成功判定必须同时满足三个条件 ======
-        // 1. target != null（碰到了石头）
-        // 2. canPlace（玩家珊瑚道具数量够）
-        // 3. RockCapacity.IsAvailable(target)（目标石头还有空位，没满！）
-        bool hasRoom = target != null && RockCapacity.IsAvailable(target.gameObject);
-        bool allPass = target != null && canPlace && hasRoom;
+        Debug.Log($"[DragAndPlace] 共命中 {allHitRocks.Count} 块石头: {string.Join(", ", allHitRocks.ConvertAll(r => r.name))}");
 
-        Debug.Log($"[DragAndPlace] 放置判定: target={target?.name}, canPlace={canPlace}, hasRoom={hasRoom}, pass={allPass}");
+        // ====== 成功判定 ======
+        // 1. 命中至少一块石头
+        // 2. 玩家珊瑚道具数量够
+        // 3. 命中的石头中至少有一块还有空位（只要有一块能放就 OK）
+        bool hasAnyRoom = false;
+        foreach (var rock in allHitRocks)
+        {
+            if (RockCapacity.IsAvailable(rock)) { hasAnyRoom = true; break; }
+        }
+        bool allPass = allHitRocks.Count > 0 && canPlace && hasAnyRoom;
+
+        Debug.Log($"[DragAndPlace] 放置判定: 命中石头数={allHitRocks.Count}, canPlace={canPlace}, hasAnyRoom={hasAnyRoom}, pass={allPass}");
 
         if (allPass)
         {
-            Debug.Log($"[DragAndPlace] 放置成功! 目标: {target.name}");
+            // 选"最靠下"的那块当主石头（通常是珊瑚底座那块），技能/日志用
+            GameObject primaryRock = FindPrimaryRock(allHitRocks);
+            Debug.Log($"[DragAndPlace] 放置成功! 主石头: {primaryRock?.name}");
 
-            // 1. 销毁预览物体
             Destroy(currentDragObject);
-
-            // 2. 放置成功才生成真实物体，位置用预览物体当前位置（Start正常运行，会生成鱼）
             currentDragObject = Instantiate(prefabToSpawn, placePos, Quaternion.identity);
             Debug.Log($"[DragAndPlace] 生成真实物体: {currentDragObject.name}");
 
-            // 3. 设置图层为最靠前（递增排序值，后生成的在前面）
+            触发放置事件(currentDragObject);
             SetToTopLayer(currentDragObject);
-
-            // 4. 直接触发放置特效（不依赖Start，确保一定播放）
             PlayPlaceEffect(currentDragObject);
-
-            // 5. 触发技能施放器（如果预制体上挂了 SkillCaster）
-            TriggerCoralSkill(currentDragObject, target);
+            TriggerCoralSkill(currentDragObject, primaryRock);
 
             // 6. 扣除珊瑚数量并更新文本显示
             float newCount = GetCoralCount() - GetCost();
@@ -480,12 +474,12 @@ public class DragAndPlaceSystem : MonoBehaviour
         else
         {
             // 区分失败原因，方便 Console 排查
-            if (target == null)
+            if (allHitRocks.Count == 0)
                 Debug.LogWarning("[DragAndPlace] 放置失败: 没碰到石头");
             else if (!canPlace)
                 Debug.LogWarning("[DragAndPlace] 放置失败: 珊瑚道具数量不足");
-            else if (!hasRoom)
-                Debug.LogWarning("[DragAndPlace] 放置失败: 石头已满! 目标=" + target.name);
+            else if (!hasAnyRoom)
+                Debug.LogWarning("[DragAndPlace] 放置失败: 所有命中的石头都已满! 石头=" + string.Join(", ", allHitRocks.ConvertAll(r => r.name)));
             Destroy(currentDragObject);
         }
 
@@ -557,9 +551,9 @@ public class DragAndPlaceSystem : MonoBehaviour
     /// <summary>
     /// 触发技能：查找新放置物体上的 SkillCaster，施放它引用的技能定义
     /// </summary>
-    void TriggerCoralSkill(GameObject placedCoral, Collider2D rockCollider)
+    void TriggerCoralSkill(GameObject placedCoral, GameObject rockGo)
     {
-        if (placedCoral == null || rockCollider == null) return;
+        if (placedCoral == null || rockGo == null) return;
 
         var caster = placedCoral.GetComponent<SkillCaster>();
         if (caster == null)
@@ -568,16 +562,52 @@ public class DragAndPlaceSystem : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[DragAndPlace] 触发技能: {placedCoral.name} → 石头 {rockCollider.gameObject.name}");
+        Debug.Log($"[DragAndPlace] 触发技能: {placedCoral.name} → 石头 {rockGo.name}");
 
         try
         {
-            caster.Cast(rockCollider.gameObject);
+            caster.Cast(rockGo);
             Debug.Log($"[DragAndPlace]   技能施放完毕");
         }
         catch (System.Exception e)
         {
             Debug.LogError($"[DragAndPlace]   技能施放出错: {e.Message}");
         }
+    }
+
+    /// <summary>
+    /// 从 OverlapBox/Area 的碰撞体数组里，过滤出 placementTag 的石头 GameObject，去重加入 hit 列表
+    /// </summary>
+    static void CollectHitRocks(Collider2D[] overlaps, GameObject self, string placementTag,
+        HashSet<Collider2D> checkedOthers, List<GameObject> hitRocks)
+    {
+        if (overlaps == null) return;
+        foreach (var other in overlaps)
+        {
+            if (other == null) continue;
+            if (checkedOthers.Contains(other)) continue;
+            checkedOthers.Add(other);
+            if (other.transform.IsChildOf(self.transform) || other.gameObject == self) continue;
+            if (!other.CompareTag(placementTag)) continue;
+
+            var go = other.attachedRigidbody != null ? other.attachedRigidbody.gameObject : other.gameObject;
+            if (!hitRocks.Contains(go)) hitRocks.Add(go);
+        }
+    }
+
+    /// <summary>
+    /// 从命中的多块石头里挑"主石头"——Y 坐标最靠下的那块（通常是珊瑚真正站在上面的底座）
+    /// </summary>
+    static GameObject FindPrimaryRock(List<GameObject> hitRocks)
+    {
+        if (hitRocks == null || hitRocks.Count == 0) return null;
+        GameObject best = hitRocks[0];
+        float bestY = best.transform.position.y;
+        for (int i = 1; i < hitRocks.Count; i++)
+        {
+            float y = hitRocks[i].transform.position.y;
+            if (y < bestY) { bestY = y; best = hitRocks[i]; }
+        }
+        return best;
     }
 }

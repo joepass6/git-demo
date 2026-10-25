@@ -15,6 +15,9 @@ public class LocalTimeManager : MonoBehaviour
     /// <summary>时间按钮被点击时触发（参数=第几个按钮，教程用）</summary>
     public static event System.Action<int> OnButtonClicked;
 
+    /// <summary>昼夜状态切换时触发：参数 true=进入夜晚，false=进入白天</summary>
+    public static event System.Action<bool> OnDayNightChanged;
+
     // ==================== 单例 ====================
     public static LocalTimeManager Instance;
 
@@ -153,13 +156,32 @@ public class LocalTimeManager : MonoBehaviour
 
     /// <summary>
     /// 按钮点击回调：打开/切换指定物体
+    /// 增加"点击验证"：只有当按下和松开都严格落在按钮自己的矩形内，才允许切换。
+    /// 防止设置面板里的 Slider 等交互控件穿透到底层工具栏按钮，导致 toggle 误触发把面板自己关掉。
     /// </summary>
     void OnPanelButtonClicked(int index)
     {
         if (index < 0 || index >= buttonPairs.Length) return;
 
         var pair = buttonPairs[index];
-        if (pair == null || pair.targetObject == null) return;
+        if (pair == null || pair.button == null || pair.targetObject == null) return;
+
+        // ===== 点击验证：拒绝 UI 穿透导致的误触发 =====
+        var rt = pair.button.GetComponent<RectTransform>();
+        if (rt != null)
+        {
+            Vector2 localPoint;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                rt, Input.mousePosition,
+                pair.button.GetComponentInParent<Canvas>()?.worldCamera,
+                out localPoint);
+            if (!rt.rect.Contains(localPoint))
+            {
+                // 鼠标松开的位置不在按钮自己的矩形里 → 这是 UI 穿透，忽略
+                return;
+            }
+        }
+        // ==============================================
 
         bool shouldOpen = true;
 
@@ -232,6 +254,7 @@ public class LocalTimeManager : MonoBehaviour
             SetObjectsActive(nightShowObjects, true);  // 打开夜晚对象
             SetObjectsActive(dayShowObjects, false);   // 关闭白天对象
             isNighttime = true; // 更新内部标记
+            OnDayNightChanged?.Invoke(true);
         }
         else
         {
@@ -240,6 +263,7 @@ public class LocalTimeManager : MonoBehaviour
             SetObjectsActive(nightShowObjects, false); // 关闭夜晚对象
             SetObjectsActive(dayShowObjects, true);    // 打开白天对象
             isNighttime = false; // 更新内部标记
+            OnDayNightChanged?.Invoke(false);
         }
     }
 
@@ -261,6 +285,7 @@ public class LocalTimeManager : MonoBehaviour
             SetObjectsActive(nightShowObjects, true);
             SetObjectsActive(dayShowObjects, false);
             isNighttime = true;
+            OnDayNightChanged?.Invoke(true);
         }
         // 情况2：应该是白天，但当前标记是夜晚 -> 切换到白天
         else if (!shouldBeNight && isNighttime)
@@ -269,6 +294,7 @@ public class LocalTimeManager : MonoBehaviour
             SetObjectsActive(nightShowObjects, false);
             SetObjectsActive(dayShowObjects, true);
             isNighttime = false;
+            OnDayNightChanged?.Invoke(false);
         }
     }
 

@@ -24,9 +24,15 @@ using TMPro;
 /// </summary>
 public class 交换宝 : MonoBehaviour
 {
-    [Header("按钮（可留空，自动查找名字含 转换 / 更换 的按钮）")]
+    [Header("按钮（可留空，自动查找）")]
+    [Tooltip("执行交换。查找名字含 转换 的按钮")]
     public Button 转换按钮;
+    [Tooltip("单个循环按钮（旧版兼容）。找不到上/下两个独立按钮时用这个")]
     public Button 更换按钮;
+    [Tooltip("上一个按钮。查找名字含 上一个 / 前一个 的按钮")]
+    public Button 上一个按钮;
+    [Tooltip("下一个按钮。查找名字含 下一个 / 后一个 的按钮")]
+    public Button 下一个按钮;
 
     [Header("宝物槽（可留空，自动查找 选择宝物 / 换到宝物）")]
     public Transform 选择槽;
@@ -132,6 +138,19 @@ public class 交换宝 : MonoBehaviour
     bool 基线已建立;
     GameObject 气泡窗口;
 
+    // ========== 外部调用接口（父级按钮点一下就用这个开/关面板） ==========
+
+    /// <summary>打开面板（给外部按钮 OnClick 用）</summary>
+    public void Show() { gameObject.SetActive(true); }
+
+    /// <summary>关闭面板</summary>
+    public void Close() { gameObject.SetActive(false); }
+
+    /// <summary>切换面板显隐（按钮点一下）</summary>
+    public void Toggle() { gameObject.SetActive(!gameObject.activeSelf); }
+
+    // ========== 内部字段 ==========
+
     // 运行时生成的柔和径向光晕贴图（所有交换宝共用一份）
     static Sprite _光晕Sprite;
     static Sprite 光晕Sprite
@@ -164,8 +183,12 @@ public class 交换宝 : MonoBehaviour
 
     void Awake()
     {
-        if (选择槽 == null) 选择槽 = 深度查找(transform, "选择宝物");
-        if (结果槽 == null) 结果槽 = 深度查找(transform, "换到宝物");
+        // 选择槽：多关键词兼容（旧名"选择宝物" + 新名"被交换物"）
+        if (选择槽 == null)
+            选择槽 = 深度查找多词(transform, new[] { "选择宝物", "被交换物", "选择" });
+        // 结果槽：多关键词兼容
+        if (结果槽 == null)
+            结果槽 = 深度查找多词(transform, new[] { "换到宝物", "换得宝物", "交换到的", "交换到", "换到", "结果" });
 
         // 选择图标：优先用 Inspector 指定的 Image；否则只在槽里找现成的子 Image，绝不自动生成（图像必须在你指定的位置）
         选择图标 = 选择宝物图标 != null ? 选择宝物图标 : 查找槽内图标(选择槽);
@@ -183,6 +206,18 @@ public class 交换宝 : MonoBehaviour
         // 截获编辑模式配好的原始图（必须在 Start 的空闲态刷新之前）
         if (结果图标 != null) 原始结果图 = 结果图标.sprite;
         创建光晕(结果槽);
+    }
+
+    /// <summary>多关键词查找：依次尝试每个关键词，找到第一个就返回</summary>
+    static Transform 深度查找多词(Transform root, string[] 关键词)
+    {
+        if (root == null) return null;
+        foreach (string kw in 关键词)
+        {
+            Transform found = 深度查找(root, kw);
+            if (found != null) return found;
+        }
+        return null;
     }
 
     /// <summary>
@@ -211,12 +246,19 @@ public class 交换宝 : MonoBehaviour
         解析数量文本();
         构建保活列表();
 
+        // 转换按钮
         if (转换按钮 == null) 转换按钮 = 按名字找按钮("转换");
-        if (更换按钮 == null) 更换按钮 = 按名字找按钮("更换");
+        // 上一个 / 下一个（优先独立按钮，没找到再用旧的"更换"单按钮兜底）
+        if (上一个按钮 == null) 上一个按钮 = 按名字找按钮多词(new[] { "上一个", "前一个", "上", "前" });
+        if (下一个按钮 == null) 下一个按钮 = 按名字找按钮多词(new[] { "下一个", "后一个", "下", "后" });
+        if (上一个按钮 == null && 下一个按钮 == null && 更换按钮 == null)
+            更换按钮 = 按名字找按钮("更换");
 
-        // 守卫组件负责在“按下”瞬间快照窗口状态
+        // 守卫组件负责在"按下"瞬间快照窗口状态
         给按钮加守卫(转换按钮);
         给按钮加守卫(更换按钮);
+        给按钮加守卫(上一个按钮);
+        给按钮加守卫(下一个按钮);
 
         // 延迟到第一帧结束后再注册：保证我们的点击回调排在其他脚本（Start 里注册的开关页/翻页逻辑）之后，
         // 这样无论谁在同一次点击里关了窗口，我们都能在最后把它恢复
@@ -231,8 +273,23 @@ public class 交换宝 : MonoBehaviour
         yield return null; // 等所有 Start 执行完
         if (转换按钮 != null) 转换按钮.onClick.AddListener(点击转换);
         else Debug.LogWarning("[交换宝] 找不到“转换”按钮，请在 Inspector 手动指定");
-        if (更换按钮 != null) 更换按钮.onClick.AddListener(点击更换);
-        else Debug.LogWarning("[交换宝] 找不到“更换”按钮，请在 Inspector 手动指定");
+
+        // 上一个/下一个优先；都没找到才用旧的更换按钮兜底
+        if (上一个按钮 != null) 上一个按钮.onClick.AddListener(点击上一个);
+        if (下一个按钮 != null) 下一个按钮.onClick.AddListener(点击下一个);
+        if (上一个按钮 == null && 下一个按钮 == null)
+        {
+            if (更换按钮 != null) 更换按钮.onClick.AddListener(点击更换);
+            else Debug.LogWarning("[交换宝] 找不到“上一个/下一个/更换”按钮，请在 Inspector 手动指定");
+        }
+    }
+
+    Button 按名字找按钮多词(string[] 关键词)
+    {
+        foreach (var b in GetComponentsInChildren<Button>(true))
+            foreach (string kw in 关键词)
+                if (b.name.Contains(kw)) return b;
+        return null;
     }
 
     void 给按钮加守卫(Button b)
@@ -444,16 +501,31 @@ public class 交换宝 : MonoBehaviour
     void 解析数量文本()
     {
         if (选择数量文本 != null) return;
+        // 注意："数量" 关键词不能用——层级里"交换到的数量"也包含"数量"，会抢。用更精确的关键词
+        string[] 关键词 = new[] { "选择宝物数量", "宝物数量", "拥有的数量", "拥有数量" };
         foreach (var tmp in GetComponentsInChildren<TMP_Text>(true))
         {
-            if (tmp.name.Contains("选择宝物数量") || tmp.name.Contains("宝物数量"))
+            if (匹配名字或父级(tmp.transform, 关键词))
             {
                 选择数量文本 = tmp;
                 break;
             }
         }
         if (选择数量文本 == null)
-            Debug.LogWarning("[交换宝] 找不到“选择宝物数量”文本，可在 Inspector 手动拖入");
+            Debug.LogWarning("[交换宝] 找不到“拥有的数量”文本，可在 Inspector 手动拖入");
+    }
+
+    /// <summary>递归查自身及父物体名字是否匹配任一关键词（最多往上爬 5 层防死循环）</summary>
+    static bool 匹配名字或父级(Transform t, string[] 关键词)
+    {
+        int 层数 = 0;
+        while (t != null && 层数++ < 5)
+        {
+            foreach (string kw in 关键词)
+                if (t.name.Contains(kw)) return true;
+            t = t.parent;
+        }
+        return false;
     }
 
     /// <summary>把数量文本绑定到 DropItem 的计数器通道：之后拾取/扣料由库存系统实时刷新这个文本</summary>
@@ -630,8 +702,17 @@ public class 交换宝 : MonoBehaviour
         return list;
     }
 
-    /// <summary>“更换”按钮：在所有还有数量的类型之间循环切换</summary>
-    public void 点击更换()
+    /// <summary>“更换”按钮：在所有还有数量的类型之间循环切换（向后）</summary>
+    public void 点击更换() { 循环切换(1); }
+
+    /// <summary>“下一个”按钮：向前（索引+1）切换</summary>
+    public void 点击下一个() { 循环切换(1); }
+
+    /// <summary>“上一个”按钮：向后（索引-1）切换</summary>
+    public void 点击上一个() { 循环切换(-1); }
+
+    /// <summary>按方向在所有有数量的类型里循环切换。dir=+1 下一个，dir=-1 上一个</summary>
+    void 循环切换(int dir)
     {
         启动移动监视(); // 临时诊断
         准备点击();
@@ -646,7 +727,8 @@ public class 交换宝 : MonoBehaviour
         }
 
         int i = available.IndexOf(当前类型);
-        当前类型 = available[(i + 1) % available.Count];
+        i = (i + dir + available.Count) % available.Count; // 数学上保证不越界
+        当前类型 = available[i];
         刷新选择显示();
 
         if (选择图标 != null && 选择图标.enabled)

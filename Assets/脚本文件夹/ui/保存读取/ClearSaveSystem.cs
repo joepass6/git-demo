@@ -25,23 +25,22 @@ public class ClearSaveSystem : MonoBehaviour
             Debug.Log("[清除存档] 已删除 save.json");
         }
 
+        // 1b. 同时删除 Steam 云端存档（否则下次启动云端旧档会被重新下载回来）
+        SteamCloudStorage.DeleteCloudSave();
+
         // 2. 清除 PlayerPrefs
         PlayerPrefs.DeleteAll();
         PlayerPrefs.Save();
         Debug.Log("[清除存档] 已清除 PlayerPrefs");
 
         // 3. 清除 DropItem 物品数量
-        var countsField = typeof(DropItem).GetField("_counts", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-        if (countsField != null)
-        {
-            var dict = countsField.GetValue(null) as System.Collections.Generic.Dictionary<string, int>;
-            if (dict != null)
-            {
-                dict.Clear();
-                Debug.Log("[清除存档] 已清除物品数量");
-            }
-        }
+        DropItem.ClearAllCounts();
+        Debug.Log("[清除存档] 已清除物品数量");
 
-        Debug.Log("[清除存档] 全部清除完成，请重启游戏生效");
+        // 4. 重置 GameStats 进度（已发现鱼、图鉴、放置/卖出计数）
+        GameStats.Reset();
+        Debug.Log("[清除存档] 已重置游戏统计进度");
+
+        Debug.Log("[清除存档] 全部清除完成");
     }
 }

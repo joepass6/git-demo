@@ -358,6 +358,10 @@ public class MoveSystem : MonoBehaviour
         {
             Debug.Log("[MoveSystem] 放置成功: 接触 " + hit.gameObject.name);
 
+            // 复用珊瑚放置事件：AudioManager 订阅播音效，教程系统也用
+            // 注意：C# event 的 Invoke 只能在声明类内部调，外部通过代理方法触发放置事件
+            DragAndPlaceSystem.触发放置事件(gameObject);
+
             // ===== 先清理白色描边 + UI + 恢复子物体（在 SetCarryIgnore 之前，避免容量判定还在忽略自己）=====
             if (currentHoverRock != null)
             {

@@ -166,13 +166,23 @@ public class RockCapacity : MonoBehaviour
             // 与读档/技能解析相同的紧贴容差，保证"显示的数量"和"技能/放置判定"是同一批珊瑚
             List<GameObject> rocks = SkillSystem.SkillCaster.DetectRocksUnder(coralGo, placementTag,
                 SkillSystem.SkillCaster.RockTouchTolerance);
-            foreach (GameObject rock in rocks)
+
+            // ===== 关键：一个珊瑚语义上只占一个容量槽（底座那块石头）=====
+            // 哪怕它的体积同时蹭到了旁边另一块石头，也只给底座那块扣减容量
+            if (rocks.Count == 0) continue;
+            // 挑 Y 最靠下的那块（= 底座）
+            GameObject baseRock = rocks[0];
+            float baseY = baseRock.transform.position.y;
+            for (int i = 1; i < rocks.Count; i++)
             {
-                RockCapacity cap = CapOf(rock);
-                if (cap == null) continue;
-                counts.TryGetValue(cap, out int n);
-                counts[cap] = n + 1;
+                float y = rocks[i].transform.position.y;
+                if (y < baseY) { baseY = y; baseRock = rocks[i]; }
             }
+
+            RockCapacity cap = CapOf(baseRock);
+            if (cap == null) continue;
+            counts.TryGetValue(cap, out int n);
+            counts[cap] = n + 1;
         }
 
         // 2. 写回每个石头（没被任何珊瑚压着的为 0）并刷新数字

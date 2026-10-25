@@ -86,18 +86,14 @@ public class SellFishItem : MonoBehaviour
             if (cost > 0) actualRefund = cost;
         }
 
-        // 4. 把返还数量加到文本上（原路返回）
+        // 4. 返还珊瑚（通过 DropItem 静态系统，自动同步所有 UI 计数器）
+        DropItem.AddCount("珊瑚", actualRefund);
+        Debug.Log($"[SellFishItem] 返还珊瑚: +{actualRefund}, 当前={DropItem.GetCount("珊瑚")}");
+
+        // 4b. 如果旧的 countText 还配置着，同步更新一下（兼容旧场景配置）
         if (countText != null)
         {
-            int current = 0;
-            int.TryParse(countText.text, out current);
-            current += actualRefund;
-            countText.text = current.ToString();
-            Debug.Log($"[SellFishItem] 返还 {actualRefund}, 文本数字={current}");
-        }
-        else
-        {
-            Debug.LogError("[SellFishItem] Count Text 未配置!");
+            countText.text = DropItem.GetCount("珊瑚").ToString();
         }
 
         // 3. 关闭页面（先关页面再销毁物体）
@@ -124,29 +120,20 @@ public class SellFishItem : MonoBehaviour
                 Debug.Log($"[SellFishItem] 自动绑定 TargetSpawner: {targetSpawner.name}");
         }
 
-        // 自动查找珊瑚数量文本和消耗文本：从 DragAndPlaceSystem 获取
-        if (countText == null || costText == null)
+        // 自动查找消耗文本：场景里找第一个 TextMeshProUGUI 名字含"消耗"或"cost"的
+        // （DragAndPlaceSystem 本身没有 costText 字段，这里只自动查场景 UI）
+        if (costText == null)
         {
-            DragAndPlaceSystem dragSystem = FindObjectOfType<DragAndPlaceSystem>();
-            if (dragSystem != null)
+            foreach (var tmp in FindObjectsOfType<TextMeshProUGUI>())
             {
-                if (countText == null)
+                if (tmp != null && (tmp.name.ToLower().Contains("cost") || tmp.name.Contains("消耗")))
                 {
-                    countText = dragSystem.coralCountText;
-                    if (countText != null)
-                        Debug.Log($"[SellFishItem] 自动绑定 CountText: {countText.name}");
-                }
-                if (costText == null)
-                {
-                    costText = dragSystem.costText;
-                    if (costText != null)
-                        Debug.Log($"[SellFishItem] 自动绑定 CostText: {costText.name}");
+                    costText = tmp;
+                    break;
                 }
             }
-            else
-            {
-                Debug.LogWarning("[SellFishItem] 场景中未找到 DragAndPlaceSystem，无法自动获取文本引用");
-            }
+            if (costText != null)
+                Debug.Log($"[SellFishItem] 自动绑定 CostText: {costText.name}");
         }
 
         // 自动查找 UI 面板（从 FishTagScanner 获取）

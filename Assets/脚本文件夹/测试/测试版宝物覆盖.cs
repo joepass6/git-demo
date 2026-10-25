@@ -26,20 +26,48 @@ public class 测试版宝物覆盖器 : MonoBehaviour
     float 下次覆盖时间;
     int 已执行次数;
 
-    // DropItem._counts 私有静态库存字典：读它的键，兜住“鱼已掉落但UI面板从没打开过”的类型
+    // DropItem._counts 私有静态库存字典：读它的键，兜住"鱼已掉落但UI面板从没打开过"的类型
     static readonly FieldInfo CountsField = typeof(DropItem).GetField(
         "_counts", BindingFlags.NonPublic | BindingFlags.Static);
 
+    // 存档加载完成前不覆盖，避免存档值把我们压回去
+    bool 存档已加载;
+
     void Start()
     {
-        // 打包版读档在启动约 1.5 秒后完成，2.5 秒起开始覆盖，保证不被存档值压回去
-        下次覆盖时间 = 2.5f;
-        Debug.Log("[测试版] 所有鱼的宝物数值将被强制设置为 " + 测试宝物数值);
+        // 订阅存档加载事件：Load() 完成后立即执行第一次覆盖
+        SaveSystem.OnLoadComplete -= On存档加载完成;
+        SaveSystem.OnLoadComplete += On存档加载完成;
+
+        // 兜底：如果存档文件不存在（全新游戏），SaveSystem.Load() 找不到文件不会触发事件，
+        // 这里设一个超时保护
+        下次覆盖时间 = 3f;
+        Debug.Log("[测试版] 等待存档加载后开始覆盖所有鱼的宝物数值为 " + 测试宝物数值);
+    }
+
+    void OnDestroy()
+    {
+        SaveSystem.OnLoadComplete -= On存档加载完成;
+    }
+
+    void On存档加载完成(int itemTypeCount)
+    {
+        存档已加载 = true;
+        // 收到事件后立即覆盖，不再等待
+        下次覆盖时间 = 0f;
+        Debug.Log("[测试版] 存档已加载，开始覆盖宝物数值");
     }
 
     void Update()
     {
-        if (Time.time < 下次覆盖时间) return;
+        if (!存档已加载 && Time.time < 下次覆盖时间) return;
+
+        // 超时保护：存档没加载也不等了（全新游戏可能没有存档）
+        if (!存档已加载 && Time.time >= 下次覆盖时间)
+        {
+            存档已加载 = true;
+            Debug.Log("[测试版] 存档加载超时，直接开始覆盖（全新游戏？）");
+        }
 
         覆盖宝物数值();
         已执行次数++;
@@ -53,7 +81,7 @@ public class 测试版宝物覆盖器 : MonoBehaviour
     {
         var types = new HashSet<string>();
 
-        // 1. 场景中所有计数器定义的宝物类型（含未激活面板，如各种“xx鱼宝”、珊瑚等）
+        // 1. 场景中所有计数器定义的宝物类型（含未激活面板，如各种"xx鱼宝"、珊瑚等）
         DropItemCounterUI[] counters = Resources.FindObjectsOfTypeAll<DropItemCounterUI>();
         foreach (DropItemCounterUI c in counters)
         {

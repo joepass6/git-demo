@@ -52,3 +52,5 @@ desktop.ini
 
 # 字体重建时的旧版备份（在项目根目录，不入库）
 /VonwaonBitmap*旧版备份.asset
+
+batchmode_log*.txt
