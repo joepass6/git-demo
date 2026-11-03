@@ -4846,6 +4846,7 @@ GameObject:
   - component: {fileID: 4578370668958240312}
   - component: {fileID: 8079117640863523506}
   - component: {fileID: 6068287530973432286}
+  - component: {fileID: -7622209811360289430}
   m_Layer: 0
   m_Name: "\u5927\u7817\u78F2"
   m_TagString: coral
@@ -4994,3 +4995,17 @@ CircleCollider2D:
   m_Offset: {x: 0.0014944971, y: 0.06576046}
   serializedVersion: 2
   m_Radius: 0.22131792
+--- !u!114 &-7622209811360289430
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8341509457922235319}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8cff1b0b0326bd45b6a2759a9eb6b84, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skill: {fileID: 11400000, guid: dc554e11deffa2f4c93d716f116a1352, type: 2}
+  coralTag: coral

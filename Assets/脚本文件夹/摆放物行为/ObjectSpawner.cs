@@ -89,9 +89,6 @@ public class ObjectSpawner : MonoBehaviour
     // 当前打开页面的挂载物（供 FishInfoPanelButtons 读取）
     public static ObjectSpawner CurrentSpawner { get; private set; }
 
-    // 页面是否正在跟随挂载物
-    private static bool isFollowing = false;
-
     // 上一次激活的面板（用于关闭）
     private GameObject lastOpenedPanel;
 
@@ -222,7 +219,7 @@ public class ObjectSpawner : MonoBehaviour
             return;
         }
 
-        Vector3 worldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        Vector3 worldPos = DesktopWindowController.ScreenToWorldPointCorrect(Camera.main, Input.mousePosition);
         Vector2 mousePos2D = new Vector2(worldPos.x, worldPos.y);
 
         if (col.OverlapPoint(mousePos2D))
@@ -282,6 +279,18 @@ public class ObjectSpawner : MonoBehaviour
         {
             buttons.OnPanelShown(this);
             Debug.Log($"[ObjectSpawner] FishInfoPanelButtons 已绑定, followSpawner={buttons.followSpawner}");
+        }
+
+        // ====== 自动刷新鱼图鉴：点珊瑚开面板时，把自己注入给 CodexPageBinder ======
+        // 搜所有 CodexPageBinder（包括 inactive 的），逐个注入
+        var allBinders = Resources.FindObjectsOfTypeAll<CodexPageBinder>();
+        foreach (var binder in allBinders)
+        {
+            if (binder != null)
+            {
+                binder.ShowCoral(this);
+                Debug.Log($"[ObjectSpawner] 图鉴已刷新 → {binder.name}");
+            }
         }
 
         // ====== 立即设置面板位置 ======

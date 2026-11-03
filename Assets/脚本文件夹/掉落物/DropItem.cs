@@ -592,7 +592,7 @@ public class DropItem : MonoBehaviour
             if (cachedCam == null) cachedCam = Camera.main;
             if (cachedCam == null) return;
 
-            Vector2 mousePos = cachedCam.ScreenToWorldPoint(Input.mousePosition);
+            Vector2 mousePos = DesktopWindowController.ScreenToWorldPointCorrect(cachedCam, Input.mousePosition);
             if (col.OverlapPoint(mousePos)) OnClickCollect();
         }
     }

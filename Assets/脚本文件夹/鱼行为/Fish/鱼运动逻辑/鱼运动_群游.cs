@@ -57,6 +57,11 @@ public class 鱼运动_群游 : 鱼运动
     {
         base.Start();
 
+        // 群游鱼保持实体碰撞器（用来挡 Obstacle 并触发 ObstacleHitResponse），
+        // 但把刚体设为 Kinematic：物理引擎不再处理碰撞响应，
+        // 否则脚本每帧用 transform.position 把鱼往群方向推，物理引擎又把重叠的鱼弹开 → 抽搐
+        if (rb != null) rb.bodyType = RigidbodyType2D.Kinematic;
+
         // 预制体基础名（群游分组用，实例化后名字为 "预制体名(Clone)"）
         prefabBaseName = gameObject.name.Replace("(Clone)", "").Trim();
         if (string.IsNullOrEmpty(prefabBaseName)) prefabBaseName = fishName;
@@ -107,6 +112,7 @@ public class 鱼运动_群游 : 鱼运动
         hasGathered = false;
         lastDeflectTime = 0f;
         if (schoolTurnRoutine != null) { StopCoroutine(schoolTurnRoutine); schoolTurnRoutine = null; }
+        if (rb != null) rb.bodyType = RigidbodyType2D.Kinematic;  // 对象池复用也确保不改回 Dynamic
 
         if (!string.IsNullOrEmpty(prefabBaseName))
         {
@@ -551,12 +557,12 @@ public class 鱼运动_群游 : 鱼运动
     private void OnTriggerStay2D(Collider2D other)
     {
         if (other.CompareTag(fishTag)) return;
-        if (other.CompareTag(obstacleTag)) ObstacleHitResponse(other.transform);
+        if (IsObstacle(other.gameObject)) ObstacleHitResponse(other.transform);
     }
 
     private void OnCollisionStay2D(Collision2D collision)
     {
         if (collision.gameObject.CompareTag(fishTag)) return;
-        if (collision.gameObject.CompareTag(obstacleTag)) ObstacleHitResponse(collision.transform);
+        if (IsObstacle(collision.gameObject)) ObstacleHitResponse(collision.transform);
     }
 }

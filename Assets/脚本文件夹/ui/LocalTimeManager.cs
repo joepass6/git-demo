@@ -206,6 +206,9 @@ public class LocalTimeManager : MonoBehaviour
         }
 
         pair.targetObject.SetActive(shouldOpen);
+
+        // 触发教程事件钩子
+        OnButtonClicked?.Invoke(index);
     }
 
     void Update()

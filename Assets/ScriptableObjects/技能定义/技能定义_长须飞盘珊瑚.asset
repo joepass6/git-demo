@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a58deb4621f5ac4fb91c964851fef1f, type: 3}
+  m_Name: "\u6280\u80FD\u5B9A\u4E49_\u957F\u987B\u98DE\u76D8\u73CA\u745A"
+  m_EditorClassIdentifier: 
+  skillName: "\u6280\u80FD_\u957F\u987B\u98DE\u76D8\u73CA\u745A"
+  effect1:
+    variable: 2
+    target: 0
+    targetName: 
+    amount: -2
+  effect2:
+    variable: 5
+    target: 0
+    targetName: 
+    amount: 2

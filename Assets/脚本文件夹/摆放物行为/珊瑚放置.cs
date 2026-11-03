@@ -119,7 +119,7 @@ public class DragAndPlaceSystem : MonoBehaviour
         if (isDragging && currentDragObject != null)
         {
             // 拖拽中：预览物体跟随鼠标
-            Vector3 worldPos = mainCam.ScreenToWorldPoint(Input.mousePosition);
+            Vector3 worldPos = DesktopWindowController.ScreenToWorldPointCorrect(mainCam, Input.mousePosition);
             currentDragObject.transform.position = new Vector3(worldPos.x, worldPos.y, 0);
 
             // ===== 每帧检测悬停的石头，通知 RockCapacity 显示 UI + 描边 =====
@@ -355,7 +355,7 @@ public class DragAndPlaceSystem : MonoBehaviour
         DisableSpawnComponents(currentDragObject);
 
         // 放到鼠标位置
-        Vector3 worldPos = mainCam.ScreenToWorldPoint(Input.mousePosition);
+        Vector3 worldPos = DesktopWindowController.ScreenToWorldPointCorrect(mainCam, Input.mousePosition);
         currentDragObject.transform.position = new Vector3(worldPos.x, worldPos.y, 0);
     }
 

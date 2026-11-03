@@ -27,7 +27,7 @@ public class DesktopWindowController : MonoBehaviour
     public Camera zoomCamera;
     [Tooltip("打包版：滚轮缩放=整个桌宠窗口放大缩小，这里是倍数范围")]
     public float minWindowScale = 0.1f;
-    public float maxWindowScale = 1f;
+    public float maxWindowScale = 1.2f;
     float windowScale = 1f;
 
     [Header("窗口按钮")]
@@ -130,6 +130,34 @@ public class DesktopWindowController : MonoBehaviour
     IntPtr memDC = IntPtr.Zero, dib = IntPtr.Zero, dibOld = IntPtr.Zero, dibBits = IntPtr.Zero;
     int texW, texH;
     byte[] bgra;
+
+    // 公开的 RT 尺寸（供其他脚本做 Screen→RT 坐标转换）
+    public static int RTWidth { get; private set; }
+    public static int RTHeight { get; private set; }
+
+    /// <summary>
+    /// 透明窗口下 Screen 分辨率 ≠ RenderTexture 分辨率，
+    /// 直接 Camera.ScreenToWorldPoint 会偏移 → 先把 Screen 坐标按比例缩放到 RT 坐标再转。
+    /// </summary>
+    public static Vector3 ScreenToWorldPointCorrect(Camera cam, Vector2 screenPos)
+    {
+        if (cam == null) cam = Camera.main;
+        if (cam == null) return new Vector3(screenPos.x, screenPos.y, 0);
+#if UNITY_EDITOR
+        return cam.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, cam.nearClipPlane));
+#else
+        float sw = Screen.width, sh = Screen.height;
+        float rw = RTWidth > 0 ? RTWidth : cam.pixelWidth;
+        float rh = RTHeight > 0 ? RTHeight : cam.pixelHeight;
+        Vector2 scaledPos = screenPos;
+        if (sw > 0 && sh > 0 && rw > 0 && rh > 0)
+        {
+            scaledPos.x = screenPos.x * rw / sw;
+            scaledPos.y = screenPos.y * rh / sh;
+        }
+        return cam.ScreenToWorldPoint(new Vector3(scaledPos.x, scaledPos.y, cam.nearClipPlane));
+#endif
+    }
 
     // ==================== DPI ====================
     void MakeProcessDpiAware()
@@ -423,9 +451,8 @@ public class DesktopWindowController : MonoBehaviour
             cam.cullingMask = newMask;
         }
 
-        // scaleFactor 直接用 windowScale，初始 windowScale=1 → scaleFactor=1（和原来一致）
-        // 缩小到 0.1 时 scaleFactor=0.1，UI 和场景一起缩小
-        float targetScaleFactor = Mathf.Max(0.01f, windowScale);
+        // scaleFactor 每个 Canvas 独立算：先模拟 ScaleWithScreenSize 的 baseFactor（RT÷referenceRes），再乘 windowScale
+        // 这样每个 Canvas 按自己的 referenceResolution 得到正确的 baseFactor，不会统一被 windowScale 压小/放大
 
         foreach (Canvas c in cachedCanvases)
         {
@@ -444,8 +471,15 @@ public class DesktopWindowController : MonoBehaviour
             if (scaler != null)
             {
                 scaler.enabled = true;
+                Vector2 refRes = scaler.referenceResolution;
+                if (refRes.x < 100f) refRes = new Vector2(1920, 1080);
+                float scaleH = (texH > 0 ? texH : Screen.height) / refRes.y;
+                float scaleW = (texW > 0 ? texW : Screen.width) / refRes.x;
+                float rtAspect = (float)texW / Mathf.Max(1, texH);
+                float refAspect = refRes.x / Mathf.Max(1f, refRes.y);
+                float baseFactor = rtAspect > refAspect ? scaleH : scaleW;
                 scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
-                scaler.scaleFactor = targetScaleFactor;
+                scaler.scaleFactor = baseFactor * Mathf.Max(0.01f, windowScale);
             }
 
             // 确保有 CustomGraphicRaycaster（Screen 坐标 ≠ RT 坐标）
@@ -462,7 +496,7 @@ public class DesktopWindowController : MonoBehaviour
             if (c.sortingOrder < 30000) c.sortingOrder = Mathf.Min(32767, 30000 + c.sortingOrder);
         }
 
-        Debug.Log($"[桌面窗口] Canvas 扫描: {rootCount} 个根 Canvas, 相机={cam.name}, texW/H={texW}x{texH}, scaleFactor={targetScaleFactor:F2}, windowScale={windowScale:F2}");
+        Debug.Log($"[桌面窗口] Canvas 扫描: {rootCount} 个根 Canvas, 相机={cam.name}, texW/H={texW}x{texH}, windowScale={windowScale:F2}");
     }
 
     // 刷新 Canvas 缓存（FindObjectsOfType 较慢，只在必要时调用）
@@ -481,6 +515,8 @@ public class DesktopWindowController : MonoBehaviour
         // 用固定的窗口尺寸（SetWindowPos 设的物理像素）
         texW = fitW > 0 ? fitW : Display.main.systemWidth;
         texH = fitH > 0 ? fitH : Display.main.systemHeight;
+        RTWidth = texW;
+        RTHeight = texH;
 
         cam.clearFlags = CameraClearFlags.SolidColor;
         cam.backgroundColor = new Color(0f, 0f, 0f, 0f);
@@ -496,7 +532,9 @@ public class DesktopWindowController : MonoBehaviour
         bgra = new byte[texW * texH * 4];
 
         CreateDib();
+#if !UNITY_EDITOR
         transparentReady = true;
+#endif
 
         // 初始缩放
         cam.orthographicSize = baseOrthoSize / Mathf.Max(0.01f, windowScale);
@@ -533,7 +571,9 @@ public class DesktopWindowController : MonoBehaviour
 
     void OnDestroy()
     {
+#if !UNITY_EDITOR
         transparentReady = false;
+#endif
         DestroyDib();
         if (rt != null) { rt.Release(); rt = null; }
         if (readback != null) { Destroy(readback); readback = null; }
@@ -680,6 +720,21 @@ public class DesktopWindowController : MonoBehaviour
         int ex = GetWindowLong(hwnd, GWL_EXSTYLE);
         if ((ex & (int)WS_EX_LAYERED) == 0)
             SetWindowLong(hwnd, GWL_EXSTYLE, ex | (int)WS_EX_LAYERED);
+
+        // 保持窗口尺寸不弹回（Unity/Windows 可能周期性重置窗口大小）
+#if !UNITY_EDITOR
+        if (fitW > 0 && fitH > 0)
+        {
+            RECT r;
+            GetWindowRect(hwnd, out r);
+            int curW = r.Right - r.Left;
+            int curH = r.Bottom - r.Top;
+            if (Mathf.Abs(curW - fitW) > 2 || Mathf.Abs(curH - fitH) > 2)
+            {
+                SetWindowPos(hwnd, IntPtr.Zero, r.Left, r.Top, fitW, fitH, SWP_NOZORDER | SWP_NOACTIVATE);
+            }
+        }
+#endif
     }
 
     // ==================== 最小化 ====================
@@ -766,19 +821,25 @@ public class DesktopWindowController : MonoBehaviour
             cam.orthographicSize = targetOrtho;
         }
 
-        // 同步 CanvasScaler.scaleFactor：UI 和场景一起缩放
-        float targetScaleFactor = Mathf.Max(0.01f, windowScale);
+        // 同步 CanvasScaler.scaleFactor：每个 Canvas 独立算 baseFactor × windowScale
         foreach (Canvas c in cachedCanvases)
         {
             if (c == null || !c.isRootCanvas) continue;
             var scaler = c.GetComponent<CanvasScaler>();
-            if (scaler != null && !Mathf.Approximately(scaler.scaleFactor, targetScaleFactor))
-            {
-                scaler.scaleFactor = targetScaleFactor;
-            }
+            if (scaler == null) continue;
+            Vector2 refRes = scaler.referenceResolution;
+            if (refRes.x < 100f) refRes = new Vector2(1920, 1080);
+            float scaleH = (texH > 0 ? texH : Screen.height) / refRes.y;
+            float scaleW = (texW > 0 ? texW : Screen.width) / refRes.x;
+            float rtAspect = (float)texW / Mathf.Max(1, texH);
+            float refAspect = refRes.x / Mathf.Max(1f, refRes.y);
+            float baseFactor = rtAspect > refAspect ? scaleH : scaleW;
+            float targetSF = baseFactor * Mathf.Max(0.01f, windowScale);
+            if (!Mathf.Approximately(scaler.scaleFactor, targetSF))
+                scaler.scaleFactor = targetSF;
         }
 
-        Debug.Log($"[桌面窗口] 缩放: orthoSize={cam.orthographicSize:F2}, scaleFactor={targetScaleFactor:F3} (baseOrtho={baseOrthoSize:F2}/windowScale={windowScale:F2})");
+        Debug.Log($"[桌面窗口] 缩放: orthoSize={cam.orthographicSize:F2}, baseOrtho={baseOrthoSize:F2}, windowScale={windowScale:F2}");
 #endif
     }
 
@@ -867,7 +928,15 @@ public class DesktopWindowController : MonoBehaviour
         {
             if (c == null || !c.isRootCanvas) continue;
             var scaler = c.GetComponent<CanvasScaler>();
-            if (scaler != null) scaler.scaleFactor = targetScaleFactor;
+            if (scaler == null) continue;
+            Vector2 refRes = scaler.referenceResolution;
+            if (refRes.x < 100f) refRes = new Vector2(1920, 1080);
+            float scaleH = (texH > 0 ? texH : Screen.height) / refRes.y;
+            float scaleW = (texW > 0 ? texW : Screen.width) / refRes.x;
+            float rtAspect = (float)texW / Mathf.Max(1, texH);
+            float refAspect = refRes.x / Mathf.Max(1f, refRes.y);
+            float baseFactor = rtAspect > refAspect ? scaleH : scaleW;
+            scaler.scaleFactor = baseFactor * targetScaleFactor;
         }
 #endif
     }

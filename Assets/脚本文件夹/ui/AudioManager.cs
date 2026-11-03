@@ -37,6 +37,16 @@ public class AudioManager : MonoBehaviour
     [Tooltip("SE 用的 AudioSource（不填的话运行时会自动创建一个，与 BGM 独立，避免打断背景音乐）")]
     public AudioSource SE播放器;
 
+    [Header("SE 独立播放器 - 各音效一个 AudioSource，直接 Play() 零延迟")]
+    [Tooltip("按钮音效专属 AudioSource（不填自动创建）")]
+    public AudioSource 按钮音效播放器;
+    [Tooltip("鱼音效专属 AudioSource（不填自动创建）")]
+    public AudioSource 鱼音效播放器;
+    [Tooltip("珊瑚放置音效专属 AudioSource（不填自动创建）")]
+    public AudioSource 珊瑚放置音效播放器;
+    [Tooltip("拾取音效专属 AudioSource（不填自动创建）")]
+    public AudioSource 拾取音效播放器;
+
     [Header("音量")]
     [Range(0f, 1f)]
     public float Bgm音量 = 0.5f;
@@ -76,20 +86,26 @@ public class AudioManager : MonoBehaviour
             BGM播放器.spatialBlend = 0f;
         }
 
-        // 1.5 SE AudioSource（2D + 最高优先级，零延迟）
+        // 1.5 SE AudioSource（2D + 最高优先级，零延迟）—— 保留作兜底，下面每个短音效还有独立的
         if (SE播放器 == null)
         {
             SE播放器 = gameObject.AddComponent<AudioSource>();
             SE播放器.playOnAwake = false;
             SE播放器.loop = false;
-            SE播放器.spatialBlend = 0f;      // 2D，不受位置影响
-            SE播放器.priority = 0;           // 最高优先级，不被 BGM 抢占
+            SE播放器.spatialBlend = 0f;
+            SE播放器.priority = 0;
         }
         else
         {
             SE播放器.spatialBlend = 0f;
             SE播放器.priority = 0;
         }
+
+        // 1.6 为每种短音效创建独立 AudioSource —— 直接 Play() 零延迟，比 PlayOneShot 快得多
+        确保SE播放器(ref 按钮音效播放器, 按钮音效);
+        确保SE播放器(ref 鱼音效播放器, 鱼音效);
+        确保SE播放器(ref 珊瑚放置音效播放器, 珊瑚放置音效);
+        确保SE播放器(ref 拾取音效播放器, 拾取音效);
 
         // 2. 从 PlayerPrefs 读 BGM 音量（首次运行无记录则用默认 0.5）
         Bgm音量 = PlayerPrefs.GetFloat("BgmVolume", Bgm音量);
@@ -103,9 +119,9 @@ public class AudioManager : MonoBehaviour
         LocalTimeManager.OnDayNightChanged += OnDayNightChanged;
 
         // 3.5 订阅业务事件：珊瑚放置成功、鱼产宝、拾取掉落物
-        _onCoralPlaced = _ => 播放音效(珊瑚放置音效);
-        _onDropProduced = _ => 播放音效(鱼音效);
-        _onItemCollected = _ => 播放音效(拾取音效);
+        _onCoralPlaced = _ => 播放珊瑚放置音效();
+        _onDropProduced = _ => 播放鱼音效事件();
+        _onItemCollected = _ => 播放拾取音效();
         DragAndPlaceSystem.OnCoralPlaced += _onCoralPlaced;
         鱼运动.OnDropProduced += _onDropProduced;
         DropItem.OnItemCollected += _onItemCollected;
@@ -178,27 +194,97 @@ public class AudioManager : MonoBehaviour
     /// </summary>
     public float 获取BGM音量() => Bgm音量;
 
-    // ==================== 对外：按钮音效 ====================
+    // ==================== 辅助：创建/确保一个独立 SE AudioSource ====================
 
     /// <summary>
-    /// 通用音效播放：用 PlayOneShot，不会打断正在播放的其他音效。
-    /// clip 为 null 时自动回退到 按钮音效（方便事件钩子没配置 clip 时也能出声）。
+    /// 如果 ref 里的 AudioSource 为 null 就 AddComponent 创建一个，
+    /// 统一配置：2D、最高优先级、不循环、不自动播放、挂载 clip、音量=Se音量。
     /// </summary>
-    public void 播放音效(AudioClip clip)
+    private void 确保SE播放器(ref AudioSource src, AudioClip clip)
     {
-        if (SE播放器 == null) return;
-        clip = clip != null ? clip : 按钮音效;
-        if (clip == null) return;
-        SE播放器.volume = Se音量;
-        SE播放器.PlayOneShot(clip);
+        if (src == null) src = gameObject.AddComponent<AudioSource>();
+        src.playOnAwake = false;
+        src.loop = false;
+        src.spatialBlend = 0f;
+        src.priority = 0;           // 最高优先级，不被 BGM 抢占
+        src.clip = clip;
+        src.volume = Se音量;
+        src.outputAudioMixerGroup = null;
+    }
+
+    // ==================== 类型化播放：直接 Play() 零延迟 ====================
+
+    /// <summary>按钮点击音效 — 独立 AudioSource，Play() 零延迟</summary>
+    public void 播放按钮音效()
+    {
+        播独立(按钮音效播放器, 按钮音效);
+    }
+
+    /// <summary>鱼产宝音效（OnDropProduced 事件用这个名字区分）</summary>
+    public void 播放鱼音效事件()
+    {
+        播独立(鱼音效播放器, 鱼音效);
+    }
+
+    /// <summary>珊瑚放置成功音效</summary>
+    public void 播放珊瑚放置音效()
+    {
+        播独立(珊瑚放置音效播放器, 珊瑚放置音效);
+    }
+
+    /// <summary>拾取掉落物音效</summary>
+    public void 播放拾取音效()
+    {
+        播独立(拾取音效播放器, 拾取音效);
+    }
+
+    /// <summary>点击鱼音效 — 给鱼运动.OnMouseDown 调用的入口</summary>
+    public void 播放鱼被点击音效()
+    {
+        播独立(鱼音效播放器, 鱼音效);
     }
 
     /// <summary>
-    /// 播放按钮点击音效（供动态创建的按钮或其他地方手动调用）。
+    /// 直接 Play()：AudioSource 提前创建好、clip 提前挂上，Play() 内部就是提交播放请求，
+    /// 不会像 PlayOneShot 那样临时创建实例/动态分配内存/池化查找。
+    /// 如果 clip 为 null 自动回退到按钮音效，兜底用 SE播放器 + PlayOneShot。
     /// </summary>
-    public void 播放按钮音效()
+    private void 播独立(AudioSource src, AudioClip fallbackClip)
     {
-        播放音效(按钮音效);
+        if (src != null && src.clip != null)
+        {
+            src.volume = Se音量;
+            src.Play();
+        }
+        else
+        {
+            // 兜底：用 SE播放器 + PlayOneShot
+            AudioClip clip = fallbackClip != null ? fallbackClip : 按钮音效;
+            if (clip == null || SE播放器 == null) return;
+            SE播放器.volume = Se音量;
+            SE播放器.PlayOneShot(clip);
+        }
+    }
+
+    // ==================== 通用接口（兜底用） ====================
+
+    /// <summary>
+    /// 通用音效播放：优先用对应类型的独立 AudioSource，clip 为 null 时自动回退到按钮音效。
+    /// 如果找不到匹配的独立 AudioSource，兜底用 SE播放器 + PlayOneShot。
+    /// </summary>
+    public void 播放音效(AudioClip clip)
+    {
+        if (clip == null) { 播放按钮音效(); return; }
+
+        if (clip == 按钮音效) { 播放按钮音效(); return; }
+        if (clip == 鱼音效) { 播放鱼被点击音效(); return; }
+        if (clip == 珊瑚放置音效) { 播放珊瑚放置音效(); return; }
+        if (clip == 拾取音效) { 播放拾取音效(); return; }
+
+        // 未知 clip，用兜底
+        if (SE播放器 == null) return;
+        SE播放器.volume = Se音量;
+        SE播放器.PlayOneShot(clip);
     }
 
     /// <summary>
@@ -220,12 +306,16 @@ public class AudioManager : MonoBehaviour
     // ==================== 对外：SE 音量调节 ====================
 
     /// <summary>
-    /// 调节 SE 音量：实时改 SE AudioSource，PlayerPrefs 立刻保存。
+    /// 调节 SE 音量：实时改所有 SE AudioSource，PlayerPrefs 立刻保存。
     /// </summary>
     public void 设置SE音量(float v)
     {
         Se音量 = Mathf.Clamp01(v);
         if (SE播放器 != null) SE播放器.volume = Se音量;
+        if (按钮音效播放器 != null) 按钮音效播放器.volume = Se音量;
+        if (鱼音效播放器 != null) 鱼音效播放器.volume = Se音量;
+        if (珊瑚放置音效播放器 != null) 珊瑚放置音效播放器.volume = Se音量;
+        if (拾取音效播放器 != null) 拾取音效播放器.volume = Se音量;
         PlayerPrefs.SetFloat("SEVolume", Se音量);
         PlayerPrefs.Save();
     }

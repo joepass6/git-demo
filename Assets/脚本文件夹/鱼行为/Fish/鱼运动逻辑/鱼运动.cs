@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
@@ -20,8 +20,11 @@ public class 鱼运动 : MonoBehaviour
     [Tooltip("鱼的移动速度")]
     public float moveSpeed = 2f;
 
-    [Tooltip("障碍物的 Tag 名称")]
+    [Tooltip("障碍物的 Tag 名称（标准障碍物）")]
     public string obstacleTag = "Obstacle";
+
+    [Tooltip("额外障碍物 Tag 名称（留空=不启用）。挂此标签的物体与 obstacleTag 走完全相同的碰撞反应")]
+    public string extraObstacleTag = "";
 
     [Tooltip("鱼的 Tag 名称")]
     public string fishTag = "fish";
@@ -287,7 +290,7 @@ public class 鱼运动 : MonoBehaviour
     {
         // 点击鱼音效（直接调 AudioManager，没挂也不报错）
         if (AudioManager.Instance != null)
-            AudioManager.Instance.播放音效(AudioManager.Instance.鱼音效);
+            AudioManager.Instance.播放鱼被点击音效();
 
         if (enableParticle && allParticles.Count > 0)
         {
@@ -303,16 +306,26 @@ public class 鱼运动 : MonoBehaviour
 
     // ==================== 碰撞处理 ====================
 
+    /// <summary>判定物体是否属于障碍物（匹配 obstacleTag 或 extraObstacleTag 任一即算）</summary>
+    protected bool IsObstacle(GameObject go)
+    {
+        if (go == null) return false;
+        if (!string.IsNullOrEmpty(obstacleTag) && go.CompareTag(obstacleTag)) return true;
+        if (!string.IsNullOrEmpty(extraObstacleTag) && extraObstacleTag != obstacleTag
+            && go.CompareTag(extraObstacleTag)) return true;
+        return false;
+    }
+
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag(fishTag)) return;
-        if (other.CompareTag(obstacleTag)) ObstacleHitResponse(other.transform);
+        if (IsObstacle(other.gameObject)) ObstacleHitResponse(other.transform);
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
         if (collision.gameObject.CompareTag(fishTag)) return;
-        if (collision.gameObject.CompareTag(obstacleTag)) ObstacleHitResponse(collision.transform);
+        if (IsObstacle(collision.gameObject)) ObstacleHitResponse(collision.transform);
     }
 
     /// <summary>

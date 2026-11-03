@@ -4846,6 +4846,7 @@ GameObject:
   - component: {fileID: 4578370668958240312}
   - component: {fileID: 8079117640863523506}
   - component: {fileID: 8441359227012981663}
+  - component: {fileID: -7115249577510207547}
   m_Layer: 0
   m_Name: "\u7403\u73CA\u745A"
   m_TagString: coral
@@ -4889,7 +4890,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 43754e50f3944d218eda0af5b65a46e8, type: 2}
+  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -4994,3 +4995,17 @@ CapsuleCollider2D:
   m_Offset: {x: -0.0000000026709692, y: -0.022405716}
   m_Size: {x: 0.4800001, y: 0.354717}
   m_Direction: 1
+--- !u!114 &-7115249577510207547
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8341509457922235319}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8cff1b0b0326bd45b6a2759a9eb6b84, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skill: {fileID: 11400000, guid: a3ba9e0fa5ff1fb46b4716aa26b4ca89, type: 2}
+  coralTag: coral

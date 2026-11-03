@@ -4846,6 +4846,7 @@ GameObject:
   - component: {fileID: 4578370668958240312}
   - component: {fileID: 8079117640863523506}
   - component: {fileID: 587422250314943838}
+  - component: {fileID: -8298332456235105406}
   m_Layer: 0
   m_Name: "\u6FB3\u6D32\u7403\u5F62\u6D77\u7EF5"
   m_TagString: coral
@@ -4994,3 +4995,17 @@ CapsuleCollider2D:
   m_Offset: {x: 0.00088981824, y: -0.039449915}
   m_Size: {x: 0.37856048, y: 0.24449599}
   m_Direction: 1
+--- !u!114 &-8298332456235105406
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8341509457922235319}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8cff1b0b0326bd45b6a2759a9eb6b84, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skill: {fileID: 11400000, guid: db65815b73f256545a8296ba83e083d2, type: 2}
+  coralTag: coral

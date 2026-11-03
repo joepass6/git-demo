@@ -213,7 +213,11 @@ public class SaveSystem : MonoBehaviour
             {
                 dwc.SetWindowPosition(data.windowState.posX, data.windowState.posY);
             }
-            dwc.SetWindowScale(data.windowState.windowScale);
+            // 不恢复旧的 windowScale——用当前 DesktopWindowController 的默认值
+            // 旧存档里的 0.73/0.785 等会让 orthoSize 变大、场景看起来缩小
+            // 如果以后需要恢复，范围应该在 minWindowScale~maxWindowScale 内
+            // 目前先注释掉恢复逻辑，强制用 1.0 默认值
+            UnityEngine.Debug.Log($"[保存系统] 跳过恢复 windowScale（存档值={data.windowState.windowScale:F2}），使用默认值 1.0");
         }
 
         // 3. 恢复 GameStats 进度
