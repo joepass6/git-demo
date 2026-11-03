@@ -54,3 +54,9 @@ desktop.ini
 /VonwaonBitmap*旧版备份.asset
 
 batchmode_log*.txt
+
+# ===== Unity 惯例补充（原先缺失）=====
+/[Mm]emory[Cc]aptures/
+/[Rr]ecordings/
+.idea/
+crashlytics-build.properties
