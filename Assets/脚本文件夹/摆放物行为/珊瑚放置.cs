@@ -162,6 +162,9 @@ public class DragAndPlaceSystem : MonoBehaviour
                     if (rejectShakeCo != null) StopCoroutine(rejectShakeCo);
                     rejectShakeCo = StartCoroutine(RejectShakeRoutine());
                 }
+                // 同时播拒绝音效
+                if (AudioManager.Instance != null)
+                    AudioManager.Instance.播放拒绝音效();
                 return;
             }
 

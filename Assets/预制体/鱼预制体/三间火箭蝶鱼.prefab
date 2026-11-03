@@ -14800,6 +14800,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 0.1
   obstacleTag: Obstacle
+  extraObstacleTag: wall
   fishTag: fish
   dropCount: 1
   dropInterval: 300

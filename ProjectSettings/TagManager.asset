@@ -10,6 +10,7 @@ TagManager:
   - SpawnArea
   - SnailDetailPanel
   - coral
+  - wall
   layers:
   - Default
   - TransparentFX

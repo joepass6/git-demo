@@ -47,6 +47,7 @@ public class DesktopWindowController : MonoBehaviour
 
     [Header("窗口行为")]
     public bool topMost = true;
+    const string TopMostKey = "WindowTopMost";
 
     [Header("时钟面板锁定塔身")]
     public bool lockClockToTower = true;
@@ -171,6 +172,10 @@ public class DesktopWindowController : MonoBehaviour
     // ==================== Start ====================
     void Start()
     {
+        // 从存档读取偏好（Inspector 里设了默认值，PlayerPrefs 有值时覆盖）
+        if (PlayerPrefs.HasKey(TopMostKey))
+            topMost = PlayerPrefs.GetInt(TopMostKey) == 1;
+
         Application.runInBackground = true;
 
 #if !UNITY_EDITOR
@@ -415,6 +420,22 @@ public class DesktopWindowController : MonoBehaviour
         SetWindowPos(hwnd, (IntPtr)(topMost ? -1 : -2), 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
 #endif
     }
+
+    /// <summary>
+    /// 设置面板调用：切换窗口置顶状态并持久化
+    /// </summary>
+    public void SetTopMost(bool value)
+    {
+        topMost = value;
+        PlayerPrefs.SetInt(TopMostKey, topMost ? 1 : 0);
+        PlayerPrefs.Save();
+        ApplyTopMost();
+    }
+
+    /// <summary>
+    /// 设置面板查询：当前是否置顶（供 Toggle 初始化用）
+    /// </summary>
+    public bool IsTopMost() => topMost;
 
     // ==================== UI 永远置顶 ====================
     // Canvas 保持 ScreenSpaceCamera 模式（不变形），CanvasScaler.scaleFactor 同步缩放

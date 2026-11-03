@@ -34,6 +34,15 @@ public class AudioManager : MonoBehaviour
     [Tooltip("拾取掉落物时的音效（可选，不填的话用鱼音效或按钮音效也行）")]
     public AudioClip 拾取音效;
 
+    [Tooltip("放置条件不足/操作被拒绝时的音效（可选，不填自动回退到按钮音效）")]
+    public AudioClip 拒绝音效;
+
+    [Tooltip("设置面板里的按钮专用音效（可选，不填则和普通按钮音效一样）")]
+    public AudioClip 设置按钮音效;
+
+    [Tooltip("设置面板根节点 —— Inspector 拖一下，AudioManager 会自动识别其子层级里的 Button 用设置按钮音效")]
+    public Transform 设置面板根节点;
+
     [Tooltip("SE 用的 AudioSource（不填的话运行时会自动创建一个，与 BGM 独立，避免打断背景音乐）")]
     public AudioSource SE播放器;
 
@@ -46,6 +55,10 @@ public class AudioManager : MonoBehaviour
     public AudioSource 珊瑚放置音效播放器;
     [Tooltip("拾取音效专属 AudioSource（不填自动创建）")]
     public AudioSource 拾取音效播放器;
+    [Tooltip("拒绝音效专属 AudioSource（不填自动创建）")]
+    public AudioSource 拒绝音效播放器;
+    [Tooltip("设置按钮音效专属 AudioSource（不填自动创建）")]
+    public AudioSource 设置按钮音效播放器;
 
     [Header("音量")]
     [Range(0f, 1f)]
@@ -106,6 +119,8 @@ public class AudioManager : MonoBehaviour
         确保SE播放器(ref 鱼音效播放器, 鱼音效);
         确保SE播放器(ref 珊瑚放置音效播放器, 珊瑚放置音效);
         确保SE播放器(ref 拾取音效播放器, 拾取音效);
+        确保SE播放器(ref 拒绝音效播放器, 拒绝音效);
+        确保SE播放器(ref 设置按钮音效播放器, 设置按钮音效);
 
         // 2. 从 PlayerPrefs 读 BGM 音量（首次运行无记录则用默认 0.5）
         Bgm音量 = PlayerPrefs.GetFloat("BgmVolume", Bgm音量);
@@ -244,6 +259,21 @@ public class AudioManager : MonoBehaviour
         播独立(鱼音效播放器, 鱼音效);
     }
 
+    /// <summary>操作被拒绝（数量不足/条件不够/满了等）时的反馈音效</summary>
+    public void 播放拒绝音效()
+    {
+        播独立(拒绝音效播放器, 拒绝音效);
+    }
+
+    /// <summary>设置面板里按钮的专用点击音效（不填则自动回退到普通按钮音效）</summary>
+    public void 播放设置按钮音效()
+    {
+        if (设置按钮音效 != null)
+            播独立(设置按钮音效播放器, 设置按钮音效);
+        else
+            播放按钮音效();
+    }
+
     /// <summary>
     /// 直接 Play()：AudioSource 提前创建好、clip 提前挂上，Play() 内部就是提交播放请求，
     /// 不会像 PlayOneShot 那样临时创建实例/动态分配内存/池化查找。
@@ -280,6 +310,7 @@ public class AudioManager : MonoBehaviour
         if (clip == 鱼音效) { 播放鱼被点击音效(); return; }
         if (clip == 珊瑚放置音效) { 播放珊瑚放置音效(); return; }
         if (clip == 拾取音效) { 播放拾取音效(); return; }
+        if (clip == 拒绝音效) { 播放拒绝音效(); return; }
 
         // 未知 clip，用兜底
         if (SE播放器 == null) return;
@@ -288,18 +319,24 @@ public class AudioManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 扫描当前场景里所有 Button，把 onClick 都自动绑上按钮音效。
-    /// 可在动态创建按钮后再次调用，为新按钮补上音效。
-    /// 已绑过的按钮 AddListener 会重复添加，所以加了 RemoveListener 先清掉。
+    /// 扫描当前场景里所有 Button，把 onClick 都自动绑上音效。
+    /// 如果 Inspector 里拖了 设置面板根节点，其子层级里的 Button 会绑 设置按钮音效，
+    /// 其他 Button 绑 普通按钮音效。可在动态创建按钮后再次调用。
     /// </summary>
     public void 绑定场景里所有按钮音效()
     {
         var buttons = FindObjectsOfType<Button>(includeInactive: true);
         foreach (var btn in buttons)
         {
-            // 先移除避免重复（同一个按钮可能被多次扫描）
+            // 先移除避免重复
             btn.onClick.RemoveListener(播放按钮音效);
-            btn.onClick.AddListener(播放按钮音效);
+            btn.onClick.RemoveListener(播放设置按钮音效);
+
+            // 如果拖了设置面板根节点，且按钮是它的子物体 → 用设置按钮音效
+            if (设置面板根节点 != null && btn.transform.IsChildOf(设置面板根节点))
+                btn.onClick.AddListener(播放设置按钮音效);
+            else
+                btn.onClick.AddListener(播放按钮音效);
         }
     }
 
@@ -316,6 +353,8 @@ public class AudioManager : MonoBehaviour
         if (鱼音效播放器 != null) 鱼音效播放器.volume = Se音量;
         if (珊瑚放置音效播放器 != null) 珊瑚放置音效播放器.volume = Se音量;
         if (拾取音效播放器 != null) 拾取音效播放器.volume = Se音量;
+        if (拒绝音效播放器 != null) 拒绝音效播放器.volume = Se音量;
+        if (设置按钮音效播放器 != null) 设置按钮音效播放器.volume = Se音量;
         PlayerPrefs.SetFloat("SEVolume", Se音量);
         PlayerPrefs.Save();
     }
