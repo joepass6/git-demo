@@ -18,6 +18,9 @@ public class FishInfoPager : MonoBehaviour
     [Tooltip("下一页按钮，留空自动找子节点'下一个'")]
     public Button nextButton;
 
+    [Tooltip("循环翻页：到最后一页点下一页回到第一页，第一页点上一页到最后一页")]
+    public bool loop = true;
+
     static readonly Regex NumberInName = new Regex(@"\d+", RegexOptions.Compiled);
 
     int currentIndex;
@@ -43,8 +46,8 @@ public class FishInfoPager : MonoBehaviour
         foreach (Transform c in transform)
         {
             Match m = NumberInName.Match(c.name);
-            if (!m.Success) continue;                    // 名字里没数字 → 跳过（比如"上一个"、"下一个"、"放置信息"）
-            int num = int.Parse(m.Value);                 // 取第一个出现的数字："1页"→1, "2页"→2, "1页 (3)"→1
+            if (!m.Success) continue;
+            int num = int.Parse(m.Value);
             found.Add(new System.Collections.Generic.KeyValuePair<int, GameObject>(num, c.gameObject));
         }
         found.Sort((a, b) => a.Key.CompareTo(b.Key));
@@ -82,10 +85,6 @@ public class FishInfoPager : MonoBehaviour
         return null;
     }
 
-    /// <summary>
-    /// 重新收集页面并翻到第一页。
-    /// 供运行时动态增删页面（如 CodexPageBuilder）后刷新使用。
-    /// </summary>
     public void RefreshAndFlipToFirst()
     {
         CollectPages();
@@ -96,16 +95,26 @@ public class FishInfoPager : MonoBehaviour
     public void PrevPage()
     {
         if (pages == null || pages.Length == 0) return;
-        if (currentIndex <= 0) return;
-        currentIndex--;
+        if (loop)
+            currentIndex = (currentIndex - 1 + pages.Length) % pages.Length;
+        else
+        {
+            if (currentIndex <= 0) return;
+            currentIndex--;
+        }
         ShowCurrent();
     }
 
     public void NextPage()
     {
         if (pages == null || pages.Length == 0) return;
-        if (currentIndex >= pages.Length - 1) return;
-        currentIndex++;
+        if (loop)
+            currentIndex = (currentIndex + 1) % pages.Length;
+        else
+        {
+            if (currentIndex >= pages.Length - 1) return;
+            currentIndex++;
+        }
         ShowCurrent();
     }
 
@@ -116,7 +125,7 @@ public class FishInfoPager : MonoBehaviour
         {
             if (pages[i] != null) pages[i].SetActive(i == currentIndex);
         }
-        if (prevButton != null) prevButton.interactable = currentIndex > 0;
-        if (nextButton != null) nextButton.interactable = currentIndex < pages.Length - 1;
+        if (prevButton != null) prevButton.interactable = loop || currentIndex > 0;
+        if (nextButton != null) nextButton.interactable = loop || currentIndex < pages.Length - 1;
     }
 }

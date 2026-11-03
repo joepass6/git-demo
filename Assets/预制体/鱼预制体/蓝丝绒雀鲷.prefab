@@ -14800,8 +14800,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 0.07
   obstacleTag: Obstacle
+  extraObstacleTag: 
   fishTag: fish
-  dropCount: 90
+  dropCount: 1
   dropInterval: 10
   itemPrefab: {fileID: 647409291031311344, guid: 99faf1106aecf6747a2ade9a4194bef5, type: 3}
   fallSpeed: 2

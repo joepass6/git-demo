@@ -4940,16 +4940,16 @@ MonoBehaviour:
   spawnEntries:
   - kindId: 1
     prefab: {fileID: 4842934446307366073, guid: 3d1e973f12b9f3a49b63b0a08166f72b, type: 3}
-    weight: 0
+    weight: 60
   - kindId: 2
     prefab: {fileID: 4842934446307366073, guid: 69be3ce0d8f953740b110a1db7cf119e, type: 3}
-    weight: 0
+    weight: 30
   - kindId: 3
     prefab: {fileID: 4842934446307366073, guid: 840ce7c53c5fdcf4db56abc585df763b, type: 3}
-    weight: 0
+    weight: 9
   - kindId: 4
     prefab: {fileID: 4842934446307366073, guid: fc8addbca45836c4291ba636f9f18654, type: 3}
-    weight: 100
+    weight: 1
   spawnCount: 1
   bonusDestroyTime: 0
   bonusDropCount: 0

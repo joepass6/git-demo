@@ -281,18 +281,6 @@ public class ObjectSpawner : MonoBehaviour
             Debug.Log($"[ObjectSpawner] FishInfoPanelButtons 已绑定, followSpawner={buttons.followSpawner}");
         }
 
-        // ====== 自动刷新鱼图鉴：点珊瑚开面板时，把自己注入给 CodexPageBinder ======
-        // 搜所有 CodexPageBinder（包括 inactive 的），逐个注入
-        var allBinders = Resources.FindObjectsOfTypeAll<CodexPageBinder>();
-        foreach (var binder in allBinders)
-        {
-            if (binder != null)
-            {
-                binder.ShowCoral(this);
-                Debug.Log($"[ObjectSpawner] 图鉴已刷新 → {binder.name}");
-            }
-        }
-
         // ====== 立即设置面板位置 ======
         SetPanelPositionToSpawner();
 
@@ -626,6 +614,10 @@ public class ObjectSpawner : MonoBehaviour
         obj.name = $"{cleanName} [{spawnEntries[kindIndex].kindId}]";
 
         spawnedObjects.Add(obj);
+
+        // 图鉴收集：鱼生成出来就标记为已发现
+        if (fishComp != null)
+            FishJournalPage.MarkFound(prefab.name);
     }
 
     /// <summary>

@@ -1,268 +1,203 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 /// <summary>
-/// 鱼槽显示组件（v6 - 鱼图在页面根的直接子物体上）
-///
-/// 用户实际层级（关键！）：
-///   1页（页面根，CodexPageBinder 挂这）
-///   ├─ 珊瑚图像 (Image)
-///   ├─ 页数 (TMP)
-///   ├─ 鱼1 (Image)              ← 显示鱼图像（页面根直接子物体）
-///   ├─ 鱼2 (Image)
-///   ├─ 鱼3 (Image)
-///   ├─ 鱼4 (Image)
-///   └─ 容器
-///      ├─ 上一个
-///      ├─ 下一个
-///      ├─ 鱼1                    ← FishSlotDisplay 挂这（边框/概率/时间/掉落物）
-///      │  └─ 容器
-///      │     ├─ 边框 (Image)
-///      │     ├─ 掉落图像 (Image)
-///      │     ├─ 出现概率 (TMP)
-///      │     ├─ 停留时间 (TMP)
-///      │     └─ 捕鱼时间 (TMP)
-///      ├─ 鱼2
-///      ├─ 鱼3
-///      └─ 鱼4
-///
-/// 鱼图查找：沿父链找到页面根节点 → 找与自己同名的直接子物体 Image
-/// 文本查找：自己子树里按关键词找 TMP
-/// 掉落物查找：自己子树里按关键词找 Image
+/// 鱼图鉴页面显示组件（挂在每个鱼槽位上）
 /// </summary>
-public class FishSlotDisplay : MonoBehaviour
+public class FishJournalPage : MonoBehaviour
 {
-    [Header("自动查找（留空=自动扫）")]
-    public Image fishImage;                    // 鱼图像（从页面根找同名 Image）
-    public TextMeshProUGUI probabilityText;    // 出现概率
-    public TextMeshProUGUI stayTimeText;       // 停留时间
-    public TextMeshProUGUI catchTimeText;      // 捕鱼时间
-    public Image dropItemImage;                // 掉落物图片
+    [Header("必选")]
+    public GameObject fishPrefab;
+    public ObjectSpawner spawner;
 
-    [Header("运行时注入")]
-    public int slotIndex;
-    public ObjectSpawner objectSpawner;
-    public Transform pageRoot;  // CodexPageBinder 会注入（不再自己爬！）
+    [Header("可选 UI 绑定（留空自动扫）")]
+    public Image fishImage;                    // 鱼图（挂在自己身上的那个 Image）
+    public TextMeshProUGUI probabilityText;   // 出现概率
+    public TextMeshProUGUI stayTimeText;      // 停留时间
+    public TextMeshProUGUI catchTimeText;     // 掉宝时间
+    public Image dropItemImage;               // 掉落物图片
+    public TextMeshProUGUI pageNumberText;    // 页码
 
-    void Reset() { AutoFindAll(); }
-    void OnEnable() { AutoFindAll(); RefreshDisplay(); }
-    void Start()   { AutoFindAll(); RefreshDisplay(); }
-
-    void AutoFindAll()
+    // ===== 图鉴收集：哪些鱼被发现过 =====
+    static readonly string FoundPrefix = "FishFound_";
+    public static void MarkFound(string key)
     {
-        // ====== 鱼图：找页面根的同名 Image ======
-        if (fishImage == null)
+        if (string.IsNullOrEmpty(key)) return;
+        PlayerPrefs.SetInt(FoundPrefix + key, 1);
+        PlayerPrefs.Save();
+        // 自动刷新所有 FishJournalPage（图鉴页面跟着变色）
+        foreach (var page in FindObjectsOfType<FishJournalPage>(true))
         {
-            // 优先用 CodexPageBinder 注入的 pageRoot（最可靠）
-            Transform root = pageRoot;
-            // 兜底：自己往上爬
-            if (root == null) root = FindPageRoot();
-
-            if (root != null)
-            {
-                string myName = gameObject.name;
-                Transform sibling = root.Find(myName);
-                if (sibling != null)
-                {
-                    fishImage = sibling.GetComponent<Image>();
-                    if (fishImage == null)
-                        fishImage = sibling.GetComponentInChildren<Image>(true);
-                }
-                if (fishImage == null)
-                    Debug.LogWarning($"[FishSlotDisplay] {gameObject.name}: 页面根 '{root.name}' 下找不到同名 '{myName}' 的 Image 子物体");
-            }
-            else
-            {
-                Debug.LogWarning($"[FishSlotDisplay] {gameObject.name}: 找不到页面根节点！");
-            }
+            if (page != null && page.fishPrefab != null && page.fishPrefab.name == key)
+                page.Refresh();
         }
+    }
+    public static bool IsFound(string key) { return string.IsNullOrEmpty(key) ? false : PlayerPrefs.GetInt(FoundPrefix + key, 0) == 1; }
+    public static void ClearAllFound() { PlayerPrefs.DeleteKey(FoundPrefix); }
 
-        // ====== 文本：自己子树里按关键词找 ======
-        if (probabilityText == null) probabilityText = FindTmpContaining("概率");
-        if (stayTimeText == null)    stayTimeText    = FindTmpContaining("停留");
-        if (stayTimeText == null)    stayTimeText    = FindTmpContaining("存在");
-        if (catchTimeText == null)   catchTimeText   = FindTmpContaining("捕鱼");
-        if (catchTimeText == null)   catchTimeText   = FindTmpContaining("筑宝");
-        if (catchTimeText == null)   catchTimeText   = FindTmpContaining("掉落");
+    void Reset() { AutoBind(); Refresh(); }
+    void OnValidate() { AutoBind(); Refresh(); }
+    void OnEnable() { AutoBind(); Refresh(); }
+    void Start()   { AutoBind(); Refresh(); }
 
-        // ====== 掉落物图片 ======
-        if (dropItemImage == null)
+    void AutoBind()
+    {
+        // fishImage 就是挂在自己身上的那个 Image 组件
+        if (fishImage == null) fishImage = GetComponent<Image>();
+        if (probabilityText == null) probabilityText = FindTmp(new[] { "概率", "几率" });
+        if (stayTimeText == null)    stayTimeText    = FindTmp(new[] { "停留", "存在" });
+        if (catchTimeText == null)   catchTimeText   = FindTmp(new[] { "捕鱼", "筑宝", "掉宝", "掉落" });
+        if (dropItemImage == null)   dropItemImage   = FindImg(new[] { "掉落", "物品" });
+        if (pageNumberText == null)  pageNumberText  = FindTmp(new[] { "页数", "页码" });
+        if (pageNumberText == null)
         {
-            dropItemImage = FindImageContaining("掉落");
-            if (dropItemImage == null) dropItemImage = FindImageContaining("物品");
+            Transform t = transform.Find("页数");
+            if (t != null) pageNumberText = t.GetComponent<TextMeshProUGUI>();
+        }
+        if (pageNumberText != null)
+        {
+            var m = Regex.Match(gameObject.name, @"\d+");
+            if (m.Success) pageNumberText.text = m.Value;
         }
     }
 
-    /// <summary>沿父链向上爬，找到页面根（含多个 "鱼X" 直接子物体的那个）</summary>
-    Transform FindPageRoot()
-    {
-        // 一直往上找，直到某个父节点下面有多个叫 "鱼X" 的直接子物体
-        Transform t = transform;
-        while (t.parent != null)
-        {
-            // 检查这个节点是不是页面根：它下面是否有 2+ 个名字匹配 "鱼数字" 的直接子物体
-            int fishChildCount = 0;
-            foreach (Transform c in t)
-            {
-                if (c.name.StartsWith("鱼") && c.name.Length >= 2 && char.IsDigit(c.name[1]))
-                    fishChildCount++;
-            }
-            if (fishChildCount >= 2) return t;
-            t = t.parent;
-        }
-        return null;
-    }
-
-    // ====== 查找辅助 ======
-    Image FindImageContaining(string keyword)
+    TextMeshProUGUI FindTmp(string[] kws)
     {
         for (int i = 0; i < transform.childCount; i++)
         {
-            var found = FindImageInChildren(transform.GetChild(i), keyword);
-            if (found != null) return found;
+            var hit = FindTmpDeep(transform.GetChild(i), kws);
+            if (hit != null) return hit;
         }
         return null;
     }
-    static Image FindImageInChildren(Transform parent, string keyword)
+    static TextMeshProUGUI FindTmpDeep(Transform t, string[] kws)
     {
-        if (parent.name.Contains(keyword))
+        foreach (var kw in kws)
+            if (t.name.Contains(kw))
+            {
+                var tmp = t.GetComponent<TextMeshProUGUI>();
+                if (tmp != null) return tmp;
+                tmp = t.GetComponentInChildren<TextMeshProUGUI>(true);
+                if (tmp != null) return tmp;
+            }
+        for (int i = 0; i < t.childCount; i++)
         {
-            var img = parent.GetComponent<Image>();
-            if (img != null) return img;
-            img = parent.GetComponentInChildren<Image>(true);
-            if (img != null) return img;
+            var hit = FindTmpDeep(t.GetChild(i), kws);
+            if (hit != null) return hit;
         }
-        for (int i = 0; i < parent.childCount; i++)
+        return null;
+    }
+    Image FindImg(string[] kws)
+    {
+        for (int i = 0; i < transform.childCount; i++)
         {
-            var hit = FindImageInChildren(parent.GetChild(i), keyword);
+            var hit = FindImgDeep(transform.GetChild(i), kws);
+            if (hit != null) return hit;
+        }
+        return null;
+    }
+    static Image FindImgDeep(Transform t, string[] kws)
+    {
+        foreach (var kw in kws)
+            if (t.name.Contains(kw))
+            {
+                var img = t.GetComponent<Image>();
+                if (img != null) return img;
+                img = t.GetComponentInChildren<Image>(true);
+                if (img != null) return img;
+            }
+        for (int i = 0; i < t.childCount; i++)
+        {
+            var hit = FindImgDeep(t.GetChild(i), kws);
             if (hit != null) return hit;
         }
         return null;
     }
 
-    TextMeshProUGUI FindTmpContaining(string keyword)
+    public void Refresh()
     {
-        for (int i = 0; i < transform.childCount; i++)
+        if (fishPrefab == null) { ClearAll(); return; }
+
+        鱼运动 fish = fishPrefab.GetComponent<鱼运动>();
+        if (fish == null) { ClearAll(); return; }
+
+        string key = fishPrefab.name;
+        bool found = IsFound(key);
+
+        // ========== 鱼图 ==========
+        if (fishImage != null)
         {
-            var found = FindTmpInChildren(transform.GetChild(i), keyword);
-            if (found != null) return found;
-        }
-        return null;
-    }
-    static TextMeshProUGUI FindTmpInChildren(Transform parent, string keyword)
-    {
-        if (parent.name.Contains(keyword))
-        {
-            var tmp = parent.GetComponent<TextMeshProUGUI>();
-            if (tmp != null) return tmp;
-            tmp = parent.GetComponentInChildren<TextMeshProUGUI>(true);
-            if (tmp != null) return tmp;
-        }
-        for (int i = 0; i < parent.childCount; i++)
-        {
-            var hit = FindTmpInChildren(parent.GetChild(i), keyword);
-            if (hit != null) return hit;
-        }
-        return null;
-    }
-
-    // ====== 主入口 ======
-    public void RefreshDisplay()
-    {
-        if (objectSpawner == null) { ClearUI(); return; }
-
-        // 🔥 关键补绑：ShowCoral 刚注入了 pageRoot，现在如果 fishImage 还没绑到正确位置，立刻绑！
-        if (fishImage == null && pageRoot != null)
-        {
-            Transform sibling = pageRoot.Find(gameObject.name);
-            if (sibling != null)
-            {
-                fishImage = sibling.GetComponent<Image>();
-                if (fishImage == null) fishImage = sibling.GetComponentInChildren<Image>(true);
-            }
-            Debug.Log($"[FishSlotDisplay] 补绑鱼图: pageRoot={pageRoot.name} 找 '{gameObject.name}' → fishImage={fishImage?.gameObject.name ?? "(null)"}");
-        }
-
-        var entries = objectSpawner.GetSpawnEntries();
-        if (slotIndex < 0 || slotIndex >= entries.Count) { ClearUI(); return; }
-
-        var entry = entries[slotIndex];
-
-        // ====== 诊断日志 ======
-        string fishName = entry.prefab != null ? entry.prefab.name : "(null prefab)";
-        string imgName = fishImage != null ? fishImage.gameObject.name : "(没找到Image)";
-        Debug.Log($"[FishSlotDisplay] 槽位={gameObject.name} slotIndex={slotIndex}/{entries.Count} → 鱼预制体={fishName} → 显示到Image={imgName}");
-        if (entry.prefab == null) { ClearUI(); return; }
-
-        鱼运动 fish = entry.prefab.GetComponent<鱼运动>();
-        if (fish != null)
-        {
-            // 鱼图
-            if (fishImage != null)
-            {
+            // 不管有没有发现，sprite 都设成鱼的图（保证有图可显示/变黑）
+            if (fish.fishSprite != null)
                 fishImage.sprite = fish.fishSprite;
-                fishImage.enabled = fish.fishSprite != null;
-            }
+            else if (fishImage.sprite == null)
+                fishImage.enabled = false;
 
-            // 停留时间
-            if (stayTimeText != null)
-                stayTimeText.text = fish.destroyTime <= 0f ? "∞" : $"{Mathf.RoundToInt(fish.destroyTime)}s";
+            // 发现了：正常颜色；没发现：纯黑
+            fishImage.color = found ? Color.white : Color.black;
 
-            // 捕鱼/筑宝时间
-            if (catchTimeText != null)
-                catchTimeText.text = $"{Mathf.RoundToInt(fish.dropInterval)}s";
+            Debug.Log($"[FishJournalPage] {gameObject.name} → 鱼预制体={key} → found={found} → fishImage.color={(found ? "白" : "黑")}");
+        }
 
-            // 掉落物图片
-            if (dropItemImage != null)
+        // ========== 停留时间 ==========
+        if (stayTimeText != null)
+            stayTimeText.text = fish.destroyTime <= 0f ? "∞" : $"{Mathf.RoundToInt(fish.destroyTime)}s";
+
+        // ========== 掉宝时间 ==========
+        if (catchTimeText != null)
+            catchTimeText.text = $"{Mathf.RoundToInt(fish.dropInterval)}s";
+
+        // ========== 掉落物图片 ==========
+        if (dropItemImage != null)
+        {
+            Sprite drop = null;
+            if (fish.itemPrefab != null)
             {
-                Sprite dropSprite = null;
-                if (fish.itemPrefab != null)
+                var sr = fish.itemPrefab.GetComponent<SpriteRenderer>();
+                if (sr != null) drop = sr.sprite;
+                if (drop == null)
                 {
-                    var sr = fish.itemPrefab.GetComponent<SpriteRenderer>();
-                    if (sr != null) dropSprite = sr.sprite;
-                    if (dropSprite == null)
-                    {
-                        var img = fish.itemPrefab.GetComponent<Image>();
-                        if (img != null) dropSprite = img.sprite;
-                    }
-                    if (dropSprite == null)
-                    {
-                        var img = fish.itemPrefab.GetComponentInChildren<Image>(true);
-                        if (img != null) dropSprite = img.sprite;
-                    }
+                    var img = fish.itemPrefab.GetComponent<Image>();
+                    if (img != null) drop = img.sprite;
                 }
-                dropItemImage.sprite = dropSprite;
-                dropItemImage.enabled = dropSprite != null;
+                if (drop == null) drop = fish.itemPrefab.GetComponentInChildren<Image>(true)?.sprite;
             }
-        }
-        else
-        {
-            if (fishImage != null) fishImage.enabled = false;
-            if (stayTimeText != null) stayTimeText.text = "";
-            if (catchTimeText != null) catchTimeText.text = "";
-            if (dropItemImage != null) { dropItemImage.sprite = null; dropItemImage.enabled = false; }
+            dropItemImage.sprite = drop;
+            dropItemImage.enabled = drop != null;
+            dropItemImage.color = found ? Color.white : Color.black;
         }
 
-        // 概率
-        if (probabilityText != null)
+        // ========== 出现概率 ==========
+        if (probabilityText != null && spawner != null)
         {
-            float totalWeight = 0f;
+            var entries = spawner.GetSpawnEntries();
+            float total = 0f, mine = 0f;
             foreach (var e in entries)
-                if (e.prefab != null) totalWeight += e.weight;
-
-            float pct = totalWeight > 0f ? entry.weight / totalWeight * 100f : 0f;
+            {
+                if (e.prefab == null) continue;
+                total += e.weight;
+                var ef = e.prefab.GetComponent<鱼运动>();
+                if (e.prefab.name == fishPrefab.name
+                    || (ef != null && ef.fishName == fish.fishName))
+                    mine += e.weight;
+            }
+            float pct = total > 0f ? mine / total * 100f : 0f;
             probabilityText.text = $"{Mathf.RoundToInt(pct)}%";
         }
+        else if (probabilityText != null)
+        {
+            probabilityText.text = "";
+        }
     }
 
-    void ClearUI()
+    void ClearAll()
     {
-        if (fishImage != null)    { fishImage.sprite = null; fishImage.enabled = false; }
+        if (fishImage != null) { fishImage.sprite = null; fishImage.enabled = false; fishImage.color = Color.white; }
         if (probabilityText != null) probabilityText.text = "";
         if (stayTimeText != null)    stayTimeText.text = "";
         if (catchTimeText != null)   catchTimeText.text = "";
-        if (dropItemImage != null) { dropItemImage.sprite = null; dropItemImage.enabled = false; }
+        if (dropItemImage != null) { dropItemImage.sprite = null; dropItemImage.enabled = false; dropItemImage.color = Color.white; }
     }
 }

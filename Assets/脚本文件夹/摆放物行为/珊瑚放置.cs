@@ -69,6 +69,17 @@ public class DragAndPlaceSystem : MonoBehaviour
     public static bool IsCarryingObject { get; private set; }
     private GameObject currentHoverRock; // 当前预览体正悬停的石头（用于切换 SetVisible/SetOutline）
 
+    // ===== 摇晃动画相关 =====
+    private Vector3 shakeOriginalLocalPos; // 摇晃前的原始本地坐标
+    private bool shakeInited = false;      // 是否已缓存原始位置
+    private Coroutine rejectShakeCo;       // 被拒绝时的一次性摇晃协程
+    [Tooltip("条件不足、被玩家尝试拖动时的摇晃振幅（UI 像素）")]
+    public float shakeAmplitude = 8f;
+    [Tooltip("条件不足、被玩家尝试拖动时的摇晃时长（秒）")]
+    public float shakeDuration = 0.35f;
+    [Tooltip("条件不足时变暗程度（0=不变，1=全黑，建议0.55左右）")]
+    [Range(0f, 1f)] public float darkenAmount = 0.55f;
+
     // ===== 桌面窗口拖动排除（DesktopWindowController 调用）=====
     // 图标可能没开 Raycast Target，EventSystem 射线扫不到，所以这里直接登记实例供窗口脚本查询
     static readonly System.Collections.Generic.List<DragAndPlaceSystem> all = new System.Collections.Generic.List<DragAndPlaceSystem>();
@@ -106,14 +117,21 @@ public class DragAndPlaceSystem : MonoBehaviour
         // 初始化目标Text和原始颜色
         if (targetText != null) originalTextColor = targetText.color;
 
+        // 缓存摇晃前的原始本地坐标
+        shakeOriginalLocalPos = transform.localPosition;
+        shakeInited = true;
+
         mainCam = Camera.main;
         Debug.Log($"[DragAndPlace] targetImage={targetImage}, targetText={targetText}, mainCam={mainCam}, prefab={prefabToSpawn}");
     }
 
     void Update()
     {
-        // ===== 检查可放置状态（不改变颜色，颜色只在拖动时变）=====
+        // ===== 检查可放置状态 =====
         CheckCanPlace();
+
+        // ===== 每帧应用颜色（变暗/恢复）=====
+        ApplyDisabledVisual();
 
         // ===== 拖拽逻辑 =====
         if (isDragging && currentDragObject != null)
@@ -133,17 +151,69 @@ public class DragAndPlaceSystem : MonoBehaviour
         }
         else if (Input.GetMouseButtonDown(0))
         {
-            // 检测鼠标是否点中了这个UI物体（无论数量是否充足都可以开始拖动）
-            if (IsPointerOverThisUI())
+            // 鼠标点中了这个UI物体
+            if (!IsPointerOverThisUI()) return;
+
+            if (!canPlace)
             {
-                BeginDrag();
+                // 数量不够 → 拒绝 + 短暂摇晃反馈
+                if (shakeInited)
+                {
+                    if (rejectShakeCo != null) StopCoroutine(rejectShakeCo);
+                    rejectShakeCo = StartCoroutine(RejectShakeRoutine());
+                }
+                return;
             }
+
+            // 数量够 → 正常开始拖拽
+            BeginDrag();
         }
+    }
+
+    /// <summary>
+    /// 数量不足时图标变暗；足够时恢复正常颜色（持续生效）
+    /// </summary>
+    void ApplyDisabledVisual()
+    {
+        if (targetImage != null)
+        {
+            targetImage.color = canPlace ? originalImageColor
+                : Color.Lerp(originalImageColor, Color.black, darkenAmount);
+        }
+        if (targetText != null)
+        {
+            targetText.color = canPlace ? originalTextColor
+                : Color.Lerp(originalTextColor, Color.black, darkenAmount);
+        }
+    }
+
+    /// <summary>
+    /// 玩家硬拖条件不足的图标 → 短促摇晃拒绝反馈
+    /// 用一个相位来回摆 shakeDuration 秒，结束后归位
+    /// </summary>
+    System.Collections.IEnumerator RejectShakeRoutine()
+    {
+        Vector3 origin = shakeOriginalLocalPos;
+        float elapsed = 0f;
+        // 用两个叠加 Sin（相位相反）制造"猛地一摆回来"的拒绝感
+        while (elapsed < shakeDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / shakeDuration; // 0→1
+            float k = Mathf.Sin(t * Mathf.PI * 6f); // 快频率来回
+            float dx = k * shakeAmplitude;
+            transform.localPosition = origin + new Vector3(dx, 0, 0);
+            yield return null;
+        }
+        transform.localPosition = origin;
+        rejectShakeCo = null;
     }
 
     /// <summary>
     /// 预览体每帧 OverlapBox，找当前悬停的 placementTag 石头。
     /// 切换石头时自动 SetVisible/SetOutline。
+    /// 与 EndDrag/CollectHitRocks 保持一致：先取 attachedRigidbody.gameObject，
+    /// 因为 Collider2D 可能挂在子物体上，而 tag/Rigidbody2D 在父物体上。
     /// </summary>
     void UpdateHoverRock()
     {
@@ -162,7 +232,8 @@ public class DragAndPlaceSystem : MonoBehaviour
                     if (checkedOthers.Contains(other)) continue;
                     checkedOthers.Add(other);
                     if (other.transform.IsChildOf(currentDragObject.transform) || other.gameObject == currentDragObject) continue;
-                    if (other.CompareTag(placementTag)) { newRock = other.gameObject; break; }
+                    var rockGo = other.attachedRigidbody != null ? other.attachedRigidbody.gameObject : other.gameObject;
+                    if (rockGo.CompareTag(placementTag)) { newRock = rockGo; break; }
                 }
                 if (newRock != null) break;
             }
@@ -177,7 +248,8 @@ public class DragAndPlaceSystem : MonoBehaviour
                 foreach (var other in hits)
                 {
                     if (other.transform.IsChildOf(currentDragObject.transform) || other.gameObject == currentDragObject) continue;
-                    if (other.CompareTag(placementTag)) { newRock = other.gameObject; break; }
+                    var rockGo = other.attachedRigidbody != null ? other.attachedRigidbody.gameObject : other.gameObject;
+                    if (rockGo.CompareTag(placementTag)) { newRock = rockGo; break; }
                 }
             }
         }
@@ -331,13 +403,6 @@ public class DragAndPlaceSystem : MonoBehaviour
         Debug.Log("[DragAndPlace] BeginDrag 开始拖拽!");
         isDragging = true;
         IsCarryingObject = true;
-
-        // 拖动开始：数量不足时变红提示
-        if (!canPlace)
-        {
-            UpdateColor();
-            Debug.LogWarning("[DragAndPlace] 珊瑚不足，拖动中显示红色提示");
-        }
 
         // 生成预览物体（仅用于显示，禁用所有生成/运动逻辑）
         currentDragObject = Instantiate(prefabToSpawn);
