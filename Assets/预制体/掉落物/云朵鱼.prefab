@@ -165,8 +165,8 @@ MonoBehaviour:
   itemType: "\u6389\u843D\u7269"
   stackCount: 1
   maxStack: 99
+  "\u963B\u6321\u6807\u7B7E": []
   countText: {fileID: 0}
-  lifetime: 30
 --- !u!58 &8930089455188235030
 CircleCollider2D:
   m_ObjectHideFlags: 0

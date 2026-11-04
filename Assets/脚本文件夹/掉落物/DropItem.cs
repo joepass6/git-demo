@@ -203,10 +203,47 @@ public class DropItem : MonoBehaviour
     static readonly Collider2D[] blockOverlapBuffer = new Collider2D[16];
     ContactFilter2D blockFilter;
 
-    // —— 光晕随堆叠数量由白变金 ——
+    // —— 光晕层：用 Custom/ItemGlow Shader（径向发光 + Shader 内置呼吸脉动）——
     SpriteRenderer glowRenderer;
-    const int FullGoldStack = 99;                 // 堆到这个数量时光晕完全变金
-    static readonly Color GoldGlow = new Color(1f, 0.84f, 0f); // #FFD700
+    Transform glowTransform;
+    Material glowMat;
+    const int FullGoldStack = 99;
+
+    [Header("光晕层大小")]
+    [Tooltip("光晕基础大小倍数（相对主图 sprite，1.5=小，2.2=大一圈，4.0=很大）")]
+    public float glowBaseSize = 2.2f;
+
+    [Header("颜色随堆叠数量变化")]
+    [Tooltip("堆叠数量=1 时光晕颜色")]
+    public Color glowColorStart = Color.white;
+    [Tooltip("堆叠数量=99 时光晕颜色（默认暖金）")]
+    public Color glowColorEnd = new Color(1f, 0.77f, 0.35f);
+    [Tooltip("数量→颜色渐变曲线（1=线性，0.5=开方早期上色明显）")]
+    [Range(0.1f, 2f)] public float glowColorCurve = 0.5f;
+
+    [Header("Shader 参数（Custom/ItemGlow）")]
+    [Tooltip("发光强度")]
+    [Range(0f, 5f)] public float glowIntensity = 3f;
+    [Tooltip("边缘衰减（越大越集中中心）")]
+    [Range(1f, 8f)] public float glowFalloff = 1.9f;
+    [Tooltip("光晕自身 alpha")]
+    [Range(0f, 1f)] public float glowAlphaStrength = 0.6f;
+    [Tooltip("Shader 内置呼吸速度（0=不呼吸）")]
+    [Range(0f, 8f)] public float glowPulseSpeed = 2.4f;
+    [Tooltip("Shader 内置呼吸幅度")]
+    [Range(0f, 1f)] public float glowPulseAmount = 0.18f;
+
+    [Header("材质")]
+    [Tooltip("ItemGlow Shader 材质（留空自动按名找 M_掉落物发光.mat）")]
+    public Material glowMaterial;
+
+    // Shader 属性 ID（减少每帧字符串查找）
+    static readonly int _GlowColorID = Shader.PropertyToID("_GlowColor");
+    static readonly int _IntensityID = Shader.PropertyToID("_Intensity");
+    static readonly int _FalloffID = Shader.PropertyToID("_Falloff");
+    static readonly int _AlphaStrengthID = Shader.PropertyToID("_AlphaStrength");
+    static readonly int _PulseSpeedID = Shader.PropertyToID("_PulseSpeed");
+    static readonly int _PulseAmountID = Shader.PropertyToID("_PulseAmount");
 
     // —— 零弹性材质：掉落物撞障碍时不反弹，防止被 depenetrate 弹飞 ——
     static PhysicsMaterial2D _zeroMat;
@@ -278,10 +315,27 @@ public class DropItem : MonoBehaviour
         }
         mergeCheckRadius = Mathf.Max(mergeCheckRadius * 2f + 0.05f, 0.3f);
 
-        // 缓存预制件"发光"子物体的光晕，初始数量为1=白色
+        // 创建光晕层：优先用预制体已有的"发光"子物体，没有就动态创建
         Transform glowTf = transform.Find("发光");
-        if (glowTf != null) glowRenderer = glowTf.GetComponent<SpriteRenderer>();
-        UpdateGlowColor();
+        if (glowTf != null)
+        {
+            glowTransform = glowTf;
+            glowRenderer = glowTf.GetComponent<SpriteRenderer>();
+        }
+        else
+        {
+            glowTransform = CreateDynamicGlowLayer();
+            glowRenderer = glowTransform != null ? glowTransform.GetComponent<SpriteRenderer>() : null;
+        }
+
+        // 给光晕层赋 ItemGlow 材质实例 + 写 Shader 属性
+        if (glowRenderer != null)
+        {
+            glowMat = InitGlowMaterial();
+            if (glowMat != null) glowRenderer.sharedMaterial = glowMat;
+            InitGlowShaderProperties();
+            UpdateGlowColor();
+        }
 
         EnsureCountText();
 
@@ -567,15 +621,92 @@ public class DropItem : MonoBehaviour
         UpdateGlowColor();
     }
 
-    /// <summary>光晕颜色：1个=纯白，随数量变金，达到 FullGoldStack 时纯金。
-    /// 用平方根曲线而非线性：99 的跨度很大，线性时前几十个几乎看不出变化，
-    /// 开方后早期上色明显，末期逐渐收缓。</summary>
+    /// <summary>
+    /// 更新 Shader _GlowColor 属性：数量=1→glowColorStart，数量=FullGoldStack→glowColorEnd
+    /// 只写 Shader 属性颜色，alpha / 强度 / 脉动全由 Shader 自己负责
+    /// </summary>
     void UpdateGlowColor()
     {
-        if (glowRenderer == null) return;
+        if (glowMat == null) return;
         float t = Mathf.Clamp01((stackCount - 1f) / (FullGoldStack - 1f));
-        t = Mathf.Sqrt(t);
-        glowRenderer.color = Color.Lerp(Color.white, GoldGlow, t);
+        t = Mathf.Pow(t, glowColorCurve);
+        Color col = Color.Lerp(glowColorStart, glowColorEnd, t);
+        glowMat.SetColor(_GlowColorID, col);
+    }
+
+    /// <summary>
+    /// 预制体没配"发光"子物体时，运行时动态创建一个光晕层。
+    /// 用主图同一张 sprite——ItemGlow Shader 用 UV 中心做光源，
+    /// 同 sprite 保证发光中心和掉落物中心完全对齐。
+    /// </summary>
+    Transform CreateDynamicGlowLayer()
+    {
+        SpriteRenderer mainSr = GetComponent<SpriteRenderer>();
+        if (mainSr == null || mainSr.sprite == null) return null;
+
+        var glowGo = new GameObject("动态光晕");
+        glowGo.transform.SetParent(transform, false);
+        glowGo.transform.localPosition = new Vector3(0f, 0f, 0.05f);
+        float bs = Mathf.Max(0.5f, glowBaseSize);
+        glowGo.transform.localScale = new Vector3(bs, bs, 1f);
+
+        var sr = glowGo.AddComponent<SpriteRenderer>();
+        sr.sprite = mainSr.sprite;
+        sr.color = Color.white;
+        sr.sortingLayerID = mainSr.sortingLayerID;
+        sr.sortingOrder = mainSr.sortingOrder - 10; // 保证在主图后面
+
+        return glowGo.transform;
+    }
+
+    /// <summary>
+    /// 给光晕层材质：优先用 Inspector 拖的 glowMaterial，没拖就按名字找 M_掉落物发光.mat，
+    /// 再不行就用 Shader 名 Custom/ItemGlow 创建。找不到返回 null。
+    /// 克隆一份——每个掉落物改颜色互不影响。
+    /// </summary>
+    Material InitGlowMaterial()
+    {
+        Material baseMat = glowMaterial;
+
+        if (baseMat == null)
+        {
+            foreach (var m in Resources.FindObjectsOfTypeAll<Material>())
+            {
+                if (m != null && m.name == "M_掉落物发光" && m.shader != null
+                    && m.shader.name == "Custom/ItemGlow")
+                {
+                    baseMat = m;
+                    break;
+                }
+            }
+        }
+
+        if (baseMat == null)
+        {
+            Shader sh = Shader.Find("Custom/ItemGlow");
+            if (sh == null)
+            {
+                Debug.LogWarning("[DropItem] 找不到 Shader: Custom/ItemGlow，光晕层将用默认材质");
+                return null;
+            }
+            baseMat = new Material(sh);
+        }
+
+        return new Material(baseMat);
+    }
+
+    /// <summary>
+    /// 把 Inspector 参数写进 Shader 属性（只在 Awake 写一次，堆叠颜色变化由 UpdateGlowColor 单独写）
+    /// </summary>
+    void InitGlowShaderProperties()
+    {
+        if (glowMat == null) return;
+        glowMat.SetFloat(_IntensityID, glowIntensity);
+        glowMat.SetFloat(_FalloffID, glowFalloff);
+        glowMat.SetFloat(_AlphaStrengthID, glowAlphaStrength);
+        glowMat.SetFloat(_PulseSpeedID, glowPulseSpeed);
+        glowMat.SetFloat(_PulseAmountID, glowPulseAmount);
+        UpdateGlowColor();
     }
 
     // ================= 点击拾取 =================

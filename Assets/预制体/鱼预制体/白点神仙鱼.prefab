@@ -9744,7 +9744,7 @@ Animator:
   m_GameObject: {fileID: 1946993001958135233}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: d0f3f610f57349f4087442d922662e46, type: 2}
+  m_Controller: {fileID: 9100000, guid: 8d8af9605b2503246b434f893d4ffeb1, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -14800,6 +14800,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 0.1
   obstacleTag: Obstacle
+  extraObstacleTag: 
   fishTag: fish
   dropCount: 1
   dropInterval: 10

@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 /// <summary>
@@ -36,6 +37,11 @@ public class MoveSystem : MonoBehaviour
     MonoBehaviour[] conflictScripts; // 搬家期间临时禁用的运动脚本
     int skipFrames;
     GameObject currentHoverRock;     // 当前悬停的石头
+
+    // sortingOrder + Sorting Layer 抬升/恢复
+    SpriteRenderer[] allSr;
+    Dictionary<SpriteRenderer, int> originalOrders;
+    Dictionary<SpriteRenderer, string> originalLayerNames;
 
     // ==================== 静态入口（推荐用这个） ====================
     /// <summary>
@@ -132,6 +138,9 @@ public class MoveSystem : MonoBehaviour
         RockCapacity.SetCarryIgnore(gameObject); // 搬家期间不要把自己算在石头容量里
         RockCapacity.RefreshAll(placementTag);
 
+        // ===== sortingOrder 抬升：珊瑚搬家时必须在所有场景物体最前面 =====
+        BubbleSortingToFront();
+
         skipFrames = 3;
         isMoveMode = true;
         isInMoveMode = true;
@@ -154,6 +163,9 @@ public class MoveSystem : MonoBehaviour
         }
         EnableConflictScripts();
         ShowInfoPanel();
+
+        // ===== 恢复 sortingOrder =====
+        RestoreSortingOrder();
 
         // ===== RockCapacity 联动：隐藏 UI + 描边 + 取消 carryIgnore + 重算 =====
         if (currentHoverRock != null)
@@ -259,6 +271,68 @@ public class MoveSystem : MonoBehaviour
         }
     }
 
+    // ==================== sortingOrder + Sorting Layer 抬升/恢复 ====================
+    /// <summary>
+    /// Unity 2D 里 Sorting Layer 名 优先级 > sortingOrder。
+    /// 只抬 sortingOrder 不够——如果别的珊瑚/鱼在更高层名（比如"前景" vs "游戏对象"），
+    /// 哪怕 sortingOrder 加 100 也会被挡。
+    /// 所以搬家时：先找场景里优先级最高的 Sorting Layer 名，把自己的所有 SpriteRenderer
+    /// 同时搬到那个层 + sortingOrder 设成 9999（该层内最顶），确保绝对压在所有场景物体前。
+    /// Disable 时恢复到原来的层名 + sortingOrder。
+    /// UI Canvas 不受影响（用 Canvas.sortingOrder 不走 SpriteRenderer 层）。
+    /// </summary>
+    void BubbleSortingToFront()
+    {
+        allSr = GetComponentsInChildren<SpriteRenderer>(true);
+        Debug.Log($"[BubbleSortingToFront] {name}: 找到 {allSr?.Length ?? 0} 个 SpriteRenderer");
+        if (allSr == null || allSr.Length == 0) return;
+
+        // 先打印自己原来的 sorting 状态
+        foreach(var sr in allSr){
+            Debug.Log($"  自身 SR: layer={sr.sortingLayerName}(id={sr.sortingLayerID}) order={sr.sortingOrder}");
+        }
+
+        // 1) 找场景最高优先级的 Sorting Layer
+        // Unity Sorting Layer 的优先级 = SortingLayer.layers 数组索引（越靠后越靠前）
+        // uniqueID (sortingLayerID) 是随机 int，**不能用来比优先级**！
+        var allLayers = SortingLayer.layers;
+        string topLayerName = allLayers.Length > 0 ? allLayers[allLayers.Length - 1].name : "Default";
+        int topLayerIndex = allLayers.Length - 1;
+        Debug.Log($"[BubbleSortingToFront] 最高优先级层: {topLayerName}（索引 {topLayerIndex}/{allLayers.Length - 1}）");
+
+        // 2) 缓存原始值 + 统一抬到最高层 + sortingOrder 9999
+        originalOrders = new Dictionary<SpriteRenderer, int>();
+        originalLayerNames = new Dictionary<SpriteRenderer, string>();
+        foreach (var sr in allSr)
+        {
+            if (sr == null) continue;
+            originalOrders[sr] = sr.sortingOrder;
+            originalLayerNames[sr] = sr.sortingLayerName;
+            sr.sortingLayerName = topLayerName;
+            sr.sortingOrder = 9999;
+            Debug.Log($"  抬升后: layer={sr.sortingLayerName} order={sr.sortingOrder}");
+        }
+    }
+
+    void RestoreSortingOrder()
+    {
+        if (originalOrders == null) return;
+        foreach (var kv in originalOrders)
+        {
+            if (kv.Key != null) kv.Key.sortingOrder = kv.Value;
+        }
+        if (originalLayerNames != null)
+        {
+            foreach (var kv in originalLayerNames)
+            {
+                if (kv.Key != null) kv.Key.sortingLayerName = kv.Value;
+            }
+        }
+        originalOrders = null;
+        originalLayerNames = null;
+        allSr = null;
+    }
+
     // ==================== 跟随鼠标 ====================
     void UpdateSpawnerPos()
     {
@@ -286,6 +360,15 @@ public class MoveSystem : MonoBehaviour
     {
         if (!isMoveMode) return;
         if (mainCam == null) mainCam = Camera.main;
+
+        // 每帧打印一次当前 sortingOrder（调试用，找到就停）
+        if (Time.frameCount % 30 == 0)
+        {
+            var srs = GetComponentsInChildren<SpriteRenderer>(true);
+            foreach(var sr in srs){
+                Debug.Log($"[MoveSystem Update] {name} 拖家中: SR layer={sr.sortingLayerName} order={sr.sortingOrder}");
+            }
+        }
 
         UpdateSpawnerPos();
         if (skipFrames > 0) { skipFrames--; return; }

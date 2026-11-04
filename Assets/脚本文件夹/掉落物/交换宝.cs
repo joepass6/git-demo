@@ -183,12 +183,42 @@ public class 交换宝 : MonoBehaviour
 
     void Awake()
     {
-        // 选择槽：多关键词兼容（旧名"选择宝物" + 新名"被交换物"）
+        Debug.Log("====== [交换宝 Awake] ======");
+        Debug.Log($"初始挂在: {name} / activeSelf={gameObject.activeSelf} / activeInHierarchy={gameObject.activeInHierarchy}");
+        
+        // 关键修复：如果自己挂在外层入口按钮上，自动往上/下找"交换宝"面板根
+        // 脚本查找起点：优先找最近的、名字含"交换宝"的祖先/后代；找不到就用自己
+        Transform 查找起点 = transform;
+        // 先看下面有没有叫"交换宝"的子物体（外层按钮下面嵌了面板）
+        Transform panelInChildren = null;
+        foreach(var t in GetComponentsInChildren<Transform>(true))
+            if(t != transform && t.name == "交换宝" || t.name.Contains("交换宝"))
+                { panelInChildren = t; break; }
+        if(panelInChildren != null){
+            查找起点 = panelInChildren;
+            Debug.Log($"✅ 自动找到面板根: {panelInChildren.name} (作为查找起点)");
+        } else {
+            // 往上爬找祖先
+            for(var p = transform.parent; p != null; p = p.parent)
+                if(p.name == "交换宝" || p.name.Contains("交换宝"))
+                    { 查找起点 = p; Debug.Log($"✅ 往上找到面板根: {p.name}"); break; }
+        }
+        
+        // 用查找起点查所有子物体
+        var allChildren = 查找起点.GetComponentsInChildren<Transform>(true);
+        Debug.Log($"面板根={查找起点.name} / 含 inactive 共 {allChildren.Length} 个 Transform:");
+        foreach(var t in allChildren)
+            Debug.Log($"  {(t.gameObject.activeSelf ? "🟢" : "🔴")} {t.name}");
+        
+        // 选槽自动查找
         if (选择槽 == null)
-            选择槽 = 深度查找多词(transform, new[] { "选择宝物", "被交换物", "选择" });
-        // 结果槽：多关键词兼容
+            选择槽 = 深度查找多词(查找起点, new[] { "选择宝物", "被交换物", "选择" });
+        Debug.Log($"选择槽 = {(选择槽?.name ?? "null")}");
+        
+        // 结果槽自动查找
         if (结果槽 == null)
-            结果槽 = 深度查找多词(transform, new[] { "换到宝物", "换得宝物", "交换到的", "交换到", "换到", "结果" });
+            结果槽 = 深度查找多词(查找起点, new[] { "换到宝物", "换得宝物", "交换到的", "交换到", "换到", "结果" });
+        Debug.Log($"结果槽 = {(结果槽?.name ?? "null")}");
 
         // 选择图标：优先用 Inspector 指定的 Image；否则只在槽里找现成的子 Image，绝不自动生成（图像必须在你指定的位置）
         选择图标 = 选择宝物图标 != null ? 选择宝物图标 : 查找槽内图标(选择槽);
@@ -242,8 +272,25 @@ public class 交换宝 : MonoBehaviour
 
     void Start()
     {
+        // ============ 诊断日志（查完问题删掉）============
+        Debug.Log("========== [交换宝 Start] ==========");
+        Debug.Log($"挂在: {name} (transform)");
+        Debug.Log($"自身层级: {GetComponentsInChildren<Transform>(true).Length} 个 Transform");
+        foreach(var t in GetComponentsInChildren<Transform>(true))
+            Debug.Log($"  子物体: {t.name}");
+        Debug.Log($"Inspector 已绑 - 转换按钮={转换按钮?.name ?? "null"} 上一个={上一个按钮?.name ?? "null"} 下一个={下一个按钮?.name ?? "null"} 选择槽={选择槽?.name ?? "null"} 结果槽={结果槽?.name ?? "null"} 选择宝物图标={(选择宝物图标 != null ? 选择宝物图标.name : "null")} 选择数量文本={(选择数量文本 != null ? 选择数量文本.name : "null")}");
+
+        // 选择槽/结果槽/选择图标自动查找结果
+        if (选择槽 != null) Debug.Log($"选择槽 已绑: {选择槽.name}");
+        else Debug.LogWarning($"选择槽 未绑！深度查找: {深度查找多词(transform, new[] { "选择宝物", "被交换物", "选择" })?.name ?? "null"}");
+        if (结果槽 != null) Debug.Log($"结果槽 已绑: {结果槽.name}");
+        else Debug.LogWarning($"结果槽 未绑！深度查找: {深度查找多词(transform, new[] { "换到宝物", "换得宝物", "交换到的", "交换到", "换到", "结果" })?.name ?? "null"}");
+
         收集类型与图标();
+        Debug.Log($"收集到类型数: {全部类型.Count} — {string.Join(", ", 全部类型)}");
+        Debug.Log($"图标数: {类型图标.Count}");
         解析数量文本();
+        Debug.Log($"解析后 选择数量文本 = {(选择数量文本 != null ? 选择数量文本.name : "null")}");
         构建保活列表();
 
         // 转换按钮

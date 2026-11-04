@@ -4845,8 +4845,8 @@ GameObject:
   - component: {fileID: 7859927800480412080}
   - component: {fileID: 4578370668958240312}
   - component: {fileID: 8079117640863523506}
-  - component: {fileID: 6068287530973432286}
   - component: {fileID: -7622209811360289430}
+  - component: {fileID: 5973336533439829268}
   m_Layer: 0
   m_Name: "\u5927\u7817\u78F2"
   m_TagString: coral
@@ -4960,8 +4960,22 @@ MonoBehaviour:
   popupOffset: {x: 136.9, y: 30.5}
   clickDarkenAmount: 0.45
   clickFlashDuration: 0.25
---- !u!58 &6068287530973432286
-CircleCollider2D:
+--- !u!114 &-7622209811360289430
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8341509457922235319}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8cff1b0b0326bd45b6a2759a9eb6b84, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skill: {fileID: 11400000, guid: dc554e11deffa2f4c93d716f116a1352, type: 2}
+  coralTag: coral
+--- !u!70 &5973336533439829268
+CapsuleCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -4989,23 +5003,9 @@ CircleCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0.0014944971, y: 0.06576046}
-  serializedVersion: 2
-  m_Radius: 0.22131792
---- !u!114 &-7622209811360289430
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8341509457922235319}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b8cff1b0b0326bd45b6a2759a9eb6b84, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  skill: {fileID: 11400000, guid: dc554e11deffa2f4c93d716f116a1352, type: 2}
-  coralTag: coral
+  m_Offset: {x: -0.036445547, y: -0.115090914}
+  m_Size: {x: 0.20250681, y: 0.07334975}
+  m_Direction: 1

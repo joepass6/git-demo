@@ -74,6 +74,9 @@ public class LocalTimeManager : MonoBehaviour
     // 内部状态记录：当前是否处于夜晚模式
     private bool isNighttime = false;
 
+    /// <summary>当前是否夜晚（供外部查询，如珊瑚夜晚发光）</summary>
+    public bool IsNightTime => isNighttime;
+
     // 缓存时间值，避免每帧分配字符串
     private int cachedHour = -1;
     private int cachedMinute = -1;
