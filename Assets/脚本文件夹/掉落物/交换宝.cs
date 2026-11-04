@@ -272,19 +272,48 @@ public class 交换宝 : MonoBehaviour
 
     void Start()
     {
-        // ============ 诊断日志（查完问题删掉）============
-        Debug.Log("========== [交换宝 Start] ==========");
-        Debug.Log($"挂在: {name} (transform)");
-        Debug.Log($"自身层级: {GetComponentsInChildren<Transform>(true).Length} 个 Transform");
+        // 找面板根（和 Awake 保持一致）
+        Transform 面板根 = transform;
         foreach(var t in GetComponentsInChildren<Transform>(true))
-            Debug.Log($"  子物体: {t.name}");
-        Debug.Log($"Inspector 已绑 - 转换按钮={转换按钮?.name ?? "null"} 上一个={上一个按钮?.name ?? "null"} 下一个={下一个按钮?.name ?? "null"} 选择槽={选择槽?.name ?? "null"} 结果槽={结果槽?.name ?? "null"} 选择宝物图标={(选择宝物图标 != null ? 选择宝物图标.name : "null")} 选择数量文本={(选择数量文本 != null ? 选择数量文本.name : "null")}");
+            if(t != transform && (t.name == "交换宝" || t.name.Contains("交换宝"))) { 面板根 = t; break; }
 
-        // 选择槽/结果槽/选择图标自动查找结果
-        if (选择槽 != null) Debug.Log($"选择槽 已绑: {选择槽.name}");
-        else Debug.LogWarning($"选择槽 未绑！深度查找: {深度查找多词(transform, new[] { "选择宝物", "被交换物", "选择" })?.name ?? "null"}");
-        if (结果槽 != null) Debug.Log($"结果槽 已绑: {结果槽.name}");
-        else Debug.LogWarning($"结果槽 未绑！深度查找: {深度查找多词(transform, new[] { "换到宝物", "换得宝物", "交换到的", "交换到", "换到", "结果" })?.name ?? "null"}");
+        // 用面板根找面板内按钮
+        if (转换按钮 == null) 转换按钮 = 按名字找按钮多词(面板根, new[] { "转换按钮", "转换", "更换" });
+        if (上一个按钮 == null) 上一个按钮 = 按名字找按钮多词(面板根, new[] { "上一个", "前一个" });
+        if (下一个按钮 == null) 下一个按钮 = 按名字找按钮多词(面板根, new[] { "下一个", "后一个" });
+        if (上一个按钮 == null && 下一个按钮 == null) 更换按钮 = 按名字找按钮("更换");
+
+        Debug.Log($"[交换宝] Start 查找结果 - 转换={转换按钮?.name ?? "null"} 上一个={上一个按钮?.name ?? "null"} 下一个={下一个按钮?.name ?? "null"} 面板根={面板根.name}");
+
+        // ========== 自动绑定入口按钮（打开/关闭面板）==========
+        // 面板默认 active=false，需要找一个外部入口按钮来 SetActive
+        // 策略：找名字含"多余鱼宝转换"/"换宝"/"交换"的外部按钮（非面板内）
+        Button 入口按钮 = null;
+        foreach(var btn in FindObjectsOfType<Button>(true))
+        {
+            if(btn == null) continue;
+            // 跳过面板内部按钮
+            if(btn.transform.IsChildOf(面板根)) continue;
+            if(btn.name.Contains("多余鱼宝转换") || btn.name.Contains("换宝") || btn.name.Contains("交换"))
+            {
+                入口按钮 = btn;
+                break;
+            }
+        }
+        if(入口按钮 != null)
+        {
+            Debug.Log($"[交换宝] ✅ 自动绑定入口按钮: {入口按钮.name} → Toggle 面板显隐");
+            入口按钮.onClick.AddListener(() => {
+                bool nowActive = 面板根.gameObject.activeSelf;
+                面板根.gameObject.SetActive(!nowActive);
+                Debug.Log($"[交换宝] 入口点击 → 面板 active={!nowActive}");
+                if(!nowActive) 刷新选择显示(); // 打开时刷新一次
+            });
+        }
+        else
+        {
+            Debug.LogWarning("[交换宝] ⚠️ 没找到入口按钮！面板可能默认就是打开的，或需要手动绑");
+        }
 
         收集类型与图标();
         Debug.Log($"收集到类型数: {全部类型.Count} — {string.Join(", ", 全部类型)}");
@@ -292,14 +321,6 @@ public class 交换宝 : MonoBehaviour
         解析数量文本();
         Debug.Log($"解析后 选择数量文本 = {(选择数量文本 != null ? 选择数量文本.name : "null")}");
         构建保活列表();
-
-        // 转换按钮
-        if (转换按钮 == null) 转换按钮 = 按名字找按钮("转换");
-        // 上一个 / 下一个（优先独立按钮，没找到再用旧的"更换"单按钮兜底）
-        if (上一个按钮 == null) 上一个按钮 = 按名字找按钮多词(new[] { "上一个", "前一个", "上", "前" });
-        if (下一个按钮 == null) 下一个按钮 = 按名字找按钮多词(new[] { "下一个", "后一个", "下", "后" });
-        if (上一个按钮 == null && 下一个按钮 == null && 更换按钮 == null)
-            更换按钮 = 按名字找按钮("更换");
 
         // 守卫组件负责在"按下"瞬间快照窗口状态
         给按钮加守卫(转换按钮);
@@ -334,6 +355,15 @@ public class 交换宝 : MonoBehaviour
     Button 按名字找按钮多词(string[] 关键词)
     {
         foreach (var b in GetComponentsInChildren<Button>(true))
+            foreach (string kw in 关键词)
+                if (b.name.Contains(kw)) return b;
+        return null;
+    }
+    // 带起始 Transform 的重载（从指定节点往下找，避免拿到面板外的按钮）
+    Button 按名字找按钮多词(Transform 起点, string[] 关键词)
+    {
+        if(起点 == null) return 按名字找按钮多词(关键词);
+        foreach (var b in 起点.GetComponentsInChildren<Button>(true))
             foreach (string kw in 关键词)
                 if (b.name.Contains(kw)) return b;
         return null;

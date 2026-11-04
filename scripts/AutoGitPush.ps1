@@ -260,7 +260,8 @@ function Write-Summary {
         [bool]$Committed = $false,
         [string]$CommitHash = '',
         [bool]$Pushed = $false,
-        [string]$FailReason = ''
+        [string]$FailReason = '',
+        [int]$ExitCode = 0
     )
     $script:Stopwatch.Stop()
     Write-Log '---------------- 摘要 ----------------'
@@ -268,6 +269,7 @@ function Write-Summary {
     if ($Pushed) { Write-Log '推送: 成功' 'OK' } else { Write-Log '推送: 未完成' 'WARN' }
     Write-Log ('耗时: {0:N1} 秒' -f $script:Stopwatch.Elapsed.TotalSeconds)
     if ($FailReason) { Write-Log ("失败原因: $FailReason") 'ERROR' }
+    if ($ExitCode -ne 0) { Write-Log ("退出码: $ExitCode") 'WARN' } else { Write-Log '退出码: 0' 'OK' }
     Write-Log '================ 结束 ================'
 }
 
@@ -282,7 +284,7 @@ Write-Log "日志: $($script:LogFile)"
 # 1. 仓库校验
 if (-not (Test-Path -LiteralPath (Join-Path $RepoPath '.git'))) {
     Write-Log '指定的目录不是 git 仓库' 'ERROR'
-    Write-Summary -FailReason '目录不是 git 仓库'
+    Write-Summary -FailReason '目录不是 git 仓库' -ExitCode 2
     exit 2
 }
 Write-Log '仓库校验: 通过'
@@ -291,7 +293,7 @@ Write-Log '仓库校验: 通过'
 $gitVer = Invoke-Cmd -FilePath 'git' -Arguments @('--version') -WorkDir $RepoPath -TimeoutSec 30
 if ($gitVer.ExitCode -ne 0) {
     Write-Log "git 不可用: $($gitVer.Output)" 'ERROR'
-    Write-Summary -FailReason 'git 不可用'
+    Write-Summary -FailReason 'git 不可用' -ExitCode 3
     exit 3
 }
 Write-Log "git 版本: $($gitVer.Output)"
@@ -302,7 +304,7 @@ $remoteUrl = ''
 if ($urlResult.ExitCode -eq 0) { $remoteUrl = $urlResult.Output.Trim() }
 if (-not $remoteUrl) {
     Write-Log "未找到远程仓库 $RemoteName" 'ERROR'
-    Write-Summary -FailReason "缺少 remote: $RemoteName"
+    Write-Summary -FailReason "缺少 remote: $RemoteName" -ExitCode 4
     exit 4
 }
 Write-Log "remote($RemoteName): $remoteUrl"
@@ -316,7 +318,7 @@ if ([string]::IsNullOrWhiteSpace($Branch)) {
 }
 if ([string]::IsNullOrWhiteSpace($Branch) -or $Branch -eq 'HEAD') {
     Write-Log '当前处于分离头指针或无法识别分支' 'ERROR'
-    Write-Summary -FailReason '无法识别当前分支'
+    Write-Summary -FailReason '无法识别当前分支' -ExitCode 9
     exit 9
 }
 Write-Log "当前分支: $Branch"
@@ -325,7 +327,7 @@ Write-Log "当前分支: $Branch"
 $add = Invoke-Git -Arguments @('add', '-A') -TimeoutSec 300
 if ($add.ExitCode -ne 0) {
     Write-Log "git add -A 失败: $($add.Output)" 'ERROR'
-    Write-Summary -FailReason 'git add 失败'
+    Write-Summary -FailReason 'git add 失败' -ExitCode 5
     exit 5
 }
 
@@ -333,7 +335,7 @@ $staged = Invoke-Git -Arguments @('diff', '--cached', '--name-only') -TimeoutSec
 $stagedFiles = @($staged.Output -split "`r?`n" | Where-Object { $_.Trim() -ne '' })
 if ($stagedFiles.Count -eq 0) {
     Write-Log '无改动，本次不提交' 'OK'
-    Write-Summary -Committed $false -Pushed $false
+    Write-Summary -Committed $false -Pushed $false -ExitCode 0
     exit 0
 }
 Write-Log ("检测到改动: $($stagedFiles.Count) 个文件")
@@ -352,7 +354,7 @@ finally {
 }
 if ($commit.ExitCode -ne 0) {
     Write-Log "git commit 失败: $($commit.Output)" 'ERROR'
-    Write-Summary -FailReason 'commit 失败'
+    Write-Summary -FailReason 'commit 失败' -ExitCode 6
     exit 6
 }
 $hash = (Invoke-Git -Arguments @('rev-parse', '--short', 'HEAD') -TimeoutSec 30).Output.Trim()
@@ -377,7 +379,7 @@ if ((-not $push.TimedOut) -and ($push.ExitCode -eq 0)) {
 elseif (Test-Rejected $push.Output) {
     Write-Log "推送被拒（远端有新提交，需要人工处理）: $($push.Output)" 'ERROR'
     Write-Log '未执行 force / pull / reset / rebase，保留本地提交' 'WARN'
-    Write-Summary -Committed $true -CommitHash $hash -Pushed $false -FailReason 'non-fast-forward，远端有新提交'
+    Write-Summary -Committed $true -CommitHash $hash -Pushed $false -FailReason 'non-fast-forward，远端有新提交' -ExitCode 8
     exit 8
 }
 else {
@@ -422,11 +424,11 @@ else {
 }
 
 if ($pushed) {
-    Write-Summary -Committed $true -CommitHash $hash -Pushed $true
+    Write-Summary -Committed $true -CommitHash $hash -Pushed $true -ExitCode 0
     exit 0
 }
 
 if (-not $failReason) { $failReason = 'push 失败（网络不可达或认证失败）' }
 Write-Log '本地提交已保留，可稍后手动 git push' 'WARN'
-Write-Summary -Committed $true -CommitHash $hash -Pushed $false -FailReason $failReason
+Write-Summary -Committed $true -CommitHash $hash -Pushed $false -FailReason $failReason -ExitCode 7
 exit 7
