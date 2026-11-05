@@ -646,7 +646,7 @@ public class DropItem : MonoBehaviour
 
         var glowGo = new GameObject("动态光晕");
         glowGo.transform.SetParent(transform, false);
-        glowGo.transform.localPosition = new Vector3(0f, 0f, 0.05f);
+        glowGo.transform.localPosition = new Vector3(0f, 0f, -0.1f); // Z=-0.1 保证在主图后面（2D Ortho 里 Z 越小越靠后）
         float bs = Mathf.Max(0.5f, glowBaseSize);
         glowGo.transform.localScale = new Vector3(bs, bs, 1f);
 
@@ -654,7 +654,7 @@ public class DropItem : MonoBehaviour
         sr.sprite = mainSr.sprite;
         sr.color = Color.white;
         sr.sortingLayerID = mainSr.sortingLayerID;
-        sr.sortingOrder = mainSr.sortingOrder - 10; // 保证在主图后面
+        sr.sortingOrder = mainSr.sortingOrder - 10; // 再垫 sortingOrder 双重保险
 
         return glowGo.transform;
     }

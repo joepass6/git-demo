@@ -15,6 +15,9 @@ public class 鱼运动_底部横向 : 鱼运动
     [Tooltip("右边界X坐标，碰到自动掉头；9999=不限制")]
     public float rightBoundaryX = 9999f;
 
+    [Tooltip("出生时高度在基准Y ±此值 范围内随机（世界单位，0=高度完全固定）")]
+    public float yVariation = 0.15f;
+
     private float runtimeY;  // 实际使用的Y（fixedY=0时每次生成/复用时捕获当前位置，不改动检查器里的值）
 
     protected override void Start()
@@ -37,7 +40,10 @@ public class 鱼运动_底部横向 : 鱼运动
 
     void CaptureFixedY()
     {
-        runtimeY = Mathf.Abs(fixedY) < 0.0001f ? transform.position.y : fixedY;
+        float baseY = Mathf.Abs(fixedY) < 0.0001f ? transform.position.y : fixedY;
+        // 每次生成/对象池复用时在基准高度 ±yVariation 内随机；0 = 完全固定
+        float yv = Mathf.Max(0f, yVariation);
+        runtimeY = yv > 0f ? baseY + Random.Range(-yv, yv) : baseY;
         Vector3 p = transform.position;
         p.y = runtimeY;
         transform.position = p;

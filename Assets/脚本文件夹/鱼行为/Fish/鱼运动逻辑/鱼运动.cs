@@ -20,6 +20,10 @@ public class 鱼运动 : MonoBehaviour
     [Tooltip("鱼的移动速度")]
     public float moveSpeed = 2f;
 
+    [Tooltip("出生时的大小随机幅度：实际缩放 = 预制体原始缩放 × (1 ± 此值)，0=固定大小")]
+    [Range(0f, 0.9f)]
+    public float scaleVariation = 0.3f;
+
     [Tooltip("障碍物的 Tag 名称（标准障碍物）")]
     public string obstacleTag = "Obstacle";
 
@@ -81,6 +85,10 @@ public class 鱼运动 : MonoBehaviour
     protected Vector3 spawnPosition;
     protected List<ParticleSystem> allParticles = new List<ParticleSystem>();
 
+    // 预制体原始缩放（对象池复用时不能被上一次的随机结果污染，所以只在首次捕获一次）
+    private Vector3 baseScale;
+    private bool baseScaleCaptured;
+
     // 预制体初始缩放（避免朝向翻转时把预制体大小覆盖掉）
     private Vector3 prefabScale;
 
@@ -139,7 +147,18 @@ public class 鱼运动 : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
 
         // 保存预制体初始缩放（第一次UpdateScale之前先记录，之后翻转只改x方向）
-        prefabScale = transform.localScale;
+        // 注意只能用首次捕获的原始缩放：对象池复用时 transform.localScale 已经是上一条鱼的随机结果，
+        // 拿它当基准会把随机系数反复叠乘，体型越用越离谱
+        if (!baseScaleCaptured)
+        {
+            baseScale = transform.localScale;
+            baseScaleCaptured = true;
+        }
+
+        // 出生随机大小：围绕预制体原始缩放 ±scaleVariation 随机
+        float sv = Mathf.Clamp(scaleVariation, 0f, 0.9f);
+        float sizeK = sv > 0f ? Random.Range(1f - sv, 1f + sv) : 1f;
+        prefabScale = new Vector3(baseScale.x * sizeK, baseScale.y * sizeK, baseScale.z);
 
         isFacingLeft = Random.value > 0.5f;
         UpdateScale();

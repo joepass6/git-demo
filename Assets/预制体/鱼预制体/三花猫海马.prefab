@@ -4842,7 +4842,6 @@ GameObject:
   - component: {fileID: 8036603943895251730}
   - component: {fileID: 9200390586693847543}
   - component: {fileID: 8930610014911196089}
-  - component: {fileID: 8332542938845966229}
   - component: {fileID: 2182174694741266824}
   m_Layer: 6
   m_Name: "\u4E09\u82B1\u732B\u6D77\u9A6C"
@@ -4882,6 +4881,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 0.07
   obstacleTag: Obstacle
+  extraObstacleTag: 
   fishTag: fish
   dropCount: 1
   dropInterval: 3
@@ -4956,41 +4956,6 @@ CapsuleCollider2D:
   m_Offset: {x: 0.0026609898, y: 0.0053216517}
   m_Size: {x: 0.18055582, y: 0.26652056}
   m_Direction: 0
---- !u!70 &8332542938845966229
-CapsuleCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1912962336656212916}
-  m_Enabled: 1
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 1
-  m_UsedByEffector: 0
-  m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 0}
-  m_Size: {x: 0.13, y: 0.2}
-  m_Direction: 0
 --- !u!114 &2182174694741266824
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5005,6 +4970,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 2
   obstacleTag: Obstacle
+  extraObstacleTag: 
   fishTag: fish
   dropCount: 1
   dropInterval: 10
@@ -5017,11 +4983,10 @@ MonoBehaviour:
   fishSprite: {fileID: 0}
   playTime: 0
   treasureBuildTime: 0
-  surfaceTag: Obstacle
-  crawlSpeed: 1
-  surfaceOffset: 0.05
-  directionChangeInterval: 0
-  refindInterval: 1
+  zoneTag: coral
+  steerSpeed: 360
+  zoneRefreshInterval: 2
+  obstacleTurnAngle: 45
 --- !u!1 &2228052818387567934
 GameObject:
   m_ObjectHideFlags: 0

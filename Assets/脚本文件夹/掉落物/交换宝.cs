@@ -11,7 +11,7 @@ using TMPro;
 /// 用法（脚本挂在“交换宝”根物体上）：
 /// 1. 选择宝物图标：把你指定位置的 Image 拖到“选择宝物图标”；留空时自动找“选择宝物”槽里的子 Image（不会自动生成）；
 /// 2. 选择宝物数量：把“选择宝物数量”文本拖进来；留空时自动按名字查找，数字实时跟随当前图标对应类型的库存；
-/// 3. 转换按钮 / 更换按钮：留空时自动在子物体里找名字含“转换”“更换”的 Button；
+/// 3. 按钮：留空时自动在子物体里找名字含“转换”“上一个/前一个”“下一个/后一个”的 Button；
 /// 4. 换到宝物槽：留空时自动找子物体“换到宝物”，槽里没图标会自动建一个；
 /// 5. 可交换的类型与图标自动从场景中所有 DropItemCounterUI 收集。
 ///
@@ -24,11 +24,12 @@ using TMPro;
 /// </summary>
 public class 交换宝 : MonoBehaviour
 {
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    static void 启动时打标记() { Debug.Log("🚀 [交换宝] RuntimeInitialize 触发！脚本已加载进 DLL"); }
+
     [Header("按钮（可留空，自动查找）")]
     [Tooltip("执行交换。查找名字含 转换 的按钮")]
     public Button 转换按钮;
-    [Tooltip("单个循环按钮（旧版兼容）。找不到上/下两个独立按钮时用这个")]
-    public Button 更换按钮;
     [Tooltip("上一个按钮。查找名字含 上一个 / 前一个 的按钮")]
     public Button 上一个按钮;
     [Tooltip("下一个按钮。查找名字含 下一个 / 后一个 的按钮")]
@@ -71,6 +72,11 @@ public class 交换宝 : MonoBehaviour
     Image 结果图标;
     Image 光晕;
 
+    // 缓存：Awake 里用手动递归找到的面板根，Start 里直接复用（Unity GetComponentsInChildren<Transform>(true) 对 inactive 子物体有 bug）
+    Transform 缓存面板根;
+    // 手动递归收集到的所有子物体（含 inactive）
+    readonly List<Transform> 全量子物体 = new List<Transform>();
+
     // 选择图标在编辑器里摆好的原始位置：抖动只围绕它偏移，快速连点也必须先归位，绝不累积漂移
     Vector3 选择图标初始位置;
     bool 已记录选择位置;
@@ -101,7 +107,6 @@ public class 交换宝 : MonoBehaviour
         收(transform.Find("气泡"));
         收(transform.Find("指示箭头"));
         if (转换按钮 != null) 收(转换按钮.transform);
-        if (更换按钮 != null) 收(更换按钮.transform);
         if (选择图标 != null) 收(选择图标.rectTransform);
         if (结果图标 != null) 收(结果图标.rectTransform);
         var 上次 = new Vector3[部件.Count];
@@ -183,31 +188,48 @@ public class 交换宝 : MonoBehaviour
 
     void Awake()
     {
-        Debug.Log("====== [交换宝 Awake] ======");
+        // ⚠️ 强制默认隐藏！不管场景文件/Prefab override/其他脚本怎么设，Awake 一进来就关掉！
+        gameObject.SetActive(false);
+        Debug.Log("====== [交换宝 Awake] 强制 SetActive(false) ======");
         Debug.Log($"初始挂在: {name} / activeSelf={gameObject.activeSelf} / activeInHierarchy={gameObject.activeInHierarchy}");
-        
-        // 关键修复：如果自己挂在外层入口按钮上，自动往上/下找"交换宝"面板根
-        // 脚本查找起点：优先找最近的、名字含"交换宝"的祖先/后代；找不到就用自己
-        Transform 查找起点 = transform;
-        // 先看下面有没有叫"交换宝"的子物体（外层按钮下面嵌了面板）
-        Transform panelInChildren = null;
-        foreach(var t in GetComponentsInChildren<Transform>(true))
-            if(t != transform && t.name == "交换宝" || t.name.Contains("交换宝"))
-                { panelInChildren = t; break; }
-        if(panelInChildren != null){
-            查找起点 = panelInChildren;
-            Debug.Log($"✅ 自动找到面板根: {panelInChildren.name} (作为查找起点)");
-        } else {
-            // 往上爬找祖先
-            for(var p = transform.parent; p != null; p = p.parent)
-                if(p.name == "交换宝" || p.name.Contains("交换宝"))
-                    { 查找起点 = p; Debug.Log($"✅ 往上找到面板根: {p.name}"); break; }
+        Debug.Log($"transform.childCount = {transform.childCount}");
+        for(int i=0; i<transform.childCount; i++){
+            var c = transform.GetChild(i);
+            Debug.Log($"  child[{i}] = {c.name} activeSelf={c.gameObject.activeSelf} childCount={c.childCount}");
         }
         
-        // 用查找起点查所有子物体
-        var allChildren = 查找起点.GetComponentsInChildren<Transform>(true);
-        Debug.Log($"面板根={查找起点.name} / 含 inactive 共 {allChildren.Length} 个 Transform:");
-        foreach(var t in allChildren)
+        // ============ 关键修复：全场景扫找"交换宝"面板（绕开父子关系！）===========
+        // YAML 写的是 Text (TMP) + 交换宝，但运行时是 消耗 + 消耗的数字
+        // 说明场景层级可能被 Unity/Prefab 实例化搞乱了，不要依赖 parent-child
+        Transform 查找起点 = null;
+        // 先扫自己下面
+        全量子物体.Clear();
+        手动递归收集(transform, 全量子物体);
+        foreach(var t in 全量子物体)
+            if(t != transform && t.name == "交换宝") { 查找起点 = t; break; }
+        
+        // 自己下面没找到 → 全场景扫！
+        if(查找起点 == null){
+            Debug.Log("[交换宝] 脚本下面找不到交换宝面板 → 全场景扫...");
+            var allInScene = FindObjectsOfType<Transform>(true);
+            foreach(var t in allInScene){
+                if(t.name == "交换宝") { 查找起点 = t; break; }
+                if(t.name.Contains("交换宝") && t != transform) { 查找起点 = t; }
+            }
+        }
+        
+        // 最后兜底：用自己
+        if(查找起点 == null){
+            Debug.LogWarning("[交换宝] 全场景扫也找不到交换宝面板！用自己代替");
+            查找起点 = transform;
+        }
+        
+        // 重新收集面板根下面的所有子物体
+        全量子物体.Clear();
+        手动递归收集(查找起点, 全量子物体);
+        缓存面板根 = 查找起点;
+        Debug.Log($"✅ 面板根 = {缓存面板根.name} (全量子物体={全量子物体.Count})");
+        foreach(var t in 全量子物体)
             Debug.Log($"  {(t.gameObject.activeSelf ? "🟢" : "🔴")} {t.name}");
         
         // 选槽自动查找
@@ -236,6 +258,47 @@ public class 交换宝 : MonoBehaviour
         // 截获编辑模式配好的原始图（必须在 Start 的空闲态刷新之前）
         if (结果图标 != null) 原始结果图 = 结果图标.sprite;
         创建光晕(结果槽);
+
+        // ========== 入口按钮绑定必须在 Awake 里！==========
+        // 面板默认 inactive → Start 不会执行 → 入口按钮永远绑不上 → 面板永远打不开！
+        // Awake 不管 active 与否都会执行，所以入口按钮必须在这绑
+        绑定入口按钮();
+    }
+
+    /// <summary>绑定打开/关闭面板的外部入口按钮。必须在 Awake 里调用（面板默认 inactive 时 Start 不会执行）</summary>
+    void 绑定入口按钮()
+    {
+        Transform 面板根 = 缓存面板根 != null ? 缓存面板根 : transform;
+
+        Button 入口按钮 = null;
+        foreach(var btn in FindObjectsOfType<Button>(true))
+        {
+            if(btn == null) continue;
+            if(btn.transform.IsChildOf(面板根)) continue; // 跳过面板内部按钮
+            if(btn.name.Contains("多余鱼宝转换") || btn.name.Contains("换宝") || btn.name.Contains("交换"))
+            {
+                入口按钮 = btn;
+                break;
+            }
+        }
+        if(入口按钮 != null)
+        {
+            Debug.Log($"[交换宝] ✅ Awake 绑定入口按钮: {入口按钮.name} → Toggle 面板显隐");
+            var btnImg = 入口按钮.GetComponent<Image>();
+            var btnRaycast = btnImg != null && btnImg.raycastTarget;
+            Debug.Log($"[交换宝] 入口按钮诊断: activeSelf={入口按钮.gameObject.activeSelf} interactable={入口按钮.interactable} raycastTarget={btnRaycast}");
+            
+            入口按钮.onClick.AddListener(() => {
+                bool nowActive = 面板根.gameObject.activeSelf;
+                面板根.gameObject.SetActive(!nowActive);
+                Debug.Log($"[交换宝] 🖱️ 入口点击！面板 active={!nowActive}");
+                if(!nowActive) 刷新选择显示();
+            });
+        }
+        else
+        {
+            Debug.LogWarning("[交换宝] ⚠️ Awake 没找到入口按钮！请检查场景里有没有名字含'交换'/'换宝'/'多余鱼宝转换'的外部按钮");
+        }
     }
 
     /// <summary>多关键词查找：依次尝试每个关键词，找到第一个就返回</summary>
@@ -246,6 +309,28 @@ public class 交换宝 : MonoBehaviour
         {
             Transform found = 深度查找(root, kw);
             if (found != null) return found;
+        }
+        return null;
+    }
+
+    /// <summary>手动递归收集所有子物体（含 inactive）——绕过 Unity GetComponentsInChildren<Transform>(true) 对 inactive 的 bug</summary>
+    static void 手动递归收集(Transform root, List<Transform> list)
+    {
+        if(root == null) return;
+        list.Add(root);
+        for(int i=0; i<root.childCount; i++)
+            手动递归收集(root.GetChild(i), list);
+    }
+
+    /// <summary>用全量子物体列表做关键词查找（确保 inactive 也能找到）</summary>
+    Transform 手动查找多词(Transform root, string[] 关键词)
+    {
+        if(root == null) return null;
+        foreach(var t in 全量子物体)
+        {
+            if(t != root && !t.IsChildOf(root)) continue;
+            foreach(var kw in 关键词)
+                if(t.name.Contains(kw)) return t;
         }
         return null;
     }
@@ -272,48 +357,16 @@ public class 交换宝 : MonoBehaviour
 
     void Start()
     {
-        // 找面板根（和 Awake 保持一致）
-        Transform 面板根 = transform;
-        foreach(var t in GetComponentsInChildren<Transform>(true))
-            if(t != transform && (t.name == "交换宝" || t.name.Contains("交换宝"))) { 面板根 = t; break; }
+        // 复用 Awake 里手动递归找到的面板根（不要重新 GetComponentsInChildren！对 inactive 有 bug）
+        Transform 面板根 = 缓存面板根 != null ? 缓存面板根 : transform;
+        Debug.Log($"[交换宝] Start 面板根复用 = {面板根.name}");
 
-        // 用面板根找面板内按钮
+        // 用面板根找面板内按钮（转换/上一个/下一个这些面板内的按钮）
         if (转换按钮 == null) 转换按钮 = 按名字找按钮多词(面板根, new[] { "转换按钮", "转换", "更换" });
         if (上一个按钮 == null) 上一个按钮 = 按名字找按钮多词(面板根, new[] { "上一个", "前一个" });
         if (下一个按钮 == null) 下一个按钮 = 按名字找按钮多词(面板根, new[] { "下一个", "后一个" });
-        if (上一个按钮 == null && 下一个按钮 == null) 更换按钮 = 按名字找按钮("更换");
 
-        Debug.Log($"[交换宝] Start 查找结果 - 转换={转换按钮?.name ?? "null"} 上一个={上一个按钮?.name ?? "null"} 下一个={下一个按钮?.name ?? "null"} 面板根={面板根.name}");
-
-        // ========== 自动绑定入口按钮（打开/关闭面板）==========
-        // 面板默认 active=false，需要找一个外部入口按钮来 SetActive
-        // 策略：找名字含"多余鱼宝转换"/"换宝"/"交换"的外部按钮（非面板内）
-        Button 入口按钮 = null;
-        foreach(var btn in FindObjectsOfType<Button>(true))
-        {
-            if(btn == null) continue;
-            // 跳过面板内部按钮
-            if(btn.transform.IsChildOf(面板根)) continue;
-            if(btn.name.Contains("多余鱼宝转换") || btn.name.Contains("换宝") || btn.name.Contains("交换"))
-            {
-                入口按钮 = btn;
-                break;
-            }
-        }
-        if(入口按钮 != null)
-        {
-            Debug.Log($"[交换宝] ✅ 自动绑定入口按钮: {入口按钮.name} → Toggle 面板显隐");
-            入口按钮.onClick.AddListener(() => {
-                bool nowActive = 面板根.gameObject.activeSelf;
-                面板根.gameObject.SetActive(!nowActive);
-                Debug.Log($"[交换宝] 入口点击 → 面板 active={!nowActive}");
-                if(!nowActive) 刷新选择显示(); // 打开时刷新一次
-            });
-        }
-        else
-        {
-            Debug.LogWarning("[交换宝] ⚠️ 没找到入口按钮！面板可能默认就是打开的，或需要手动绑");
-        }
+        Debug.Log($"[交换宝] Start 查找结果 - 转换={转换按钮?.name ?? "null"} 上一个={上一个按钮?.name ?? "null"} 下一个={下一个按钮?.name ?? "null"}");
 
         收集类型与图标();
         Debug.Log($"收集到类型数: {全部类型.Count} — {string.Join(", ", 全部类型)}");
@@ -324,7 +377,6 @@ public class 交换宝 : MonoBehaviour
 
         // 守卫组件负责在"按下"瞬间快照窗口状态
         给按钮加守卫(转换按钮);
-        给按钮加守卫(更换按钮);
         给按钮加守卫(上一个按钮);
         给按钮加守卫(下一个按钮);
 
@@ -332,6 +384,8 @@ public class 交换宝 : MonoBehaviour
         // 这样无论谁在同一次点击里关了窗口，我们都能在最后把它恢复
         StartCoroutine(延迟绑定按钮());
 
+        // ⚠️ 关键！先设当前类型，再刷新显示——否则当前类型=null→图标被设为null→enabled=false→消失！
+        if (string.IsNullOrEmpty(当前类型)) 当前类型 = 找第一个可用类型();
         刷新选择显示();
         刷新结果显示();
     }
@@ -339,33 +393,56 @@ public class 交换宝 : MonoBehaviour
     IEnumerator 延迟绑定按钮()
     {
         yield return null; // 等所有 Start 执行完
-        if (转换按钮 != null) 转换按钮.onClick.AddListener(点击转换);
+        var am = AudioManager.Instance;
+
+        if (转换按钮 != null)
+        {
+            转换按钮.onClick.AddListener(点击转换);
+            if (am != null) 转换按钮.onClick.AddListener(am.播放按钮音效);
+        }
         else Debug.LogWarning("[交换宝] 找不到“转换”按钮，请在 Inspector 手动指定");
 
-        // 上一个/下一个优先；都没找到才用旧的更换按钮兜底
-        if (上一个按钮 != null) 上一个按钮.onClick.AddListener(点击上一个);
-        if (下一个按钮 != null) 下一个按钮.onClick.AddListener(点击下一个);
-        if (上一个按钮 == null && 下一个按钮 == null)
+        if (上一个按钮 != null)
         {
-            if (更换按钮 != null) 更换按钮.onClick.AddListener(点击更换);
-            else Debug.LogWarning("[交换宝] 找不到“上一个/下一个/更换”按钮，请在 Inspector 手动指定");
+            上一个按钮.onClick.AddListener(点击上一个);
+            if (am != null) 上一个按钮.onClick.AddListener(am.播放按钮音效);
         }
+        else Debug.LogWarning("[交换宝] 找不到“上一个”按钮");
+
+        if (下一个按钮 != null)
+        {
+            下一个按钮.onClick.AddListener(点击下一个);
+            if (am != null) 下一个按钮.onClick.AddListener(am.播放按钮音效);
+        }
+        else Debug.LogWarning("[交换宝] 找不到“下一个”按钮");
+
+        // 入口按钮也要音效
+        if (am != null && 转换按钮 != null) am.绑定场景里所有按钮音效();
     }
 
     Button 按名字找按钮多词(string[] 关键词)
     {
-        foreach (var b in GetComponentsInChildren<Button>(true))
+        foreach (var t in 全量子物体)
+        {
+            var b = t.GetComponent<Button>();
+            if(b == null) continue;
             foreach (string kw in 关键词)
                 if (b.name.Contains(kw)) return b;
+        }
         return null;
     }
-    // 带起始 Transform 的重载（从指定节点往下找，避免拿到面板外的按钮）
+    // 带起始 Transform 的重载
     Button 按名字找按钮多词(Transform 起点, string[] 关键词)
     {
         if(起点 == null) return 按名字找按钮多词(关键词);
-        foreach (var b in 起点.GetComponentsInChildren<Button>(true))
+        foreach (var t in 全量子物体)
+        {
+            if(t != 起点 && !t.IsChildOf(起点)) continue;
+            var b = t.GetComponent<Button>();
+            if(b == null) continue;
             foreach (string kw in 关键词)
                 if (b.name.Contains(kw)) return b;
+        }
         return null;
     }
 
@@ -424,7 +501,37 @@ public class 交换宝 : MonoBehaviour
 
     void Update()
     {
-        // 每 0.5 秒校准一次：覆盖读档延迟恢复、转换后当前类型被扣光等情况（零 GC，只做遍历不建列表）
+        // ============ 手动鼠标点击检测（绕过 Button.onClick 的所有坑）============
+        if(Input.GetMouseButtonDown(0))
+        {
+            Vector2 mousePos = Input.mousePosition;
+            var am = AudioManager.Instance;
+            
+            // 面板打开时：手动 Hit Test 面板内按钮
+            if(缓存面板根 != null && 缓存面板根.gameObject.activeSelf)
+            {
+                if(上一个按钮 != null && RectTransformUtility.RectangleContainsScreenPoint(上一个按钮.GetComponent<RectTransform>(), mousePos))
+                {
+                    Debug.Log("[交换宝] 🖱️ 手动命中 上一个鱼宝");
+                    if(am != null) am.播放按钮音效();
+                    点击上一个();
+                }
+                else if(下一个按钮 != null && RectTransformUtility.RectangleContainsScreenPoint(下一个按钮.GetComponent<RectTransform>(), mousePos))
+                {
+                    Debug.Log("[交换宝] 🖱️ 手动命中 下一个鱼宝");
+                    if(am != null) am.播放按钮音效();
+                    点击下一个();
+                }
+                else if(转换按钮 != null && RectTransformUtility.RectangleContainsScreenPoint(转换按钮.GetComponent<RectTransform>(), mousePos))
+                {
+                    Debug.Log("[交换宝] 🖱️ 手动命中 转换按钮");
+                    if(am != null) am.播放按钮音效();
+                    点击转换();
+                }
+            }
+        }
+        
+        // 每 0.5 秒校准一次
         选择检查计时 -= Time.deltaTime;
         if (选择检查计时 > 0f) return;
         选择检查计时 = 0.5f;
@@ -444,7 +551,7 @@ public class 交换宝 : MonoBehaviour
     string 找第一个可用类型()
     {
         foreach (string t in 全部类型)
-            if (DropItem.GetCount(t) > 0) return t;
+            if (DropItem.GetCount(t) > 0 && 类型图标.ContainsKey(t)) return t;
         return null;
     }
 
@@ -455,7 +562,7 @@ public class 交换宝 : MonoBehaviour
 
     void LateUpdate()
     {
-        // 兜底1：结果展示期内，转换/更换按钮自己的点击链路中若关窗，本帧渲染前恢复
+        // 兜底1：结果展示期内，按钮点击链路中若关窗，本帧渲染前恢复
         if (本帧内部点击)
         {
             本帧内部点击 = false;
@@ -644,11 +751,16 @@ public class 交换宝 : MonoBehaviour
     static Transform 深度查找(Transform root, string 名字关键词)
     {
         if (root == null) return null;
-        foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+        // ⚠️ 关键！用【后序遍历】（先递归子物体再判断自己），让最深层的精确匹配先返回！
+        // 场景里"交换到的数量"(父级) 和 "交换到的"(子级) 都包含关键词，深层优先才能命中真正的槽位
+        for(int i=0; i<root.childCount; i++)
         {
-            if (t == root) continue;
-            if (t.name == 名字关键词 || t.name.Contains(名字关键词)) return t;
+            Transform c = root.GetChild(i);
+            Transform found = 深度查找(c, 名字关键词);  // 先递归子物体
+            if(found != null) return found;  // 深层匹配优先返回
         }
+        // 所有子物体都没找到才检查自己
+        if (root.name == 名字关键词 || root.name.Contains(名字关键词)) return root;
         return null;
     }
 
@@ -704,17 +816,26 @@ public class 交换宝 : MonoBehaviour
 
         var go = new GameObject("交换光晕", typeof(RectTransform));
         var rt = (RectTransform)go.transform;
-        rt.SetParent(槽, false);
-        rt.anchorMin = new Vector2(0.5f, 0.5f);
-        rt.anchorMax = new Vector2(0.5f, 0.5f);
+        // ⚠️ 必须挂在 槽 的 PARENT 下！不能挂在 槽 下面！
+        // 因为 槽 很可能就是结果图标本身（查找槽内图标 返回 槽.GetComponent<Image>()），
+        // 子物体永远画在父物体前面——SetAsFirstSibling 对父子关系无效！
+        rt.SetParent(槽.parent != null ? 槽.parent : 槽, false);
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
         rt.pivot = new Vector2(0.5f, 0.5f);
-        rt.anchoredPosition = Vector2.zero;
 
+        // 结果槽可能不是拉伸锚点，用它的实际 rect 尺寸
         var 槽rt = 槽 as RectTransform;
         Vector2 槽尺寸 = 槽rt != null ? 槽rt.rect.size : Vector2.zero;
         if (槽尺寸.x <= 1f) 槽尺寸.x = 120f;
         if (槽尺寸.y <= 1f) 槽尺寸.y = 120f;
         rt.sizeDelta = 槽尺寸 * 1.9f;
+        rt.anchoredPosition = 槽rt != null ? 槽rt.anchoredPosition : Vector2.zero;
+        // 对齐锚点到结果槽的锚点
+        rt.anchorMin = 槽rt != null ? 槽rt.anchorMin : new Vector2(0.5f, 0.5f);
+        rt.anchorMax = 槽rt != null ? 槽rt.anchorMax : new Vector2(0.5f, 0.5f);
 
         光晕 = go.AddComponent<Image>();
         光晕.sprite = 光晕Sprite;
@@ -722,6 +843,12 @@ public class 交换宝 : MonoBehaviour
         光晕.preserveAspect = true;
         光晕.color = new Color(发光颜色.r, 发光颜色.g, 发光颜色.b, 0f);
         go.SetActive(false);
+        
+        // ⚠️ 关键！光晕必须排在结果槽的兄弟序列里在它前面，这样才会被结果槽盖住！
+        // SetAsFirstSibling 让它排在兄弟序列的最底层（UI 里先画的在下面）
+        光晕.transform.SetAsFirstSibling();
+        // 再确保结果槽排在光晕后面（画在光晕上面盖住它）
+        if(槽.parent != null) 槽.SetAsLastSibling();
     }
 
     /// <summary>
@@ -734,39 +861,112 @@ public class 交换宝 : MonoBehaviour
         类型图标.Clear();
 
         DropItemCounterUI[] all = Resources.FindObjectsOfTypeAll<DropItemCounterUI>();
+        Debug.Log($"[交换宝] 场景里 DropItemCounterUI 共 {all.Length} 个");
         foreach (DropItemCounterUI c in all)
         {
             if (c == null || !c.gameObject.scene.IsValid()) continue;
             string t = c.itemType;
             if (string.IsNullOrEmpty(t)) continue;
-
             if (!全部类型.Contains(t)) 全部类型.Add(t);
 
+            // 每个 CounterUI 所在面板里肯定有鱼的 Image——往上爬到面板根，找里面的 Image
             if (!类型图标.ContainsKey(t))
             {
-                Sprite s = 找面板头像(c.transform);
-                if (s != null) 类型图标[t] = s;
+                var img = 找CounterUI面板里的图标(c);
+                if (img != null)
+                {
+                    类型图标[t] = img;
+                    Debug.Log($"[交换宝]   ✅ 图标 {t} → {img.name} (从面板 Image)");
+                }
+                else
+                {
+                    // 兜底：场景里已有的 DropItem 实例
+                    var drops = Resources.FindObjectsOfTypeAll<DropItem>();
+                    foreach (var d in drops)
+                    {
+                        if (d == null) continue;
+                        if (d.itemType == t)
+                        {
+                            var sr = d.GetComponent<SpriteRenderer>();
+                            if (sr != null && sr.sprite != null)
+                            {
+                                类型图标[t] = sr.sprite;
+                                Debug.Log($"[交换宝]   ✅ 图标 {t} → {sr.sprite.name} (从场景 DropItem)");
+                                break;
+                            }
+                        }
+                    }
+                }
             }
         }
+
+        Debug.Log($"[交换宝] 图标数: {类型图标.Count} / 类型总数: {全部类型.Count}");
     }
 
-    static Sprite 找面板头像(Transform counterTf)
+    /// <summary>从 DropItemCounterUI 往上爬到面板里，返回鱼图标的 sprite（排除面板背景框！）</summary>
+    static Sprite 找CounterUI面板里的图标(DropItemCounterUI c)
     {
-        Transform panel = counterTf.parent;
-        if (panel == null) return null;
-
-        Transform avatarTf = panel.Find("掉落物头像");
-        Image avatar = avatarTf != null ? avatarTf.GetComponent<Image>() : null;
-
-        // 兜底：个别面板结构不同，就在同级里找第一个不是计数器自己的 Image
-        if (avatar == null)
+        Transform t = c.transform;
+        Transform 面板根 = null;
+        for (int i = 0; i < 5 && t != null; i++)
         {
-            foreach (Image img in panel.GetComponentsInChildren<Image>(true))
+            foreach (var img in t.GetComponentsInChildren<Image>(true))
             {
-                if (img.transform != counterTf) { avatar = img; break; }
+                if (img.transform == c.transform) continue;
+                if (img.sprite != null) { 面板根 = t; break; }
+            }
+            if (面板根 != null) break;
+            t = t.parent;
+        }
+        if (面板根 == null) return null;
+
+        // 收集面板里所有有 sprite 且不是自己的 Image，按优先级排序
+        var candidates = new List<Image>();
+        foreach (var img in 面板根.GetComponentsInChildren<Image>(true))
+        {
+            if (img.transform == c.transform) continue;
+            if (img.sprite == null) continue;
+            candidates.Add(img);
+        }
+
+        if (candidates.Count == 0) return null;
+
+        // 打印诊断：面板里有哪些 Image（帮助理解为什么选错了）
+        if (candidates.Count > 1)
+        {
+            Debug.Log($"[交换宝] 面板 {面板根.name} 里有 {candidates.Count} 个 Image：");
+            foreach (var img in candidates)
+                Debug.Log($"  → {img.name} sprite={img.sprite.name}");
+        }
+
+        // 优先级：挑"鱼图"而不是"背景框"
+        // 1. 名字含"头像"/"鱼"/"icon"/"Icon"（鱼图的典型命名）
+        foreach (var img in candidates)
+        {
+            string n = img.name;
+            if (n.Contains("头像") || n.Contains("鱼") || n.Contains("icon") || n.Contains("Icon") || n.Contains("avatar"))
+                return img.sprite;
+        }
+        // 2. sprite.name 含 CounterUI.itemType 里的关键词（itemType 里去掉"宝"/"宝宝"后匹配）
+        string typeKw = c.itemType.Replace("宝宝", "").Replace("宝", "").Trim();
+        if (!string.IsNullOrEmpty(typeKw))
+        {
+            foreach (var img in candidates)
+            {
+                if (img.sprite.name.Contains(typeKw) || img.sprite.name.StartsWith(typeKw))
+                    return img.sprite;
             }
         }
-        return avatar != null ? avatar.sprite : null;
+        // 3. 排除明显是背景的（名字含"框"/"背景"/"Frame"/"Bg"/"panel"/"Panel"）
+        foreach (var img in candidates)
+        {
+            string n = img.name;
+            if (!n.Contains("框") && !n.Contains("背景") && !n.Contains("Frame") && !n.Contains("Bg") && !n.Contains("panel") && !n.Contains("Panel"))
+                return img.sprite;
+        }
+        // 4. 兜底：第一个（但大概率是背景框，打个 warning）
+        Debug.LogWarning($"[交换宝] 面板里没找到鱼图候选，fallback 到第一个（可能是背景框！）");
+        return candidates[0].sprite;
     }
 
     // ================= 业务逻辑 =================
@@ -775,7 +975,7 @@ public class 交换宝 : MonoBehaviour
     {
         var list = new List<string>();
         foreach (string t in 全部类型)
-            if (DropItem.GetCount(t) > 0) list.Add(t);
+            if (DropItem.GetCount(t) > 0 && 类型图标.ContainsKey(t)) list.Add(t);
         return list;
     }
 
@@ -904,14 +1104,18 @@ public class 交换宝 : MonoBehaviour
             结果图标.sprite = s;
             结果图标.enabled = true;
 
-            // 光晕始终垫在图标下面
+            // 光晕始终垫在结果图标下面（兄弟顺序：光晕先画，结果槽后画盖住中心）
             if (光晕 != null)
             {
-                光晕.transform.SetAsFirstSibling();
+                光晕.transform.SetAsFirstSibling(); // 最底层先画
+                if(结果槽 != null && 结果槽.parent != null) 结果槽.SetAsLastSibling(); // 结果槽最后画盖在上面
                 // 按槽位当前实际尺寸再校准一次（Awake 时布局可能还没完成）
                 var 槽rt = 结果槽 as RectTransform;
-                if (槽rt != null && 槽rt.rect.size.x > 1f)
-                    光晕.rectTransform.sizeDelta = 槽rt.rect.size * 1.9f;
+                Vector2 槽尺寸 = 槽rt != null ? 槽rt.rect.size : Vector2.zero;
+                if (槽尺寸.x <= 1f) 槽尺寸.x = 120f;  // 兜底：空Transform用默认值
+                if (槽尺寸.y <= 1f) 槽尺寸.y = 120f;
+                光晕.rectTransform.sizeDelta = 槽尺寸 * 1.9f;
+                光晕.rectTransform.anchoredPosition = 槽rt != null ? 槽rt.anchoredPosition : Vector2.zero;
                 光晕.gameObject.SetActive(true);
             }
 
@@ -919,10 +1123,11 @@ public class 交换宝 : MonoBehaviour
         }
         else
         {
-            // 非展示态：稳稳显示原始图，无光晕、无缩放动画
+            // 非展示态：稳稳显示原始图，无光晕、无缩放、无残留旋转
             结果图标.sprite = 原始结果图;
             结果图标.enabled = 原始结果图 != null;
             结果图标.rectTransform.localScale = Vector3.one;
+            结果图标.rectTransform.localRotation = Quaternion.identity; // ⚠️ 清零旋转，防止中途切换残留
             if (光晕 != null) 光晕.gameObject.SetActive(false);
         }
     }
@@ -946,35 +1151,46 @@ public class 交换宝 : MonoBehaviour
         结果图标.sprite = 原始结果图;
         结果图标.enabled = 原始结果图 != null;
         结果图标.rectTransform.localScale = Vector3.one;
+        结果图标.rectTransform.localRotation = Quaternion.identity; // ⚠️ 旋转归零
         if (光晕 != null) 光晕.gameObject.SetActive(false);
     }
 
     // ================= 特效 =================
 
-    /// <summary>换到宝物：先弹性放大入场，随后金色光晕呼吸，到展示结束时刻自动切回原始图</summary>
+    /// <summary>换到宝物：弹性放大 + 旋转翻牌入场，金色光晕呼吸，到展示结束时刻自动切回原始图</summary>
     IEnumerator 放大发光(float 结束时刻)
     {
         RectTransform iconRt = 结果图标.rectTransform;
         RectTransform haloRt = 光晕 != null ? 光晕.rectTransform : null;
 
+        // ⚠️ 入场前重置状态（防止上一次动画残留）
         iconRt.localScale = Vector3.zero;
-        if (haloRt != null) haloRt.localScale = Vector3.one * 0.3f;
+        iconRt.localRotation = Quaternion.Euler(0, 0, 180); // 从180°翻转状态开始
+        if (haloRt != null)
+        {
+            haloRt.localScale = Vector3.one * 0.3f;
+            haloRt.localRotation = Quaternion.identity;
+        }
 
-        // 1. 弹性放大入场（Back 缓动，有一点过冲更有“蹦出来”的感觉）；入场时长不超过剩余展示时间
+        // 1. 弹性放大 + 旋转翻牌入场（Back 缓动，有一点过冲更有"蹦出来"的感觉）
         float 开始时刻 = Time.time;
         float 入场结束 = Mathf.Min(开始时刻 + 放大时长, 结束时刻);
         float 入场跨度 = Mathf.Max(0.0001f, 入场结束 - 开始时刻);
         while (Time.time < 入场结束)
         {
             float k = Mathf.Clamp01((Time.time - 开始时刻) / 入场跨度);
-            iconRt.localScale = Vector3.one * BackEaseOut(k);
+            float backK = BackEaseOut(k);
+            iconRt.localScale = Vector3.one * backK;
+            // 旋转：180° → 0°，也用Back缓动让翻牌有惯性感
+            iconRt.localRotation = Quaternion.Euler(0, 0, Mathf.Lerp(180f, 0f, backK));
             if (haloRt != null) haloRt.localScale = Vector3.one * Mathf.Lerp(0.3f, 1f, k);
             yield return null;
         }
         iconRt.localScale = Vector3.one;
+        iconRt.localRotation = Quaternion.identity; // 确保归零
         if (haloRt != null) haloRt.localScale = Vector3.one;
 
-        // 2. 金色光晕呼吸发光，直到展示期结束
+        // 2. 金色光晕呼吸发光 + 图标轻微脉动，直到展示期结束
         const float 周期 = 1.1f;
         while (Time.time < 结束时刻)
         {
