@@ -14663,7 +14663,7 @@ GameObject:
   - component: {fileID: 7795196677473724414}
   - component: {fileID: 6095502072857755692}
   - component: {fileID: 2525360904135216834}
-  - component: {fileID: 6693345066458234016}
+  - component: {fileID: 2645752366834623449}
   m_Layer: 6
   m_Name: "\u767D\u5C3E\u5012\u540A"
   m_TagString: fish
@@ -14750,7 +14750,7 @@ CapsuleCollider2D:
   m_Offset: {x: 0.0025197868, y: 0.0010200737}
   m_Size: {x: 0.27640572, y: 0.18562338}
   m_Direction: 1
---- !u!114 &6693345066458234016
+--- !u!114 &2645752366834623449
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -14759,25 +14759,44 @@ MonoBehaviour:
   m_GameObject: {fileID: 4842934446307366073}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 25c86d72e6a8d3849a148fe08f8fd4f5, type: 3}
+  m_Script: {fileID: 11500000, guid: 922857f1f6e5db34a902c673c28a3b05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 0.07
+  moveSpeed: 2
+  scaleVariation: 0.3
   obstacleTag: Obstacle
-  extraObstacleTag: wall
+  extraObstacleTag: 
   fishTag: fish
   dropCount: 1
-  dropInterval: 300
-  itemPrefab: {fileID: 647409291031311344, guid: a1db899d1d4418a48b530c2effe88bb7, type: 3}
+  dropInterval: 10
+  itemPrefab: {fileID: 0}
   fallSpeed: 2
-  destroyTime: 3000
+  destroyTime: 30
   enableParticle: 1
   emitCount: 1
-  fishName: "\u767D\u5C3E\u5012\u540A"
-  fishSprite: {fileID: 373464844, guid: 69893671dd0e8cc4ea252cb1695c0af2, type: 3}
-  playTime: 3000
-  treasureBuildTime: 300
-  turnRandomAngle: 30
+  fishName: "\u672A\u547D\u540D\u9C7C"
+  fishSprite: {fileID: 0}
+  playTime: 0
+  treasureBuildTime: 0
+  orbitClockwise: 1
+  orbitCenter: {x: 0, y: 0}
+  ellipseSemiMajor: 3.03
+  ellipseSemiMinor: 0.98
+  ellipseTilt: 25
+  majorBreath: 0.5
+  minorBreath: 0.5
+  tiltBreath: 8
+  centerBreath: 0.5
+  breathRate: 0.5
+  schoolOrbitSpeed: 0.95
+  turnSpeed: 540
+  minDistance: 0.3
+  trackPullSpeed: 20
+  hiddenDirectionThreshold: 0
+  hiddenHysteresis: 10
+  layerNormal: fish
+  layerHidden: Default
+  hiddenSortingOrder: -9999
 --- !u!1 &6938092234998911703
 GameObject:
   m_ObjectHideFlags: 0

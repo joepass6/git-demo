@@ -26,3 +26,42 @@ fz,放置,放置,Place,Platzieren,Placer,Colocar,Разместить,配置,배
 可以放置{0},可以放置{0},可以放置{0},Can place {0},Verfügbar: {0},Placeable : {0},Disponible: {0},Можно разместить: {0},配置可能 {0},배치 가능 {0}
 已放置{0},已放置{0},已放置{0},Placed {0},Platziert: {0},Placé : {0},Colocado: {0},Размещено: {0},配置済み {0},배치 완료 {0}
 珊瑚调节,珊瑚调节,珊瑚調節,Adjust Coral,Koralle anpassen,Ajuster le corail,Ajustar coral,Настройка коралла,サンゴ調整,산호 조정
+出现概率：,出现概率：,出現概率：,Spawn Rate:,Spawnrate:,Taux de spawn:,Tasa de aparición:,Частота появления:,出現率：,등장 확률:
+掉宝时间：,掉宝时间：,掉寶時間：,Drop Interval:,Drop-Intervall:,Intervalle de drop:,Intervalo de caída:,Интервал выпадения:,ドロップ間隔：,드롭 간격:
+停留时间：,停留时间：,停留時間：,Stay Time:,Verweildauer:,Durée de présence:,Tiempo de estancia:,Время пребывания:,滞在時間：,체류 시간:
+教程,教程,教程,Tutorial,Tutorial,Tutoriel,Tutorial,Учебник,チュートリアル,튜토리얼
+开机自启动,开机自启动,開機自啟動,Auto Start,Autostart,Démarrage automatique,Autoinicio,Автозагрузка,自動起動,자동 시작
+可放置,可放置,可放置,Placeable,Platzierbar,Placeable,Colocable,Можно разместить,配置可能,배치 가능
+鱼图鉴,鱼图鉴,魚圖鑑,Fish Journal,Fisch-Enzyklopädie,Journal des poissons,Atlas de peces,Журнал рыб,魚図鑑,물고기 도감
+已放满！,已放满！,已放滿！,Full!,Voll!,Plein!,¡Lleno!,Полно!,満杯！,가득 찼습니다!
+现有宝物：,现有宝物：,現有寶物：,Current Treasures:,Aktuelle Schätze:,Trésors actuels:,Tesoros actuales:,Текущие сокровища:,現在の宝物：,현재 보물:
+需要的宝物：,需要的宝物：,需要的寶物：,Required Treasures:,Benötigte Schätze:,Trésors requis:,Tesoros necesarios:,Требуемые сокровища:,必要な宝物：,필요한 보물:
+消耗：,消耗：,消耗：,Cost:,Kosten:,Coût:,Costo:,Стоимость:,コスト：,비용:
+设置,设置,設置,Settings,Einstellungen,Paramètres,Ajustes,Настройки,設定,설정
+是否置顶,是否置顶,是否置頂,Always on Top,Immer im Vordergrund,Toujours au premier plan,Siempre arriba,Всегда поверх,常に最前面,항상 위에 표시
+一键缩放,一键缩放,一鍵縮放,Quick Zoom,Schnellzoom,Zoom rapide,Zoom rápido,Быстрое масштабирование,クイックズーム,빠른 줌
+珊瑚选择界面,珊瑚选择界面,珊瑚選擇介面,Coral Selection,Korallenauswahl,Sélection de corail,Selección de coral,Выбор коралла,サンゴ選択,산호 선택
+多余宝物交换,多余宝物交换,多餘寶物交換,Excess Treasure Swap,Überschüssiger Schatztausch,Échange de trésors excédentaires,Intercambio de tesoros excedentes,Обмен лишними сокровищами,余剰宝物交換,잉여 보물 교환
+英语,英语,英語,English,Englisch,Anglais,Inglés,Английский,英語,영어
+日语,日语,日語,Japanese,Japanisch,Japonais,Japonés,Японский,日本語,일본어
+韩语,韩语,韓語,Korean,Korean,Koréen,Coreano,Корейский,韓国語,한국어
+德语,德语,德語,German,Deutsch,Allemand,Alemán,Немецкий,ドイツ語,독일어
+法语,法语,法語,French,Französisch,Français,Francés,Французский,フランス語,프랑스어
+俄语,俄语,俄語,Russian,Russisch,Russe,Ruso,Русский,ロシア語,러시아어
+繁体,繁体,繁體,Traditional Chinese,Traditionelles Chinesisch,Chinois traditionnel,Chino tradicional,Традиционный китайский,繁体字,중국어 번체
+简中,简中,簡中,Simplified Chinese,Vereinfachtes Chinesisch,Chinois simplifié,Chino simplificado,Упрощенный китайский,簡体字,중국어 간체
+西班牙语,西班牙语,西班牙語,Spanish,Spanisch,Espagnol,Español,Испанский,スペイン語,스페인어
+随机宝物数量：{0},随机宝物数量：{0},隨機寶物數量：{0},Random Treasures: {0},Zufällige Schätze: {0},Trésors aléatoires : {0},Tesoros aleatorios: {0},Случайные сокровища: {0},ランダム宝物：{0},랜덤 보물: {0}
+放大\n,放大,放大\n,Zoom In,Vergrößern,Agrandir,Acercar,Увеличить,拡大,확대
+缩小\n,缩小,縮小\n,Zoom Out,Verkleinern,Réduire,Alejar,Уменьшить,縮小,축소
+逆时针转\n,逆时针转,逆時針轉\n,Rotate Counterclockwise,Gegen den Uhrzeigersinn,Rotation antihoraire,Girar a la izquierda,Против часовой,反時計回り,반시계 방향
+退出游戏\n,退出游戏,退出遊戲\n,Quit Game,Spiel beenden,Quitter le jeu,Salir del juego,Выйти из игры,ゲーム終了,게임 종료
+设置\n,设置,設置\n,Settings,Einstellungen,Paramètres,Ajustes,Настройки,設定,설정
+是否置顶\n,是否置顶,是否置頂\n,Always on Top,Immer im Vordergrund,Toujours au premier plan,Siempre arriba,Всегда поверх,常に最前面,항상 위에 표시
+一键\n缩放\n,一键缩放,一鍵縮放\n,Quick Zoom,Schnellzoom,Zoom rapide,Zoom rápido,Быстрое масштабирование,クイックズーム,빠른 줌
+珊瑚\n选择\n界面,珊瑚选择界面,珊瑚選擇介面\n,Coral Selection,Korallenauswahl,Sélection de corail,Selección de coral,Выбор коралла,サンゴ選択,산호 선택
+简中\n,简中,簡中\n,Simplified Chinese,Vereinfachtes Chinesisch,Chinois simplifié,Chino simplificado,Упрощенный китайский,簡体字,중국어 간체
+西班牙\n,西班牙语,西班牙語\n,Spanish,Spanisch,Espagnol,Español,Испанский,スペイン語,스페인어
+随机宝物数量：0\n,随机宝物数量：0,隨機寶物數量：0\n,Random Treasures: 0,Zufällige Schätze: 0,Trésors aléatoires : 0,Tesoros aleatorios: 0,Случайные сокровища: 0,ランダム宝物：0,랜덤 보물: 0
+消耗：\n,消耗：,消耗：\n,Cost:,Kosten:,Coût:,Costo:,Стоимость:,コスト：,비용:
+多余\n宝物\n交换\n,多余宝物交换,多餘寶物交換\n,Excess Treasure Swap,Überschüssiger Schatztausch,Échange de trésors excédentaires,Intercambio de tesoros excedentes,Обмен лишними сокровищами,余剰宝物交換,잉여 보물 교환

@@ -1,4 +1,4 @@
-%YAML 1.1
+﻿%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!1 &647409291031311344
 GameObject:
@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 8930089455188235030}
   m_Layer: 0
   m_Name: "\u73CA\u745A\u77F3\u6591\u9C7C"
-  m_TagString: Untagged
+  m_TagString: coral
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

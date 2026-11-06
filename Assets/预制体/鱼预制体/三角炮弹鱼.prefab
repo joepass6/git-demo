@@ -14747,8 +14747,8 @@ CapsuleCollider2D:
   m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0.0026609888, y: -0.010983357}
-  m_Size: {x: 0.2665206, y: 0.23391195}
+  m_Offset: {x: 0.021614509, y: 0.00027032936}
+  m_Size: {x: 0.5366102, y: 0.2919618}
   m_Direction: 1
 --- !u!114 &-6151150124930557014
 MonoBehaviour:
@@ -14763,6 +14763,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 0.07
+  scaleVariation: 0.3
   obstacleTag: Obstacle
   extraObstacleTag: wall
   fishTag: fish

@@ -14664,6 +14664,7 @@ GameObject:
   - component: {fileID: 6095502072857755692}
   - component: {fileID: 2525360904135216834}
   - component: {fileID: 9132269899603604185}
+  - component: {fileID: -6463559935666382225}
   m_Layer: 6
   m_Name: "\u7FF1\u7FD4\u771F\u8C79\u9C82\u9B84"
   m_TagString: fish
@@ -14763,6 +14764,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 0.1
+  scaleVariation: 0.3
   obstacleTag: Obstacle
   extraObstacleTag: wall
   fishTag: fish
@@ -14785,6 +14787,35 @@ MonoBehaviour:
   swimAreaTag: SpawnArea
   areaSteerSpeed: 360
   viewMargin: 0.5
+--- !u!114 &-6463559935666382225
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4842934446307366073}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 25c86d72e6a8d3849a148fe08f8fd4f5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  moveSpeed: 0.1
+  scaleVariation: 0.3
+  obstacleTag: Obstacle
+  extraObstacleTag: 
+  fishTag: fish
+  dropCount: 1
+  dropInterval: 10
+  itemPrefab: {fileID: 0}
+  fallSpeed: 2
+  destroyTime: 30
+  enableParticle: 1
+  emitCount: 1
+  fishName: "\u672A\u547D\u540D\u9C7C"
+  fishSprite: {fileID: 0}
+  playTime: 0
+  treasureBuildTime: 0
+  turnRandomAngle: 30
 --- !u!1 &6938092234998911703
 GameObject:
   m_ObjectHideFlags: 0

@@ -14747,8 +14747,8 @@ CapsuleCollider2D:
   m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0.0026609888, y: -0.010983357}
-  m_Size: {x: 0.2665206, y: 0.23391195}
+  m_Offset: {x: 0.0029858868, y: -0.0017873949}
+  m_Size: {x: 0.18922882, y: 0.087327816}
   m_Direction: 1
 --- !u!114 &-8223390293229575740
 MonoBehaviour:
@@ -14763,6 +14763,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 0.1
+  scaleVariation: 0.3
   obstacleTag: Obstacle
   extraObstacleTag: 
   fishTag: fish
@@ -14777,10 +14778,13 @@ MonoBehaviour:
   fishSprite: {fileID: 45861309, guid: f94fc6c599a6494458ec4e2999e040a2, type: 3}
   playTime: 2400
   treasureBuildTime: 600
+  areaMode: 1
   zoneTag: Obstacle
   steerSpeed: 360
   zoneRefreshInterval: 2
   obstacleTurnAngle: 45
+  surfaceDistance: 0.02
+  surfaceStickRange: 0.1
 --- !u!1 &6938092234998911703
 GameObject:
   m_ObjectHideFlags: 0

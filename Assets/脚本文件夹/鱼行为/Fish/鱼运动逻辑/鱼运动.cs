@@ -146,6 +146,16 @@ public class 鱼运动 : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
 
+        // 所有鱼都关重力 + 设 Kinematic：重力会把鱼往下拉，和每帧 transform.position 手动定位对抗
+        // Inside 模式靠钳位覆盖了重力，Surface 模式贴 coral 侧面时会和重力打架导致"卡住"
+        if (rb != null)
+        {
+            rb.gravityScale = 0f;
+            rb.bodyType = RigidbodyType2D.Kinematic;
+            rb.interpolation = RigidbodyInterpolation2D.None;
+            rb.collisionDetectionMode = CollisionDetectionMode2D.Discrete;
+        }
+
         // 保存预制体初始缩放（第一次UpdateScale之前先记录，之后翻转只改x方向）
         // 注意只能用首次捕获的原始缩放：对象池复用时 transform.localScale 已经是上一条鱼的随机结果，
         // 拿它当基准会把随机系数反复叠乘，体型越用越离谱
@@ -451,3 +461,4 @@ public class 鱼运动 : MonoBehaviour
         return Mathf.Max(0f, dropInterval - dropTimer);
     }
 }
+  

@@ -14663,7 +14663,7 @@ GameObject:
   - component: {fileID: 7795196677473724414}
   - component: {fileID: 6095502072857755692}
   - component: {fileID: 2525360904135216834}
-  - component: {fileID: 7102232485910752900}
+  - component: {fileID: 8393252641232431422}
   m_Layer: 6
   m_Name: "\u767D\u70B9\u795E\u4ED9\u9C7C"
   m_TagString: fish
@@ -14681,8 +14681,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0.94562435, y: 3.6527703, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 1.27, y: 1.27, z: 1.27}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 3846378892942753418}
   - {fileID: 2608673417173603935}
@@ -14750,7 +14750,7 @@ CapsuleCollider2D:
   m_Offset: {x: 0.0013420286, y: 0.0010761544}
   m_Size: {x: 0.2932767, y: 0.12689118}
   m_Direction: 1
---- !u!114 &7102232485910752900
+--- !u!114 &8393252641232431422
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -14759,32 +14759,26 @@ MonoBehaviour:
   m_GameObject: {fileID: 4842934446307366073}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ae2277c7af3e65345b628cfdda97f998, type: 3}
+  m_Script: {fileID: 11500000, guid: 25c86d72e6a8d3849a148fe08f8fd4f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 0.1
+  scaleVariation: 0.3
   obstacleTag: Obstacle
-  extraObstacleTag: 
+  extraObstacleTag: wall
   fishTag: fish
   dropCount: 1
   dropInterval: 10
   itemPrefab: {fileID: 647409291031311344, guid: f56d3d20d01a15446a051f2bf4417614, type: 3}
   fallSpeed: 2
-  destroyTime: 2700
+  destroyTime: 30
   enableParticle: 1
   emitCount: 1
   fishName: "\u767D\u70B9\u795E\u4ED9\u9C7C"
   fishSprite: {fileID: 1197973122, guid: 70116a7c657d36d4891e3144456b3a93, type: 3}
-  playTime: 2700
+  playTime: 0
   treasureBuildTime: 0
-  schoolSeparationDistance: 0.1
-  schoolSwimSpeed: 0.2
-  schoolGatherSpeedMultiplier: 1.5
-  schoolTurnSpeed: 540
-  schoolMinDistance: 0.1
-  swimAreaTag: SpawnArea
-  areaSteerSpeed: 360
-  viewMargin: 0.5
+  turnRandomAngle: 30
 --- !u!1 &6938092234998911703
 GameObject:
   m_ObjectHideFlags: 0

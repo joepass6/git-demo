@@ -1,4 +1,4 @@
-%YAML 1.1
+﻿%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!1 &4560810237967673208
 GameObject:
@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 3138402945477477621}
   m_Layer: 5
   m_Name: "\u73CA\u745A\u7B80\u4ECB"
-  m_TagString: Untagged
+  m_TagString: coral
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -164,7 +164,7 @@ GameObject:
   - component: {fileID: 5566043513856094540}
   m_Layer: 5
   m_Name: "\u5B9D\u7269\u6761\u4EF6"
-  m_TagString: Untagged
+  m_TagString: coral
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -314,7 +314,7 @@ GameObject:
   - component: {fileID: 707312029465892527}
   m_Layer: 5
   m_Name: "\u73B0\u6709\u5B9D\u7269"
-  m_TagString: Untagged
+  m_TagString: coral
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -463,7 +463,7 @@ GameObject:
   - component: {fileID: 6217092499147318637}
   m_Layer: 5
   m_Name: "\u6FB3\u5927\u5229\u4E9A\u6C99\u7FA4\u6D77\u8475"
-  m_TagString: Untagged
+  m_TagString: coral
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -544,7 +544,7 @@ GameObject:
   - component: {fileID: 6996342603397639077}
   m_Layer: 5
   m_Name: "\u5206\u53F7"
-  m_TagString: Untagged
+  m_TagString: coral
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -693,7 +693,7 @@ GameObject:
   - component: {fileID: 6589810995461826208}
   m_Layer: 5
   m_Name: "\u6389\u843D\u7269\u5934\u50CF"
-  m_TagString: Untagged
+  m_TagString: coral
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

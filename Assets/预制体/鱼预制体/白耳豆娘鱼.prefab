@@ -14663,7 +14663,7 @@ GameObject:
   - component: {fileID: 7795196677473724414}
   - component: {fileID: 6095502072857755692}
   - component: {fileID: 2525360904135216834}
-  - component: {fileID: -1422119930038877882}
+  - component: {fileID: -869745261376387376}
   m_Layer: 6
   m_Name: "\u767D\u8033\u8C46\u5A18\u9C7C"
   m_TagString: fish
@@ -14747,10 +14747,10 @@ CapsuleCollider2D:
   m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0.0026609888, y: -0.010983357}
-  m_Size: {x: 0.2665206, y: 0.23391195}
+  m_Offset: {x: 0.0058305566, y: -0.00006561797}
+  m_Size: {x: 0.20383301, y: 0.10360612}
   m_Direction: 1
---- !u!114 &-1422119930038877882
+--- !u!114 &-869745261376387376
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -14759,32 +14759,44 @@ MonoBehaviour:
   m_GameObject: {fileID: 4842934446307366073}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ae2277c7af3e65345b628cfdda97f998, type: 3}
+  m_Script: {fileID: 11500000, guid: 922857f1f6e5db34a902c673c28a3b05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 0.1
+  moveSpeed: 2
+  scaleVariation: 0.3
   obstacleTag: Obstacle
-  extraObstacleTag: wall
+  extraObstacleTag: 
   fishTag: fish
   dropCount: 1
-  dropInterval: 60
-  itemPrefab: {fileID: 647409291031311344, guid: a453e7395e1936b46afb0f05463ad1da, type: 3}
+  dropInterval: 10
+  itemPrefab: {fileID: 0}
   fallSpeed: 2
-  destroyTime: 360
+  destroyTime: 30
   enableParticle: 1
   emitCount: 1
-  fishName: "\u767D\u8033\u8C46\u5A18\u9C7C"
-  fishSprite: {fileID: -619922319, guid: 0814136a9c03af743b8b3afe7635db30, type: 3}
-  playTime: 360
-  treasureBuildTime: 60
-  schoolSeparationDistance: 0.1
-  schoolSwimSpeed: 0.2
-  schoolGatherSpeedMultiplier: 1.5
-  schoolTurnSpeed: 540
-  schoolMinDistance: 0.1
-  swimAreaTag: SpawnArea
-  areaSteerSpeed: 360
-  viewMargin: 0.5
+  fishName: "\u672A\u547D\u540D\u9C7C"
+  fishSprite: {fileID: 0}
+  playTime: 0
+  treasureBuildTime: 0
+  orbitClockwise: 1
+  orbitCenter: {x: 0, y: 0}
+  ellipseSemiMajor: 3.03
+  ellipseSemiMinor: 0.98
+  ellipseTilt: 25
+  majorBreath: 0.5
+  minorBreath: 0.5
+  tiltBreath: 8
+  centerBreath: 0.5
+  breathRate: 0.5
+  schoolOrbitSpeed: 0.95
+  turnSpeed: 540
+  minDistance: 0.3
+  trackPullSpeed: 20
+  hiddenDirectionThreshold: 0
+  hiddenHysteresis: 10
+  layerNormal: fish
+  layerHidden: Default
+  hiddenSortingOrder: -9999
 --- !u!1 &6938092234998911703
 GameObject:
   m_ObjectHideFlags: 0
