@@ -14788,7 +14788,7 @@ MonoBehaviour:
   tiltBreath: 8
   centerBreath: 0.5
   breathRate: 0.5
-  schoolOrbitSpeed: 0.95
+  schoolOrbitSpeed: 0.5
   turnSpeed: 540
   minDistance: 0.3
   trackPullSpeed: 20

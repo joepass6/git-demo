@@ -18,10 +18,10 @@ using UnityEngine.UI;
 ///   编码兼容 UTF-8(含/不含BOM) 和 GBK，Excel 默认另存的 CSV 也能读
 ///
 /// 用法：
-/// 1. 场景里一个“始终激活”的物体挂本组件（不要挂在默认隐藏的语言面板内部）；
+/// 1. 场景里一个"始终激活"的物体挂本组件（不要挂在默认隐藏的语言面板内部）；
 /// 2. 在 languageFonts 里为每种语言指定一个 TMP 字体资源（Reset 时自动补齐 9 条空槽）；
-/// 3. “语言选择”容器下的 9 个语言按钮按物体名自动绑定，无需手动拖 OnClick；
-/// 4. 需要翻译的 Text(TMP) 挂 LocalizedText，填“表名(可空)+key”；
+/// 3. "语言选择"容器下的 9 个语言按钮按物体名自动绑定，无需手动拖 OnClick；
+/// 4. 需要翻译的 Text(TMP) 挂 LocalizedText，填"表名(可空)+key"；
 /// 5. 首次启动识别电脑系统语言；手动切换后存入 PlayerPrefs。
 ///
 /// 其他脚本取文案：LocalizationManager.Tr("ui", "btn_close", "关闭")；表名可省：Tr("btn_close", "关闭")。
@@ -71,12 +71,19 @@ public class LocalizationManager : MonoBehaviour
     public List<LanguageFont> languageFonts = new List<LanguageFont>();
 
     [Header("语言按钮容器")]
-    [Tooltip("“语言选择”容器（其下直接放 9 个语言节点，每个节点里有 Button）。留空则在场景中按名字自动查找")]
+    [Tooltip("语言选择容器（其下直接放 9 个语言节点，每个节点里有 Button）。留空则在场景中按名字自动查找")]
     public Transform languageButtonRoot;
 
     [Header("字体额外生效范围（可选）")]
     [Tooltip("除挂了 LocalizedText 的文本外，这些节点下的所有 TMP 文本也会在切换语言时一起换字体。不需要可留空")]
     public Transform[] fontRoots;
+
+    [Header("语言面板开关（可选）")]
+    [Tooltip("要关的那个 GameObject——你想关\"语言选择\"就拖它，想关\"语言\"板块根就拖那个。不自动推断，关哪个由你说了算")]
+    public GameObject languagePanel;
+
+    [Tooltip("关闭按钮（Button 组件）。不自动搜名字，你手动拖哪个就是哪个。也可以留空，自己在 Inspector 里把 OnClick 绑到 CloseLanguagePanel/ToggleLanguagePanel")]
+    public Button closeButton;
 
     readonly List<LocalizedText> registeredTexts = new List<LocalizedText>();
     Dictionary<Language, TMP_FontAsset> fontDict;
@@ -114,6 +121,7 @@ public class LocalizationManager : MonoBehaviour
     void Start()
     {
         BindLanguageButtons();
+        BindPanelControls();
         ApplyAll();
 
         // 语言面板若是运行后才实例化/激活的，Start 时会找不到按钮：延迟多补绑几轮
@@ -132,10 +140,13 @@ public class LocalizationManager : MonoBehaviour
         // 0.5s / 1.5s / 3s 各补一次：覆盖面板延迟生成的情况。BindLanguageButtons 内部有去重，不会重复绑定
         yield return new WaitForSeconds(0.5f);
         BindLanguageButtons();
+        BindPanelControls();
         yield return new WaitForSeconds(1f);
         BindLanguageButtons();
+        BindPanelControls();
         yield return new WaitForSeconds(1.5f);
         BindLanguageButtons();
+        BindPanelControls();
     }
 
     int CountConfiguredFonts()
@@ -308,7 +319,7 @@ public class LocalizationManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 让 TMP 文本在自己的文本框内“放得下就保持原字号、放不下（外文字更长/带数字）自动缩小”，
+    /// 让 TMP 文本在自己的文本框内"放得下就保持原字号、放不下（外文字更长/带数字）自动缩小"，
     /// 避免文字跑出框外。以设计师当前字号为上限，只缩小不放大，不改排版不删文字。
     /// 设计师已手动开启 Auto Size 的文本保持其设置不动。
     /// </summary>
@@ -390,51 +401,190 @@ public class LocalizationManager : MonoBehaviour
     }
 
     // ---- 内置默认字体（字体槽留空时使用）----
-    TMP_FontAsset fontLatin;
-    TMP_FontAsset fontJapanese;
-    TMP_FontAsset fontKoreanRussian;
+    // 终极统一：TerrarumSansBitmap.otf（48945 字形的像素风超级字体）+ Dynamic Atlas
+    // 覆盖 9 种语言：拉丁+重音+西里尔+希腊+平假名+片假名+韩文+常用汉字
+    TMP_FontAsset fontUnifiedPixel;   // TerrarumSansBitmap（首选，全语言像素风）
+    TMP_FontAsset fontJapaneseFallback;
+    TMP_FontAsset fontKoreanFallback;
+    TMP_FontAsset fontChineseFallback;
 
     TMP_FontAsset GetBuiltinFont(Language lang)
     {
+        // —— 所有语言统一先走 TerrarumSansBitmap 动态像素字体 ——
+        if (fontUnifiedPixel == null)
+        {
+            // Resources/Fonts/TerrarumSansBitmap.otf 已有一份
+            fontUnifiedPixel = LoadDynamicFont("Fonts/TerrarumSansBitmap");
+            if (fontUnifiedPixel != null)
+                Debug.Log($"[多语言] 统一像素字体加载成功：TerrarumSansBitmap（{lang} 等 9 种语言共享，48945 字形）");
+        }
+        if (fontUnifiedPixel != null) return fontUnifiedPixel;
+
+        // —— 兜底链：TerrarumSansBitmap 加载失败才各自降级 ——
         switch (lang)
         {
             case Language.English:
             case Language.German:
             case Language.French:
             case Language.Spanish:
-                // TMP 自带：含完整拉丁扩展（ä ö ü ß é è à ç ñ 等）
-                if (fontLatin == null)
-                    fontLatin = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
-                return fontLatin;
+            case Language.Russian:
+                // TMP 自带：含完整拉丁扩展 + 西里尔
+                fontUnifiedPixel = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+                if (fontUnifiedPixel == null)
+                    fontUnifiedPixel = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF - Fallback");
+                return fontUnifiedPixel;
 
             case Language.Japanese:
-                // 项目点阵体（含假名+常用汉字），动态 SDF
-                if (fontJapanese == null) fontJapanese = LoadDynamicFont("Fonts/TerrarumSansBitmap");
-                return fontJapanese;
+                if (fontJapaneseFallback == null)
+                    fontJapaneseFallback = LoadOSFontAsset("Yu Gothic", "MS Gothic", "Meiryo");
+                if (fontJapaneseFallback == null)
+                    fontJapaneseFallback = LoadDynamicFont("Fonts/malgun");
+                return fontJapaneseFallback;
 
             case Language.Korean:
-            case Language.Russian:
-                // Malgun Gothic：谚文+西里尔+拉丁全覆盖，动态 SDF
-                if (fontKoreanRussian == null) fontKoreanRussian = LoadDynamicFont("Fonts/malgun");
-                return fontKoreanRussian;
+                if (fontKoreanFallback == null)
+                    fontKoreanFallback = LoadDynamicFont("Fonts/malgun");
+                if (fontKoreanFallback == null)
+                    fontKoreanFallback = LoadOSFontAsset("Malgun Gothic", "Gulim");
+                return fontKoreanFallback;
 
             default:
-                // 简中/繁中：保持游戏原字体
-                return null;
+                // 简中/繁中：系统微软雅黑兜底（含完整繁简）
+                if (fontChineseFallback == null)
+                    fontChineseFallback = LoadOSFontAsset("Microsoft YaHei", "微软雅黑",
+                                                           "SimSun", "宋体",
+                                                           "SimHei", "黑体");
+                return fontChineseFallback;
         }
     }
 
-    /// <summary>把 Resources 里的 ttf/otf 包装成动态 SDF 字体（运行时按需生成字形，无需预烘焙字符集）</summary>
+    /// <summary>从系统字体创建 TMP_FontAsset（runtime 可用）。找不到任一指定字体时返回 null</summary>
+    static TMP_FontAsset LoadOSFontAsset(params string[] fontNames)
+    {
+        foreach (string name in fontNames)
+        {
+            try
+            {
+                Font osFont = Font.CreateDynamicFontFromOSFont(name, 90);
+                if (osFont == null) continue;
+                TMP_FontAsset fa = CreateFontAssetSafe(osFont);
+                if (fa != null)
+                {
+                    fa.atlasPopulationMode = AtlasPopulationMode.Dynamic;
+                    // 挂 LiberationSans Fallback 兜底
+                    TMP_FontAsset fallback = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF - Fallback");
+                    if (fallback != null)
+                    {
+                        if (fa.fallbackFontAssetTable == null) fa.fallbackFontAssetTable = new System.Collections.Generic.List<TMP_FontAsset>();
+                        fa.fallbackFontAssetTable.Clear();
+                        fa.fallbackFontAssetTable.Add(fallback);
+                    }
+                    Debug.Log($"[多语言] 系统字体加载成功：{name} -> {fa.name}");
+                    return fa;
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[多语言] 系统字体 {name} 创建失败：{e.Message}");
+            }
+        }
+        Debug.LogWarning($"[多语言] 所有系统字体都加载失败：{string.Join("/", fontNames)}");
+        return null;
+    }
+
+    /// <summary>兼容不同 TMP 版本的 CreateFontAsset——优先用完整参数（更高质量 SDF），不支持时降级无参重载</summary>
+    static TMP_FontAsset CreateFontAssetSafe(Font sourceFont)
+    {
+        // 尝试完整参数重载：CreateFontAsset(Font, samplingPointSize, padding, FontAtlasSize)
+        // TMP 3.x 枚举名是 FontAtlasSize；旧版也有叫 TMP_AtlasResolution 的
+        try
+        {
+            var atlasSizeType = System.Type.GetType("TMPro.FontAtlasSize, Unity.TextMeshPro");
+            if (atlasSizeType == null) atlasSizeType = System.Type.GetType("TMPro.TMP_AtlasResolution, Unity.TextMeshPro");
+            if (atlasSizeType != null)
+            {
+                int atlasValue = 2; // AtlasResolution_2048 / AtlasResolution2048（常见值）
+                foreach (System.Reflection.FieldInfo f in atlasSizeType.GetFields())
+                {
+                    if (f.IsStatic && (f.Name.Contains("2048") || f.Name.Contains("k2048")))
+                    {
+                        atlasValue = (int)f.GetValue(null);
+                        break;
+                    }
+                }
+                var mi = typeof(TMP_FontAsset).GetMethod("CreateFontAsset",
+                    new[] { typeof(Font), typeof(int), typeof(int), atlasSizeType });
+                if (mi != null)
+                {
+                    var result = mi.Invoke(null, new object[] { sourceFont, 90, 5, System.Enum.ToObject(atlasSizeType, atlasValue) });
+                    if (result != null) return (TMP_FontAsset)result;
+                }
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.Log($"[多语言] 完整参数 CreateFontAsset 不可用：{e.Message}，降级到无参重载");
+        }
+
+        // 降级：无参重载，之后手动调 atlas 大小
+        return TMP_FontAsset.CreateFontAsset(sourceFont);
+    }
+
+    /// <summary>
+    /// 把 Resources 里的 ttf/otf 包装成动态 SDF 字体。
+    /// 运行时按需生成字形（AtlasPopulationMode.Dynamic），无需预烘焙字符集。
+    /// 同时挂 LiberationSans SDF 作为 fallback——当源字体缺某个字（如日文汉字、韩文里没覆盖的拉丁字符）时，
+    /// 自动从 fallback 拿，避免出现方块。
+    /// </summary>
     static TMP_FontAsset LoadDynamicFont(string resourcesPath)
     {
         Font f = Resources.Load<Font>(resourcesPath);
         if (f == null)
         {
-            Debug.LogWarning($"[多语言] Resources 里找不到字体文件：{resourcesPath}");
+            Debug.LogWarning($"[多语言] Resources 里找不到字体文件：{resourcesPath}（确认字体在 Assets/Resources/ 或其子目录下，文件名去掉扩展名）");
             return null;
         }
-        TMP_FontAsset fa = TMP_FontAsset.CreateFontAsset(f);
-        if (fa != null) fa.atlasPopulationMode = AtlasPopulationMode.Dynamic;
+
+        TMP_FontAsset fa;
+        try
+        {
+            fa = CreateFontAssetSafe(f);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"[多语言] CreateFontAsset 运行时失败：{resourcesPath} -> {e.Message}。尝试无参重载...");
+            try { fa = TMP_FontAsset.CreateFontAsset(f); }
+            catch { return null; }
+        }
+
+        if (fa == null)
+        {
+            Debug.LogWarning($"[多语言] CreateFontAsset 返回 null：{resourcesPath}。可能是 Runtime 版本不支持，请改用 Editor 预烘焙的 .asset。");
+            return null;
+        }
+
+        // 关键：设为动态 atlas，新字符自动生成
+        fa.atlasPopulationMode = AtlasPopulationMode.Dynamic;
+
+        // 挂 fallback——这个能解决 90% 以上的"缺字变方块"问题
+        // 比如 TerrarumSansBitmap（日文）缺拉丁扩展字符、malgun（韩/俄）缺中文汉字，都能自动从 Fallback 里补
+        try
+        {
+            TMP_FontAsset fallback = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF - Fallback");
+            if (fallback == null) fallback = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+            if (fallback != null)
+            {
+                if (fa.fallbackFontAssetTable == null) fa.fallbackFontAssetTable = new System.Collections.Generic.List<TMP_FontAsset>();
+                fa.fallbackFontAssetTable.Clear();
+                fa.fallbackFontAssetTable.Add(fallback);
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"[多语言] 挂 fallback 失败：{e.Message}（不影响主字体，只是缺字时无法回退）");
+        }
+
+        Debug.Log($"[多语言] 动态字体加载成功：{resourcesPath} -> {fa.name}（atlas={fa.atlasWidth}x{fa.atlasHeight}）");
         return fa;
     }
 
@@ -645,8 +795,8 @@ public class LocalizationManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 自动绑定“语言选择”下的 9 个语言按钮：在语言节点自身或其子物体上找 Button。
-    /// 与 设置.cs 自动补绑“退出游戏”按钮同一套思路，场景里不用手动拖事件。
+    /// 自动绑定"语言选择"下的 9 个语言按钮：在语言节点自身或其子物体上找 Button。
+    /// 与 设置.cs 自动补绑"退出游戏"按钮同一套思路，场景里不用手动拖事件。
     /// </summary>
     readonly HashSet<int> boundButtonIds = new HashSet<int>();
 
@@ -657,7 +807,7 @@ public class LocalizationManager : MonoBehaviour
         if (root == null)
         {
             // Start 时语言面板可能还没生成，这里降级为普通日志，延迟补绑轮次会再找
-            Debug.Log("[多语言] 暂未找到“语言选择”容器（面板可能尚未生成，稍后会重试；如已存在请把它拖到 languageButtonRoot）");
+            Debug.Log("[多语言] 暂未找到\"语言选择\"容器（面板可能尚未生成，稍后会重试；如已存在请把它拖到 languageButtonRoot）");
             return;
         }
 
@@ -676,7 +826,7 @@ public class LocalizationManager : MonoBehaviour
             Button btn = node.GetComponentInChildren<Button>(true);
             if (btn == null)
             {
-                details.Append($"  {node.name}→{lang}：没找到 Button 组件！\n");
+                details.Append($"  {node.name}->{lang}：没找到 Button 组件！\n");
                 continue;
             }
 
@@ -685,11 +835,77 @@ public class LocalizationManager : MonoBehaviour
                 Language target = lang.Value; // 闭包捕获固定值
                 btn.onClick.AddListener(() => SetLanguage(target));
                 newlyBound++;
-                details.Append($"  已绑定: {node.name} → {target}（按钮物体:{btn.name}）\n");
+                details.Append($"  已绑定: {node.name} -> {target}（按钮物体:{btn.name}）\n");
             }
+
+            // ★ 关键：给按钮上的 TMP 文字自动挂 LocalizedText，让按钮名字能随语言切换
+            // 按钮节点名字就是 CSV key（"英语"/"日语"/"韩语"/"德语"/"法语"/"俄语"/"繁体"/"简中"/"西班牙语"）
+            EnsureButtonLabelLocalized(btn, node.name);
         }
 
-        Debug.Log($"[多语言] 语言按钮容器='{root.name}'，本次新绑 {newlyBound} 个，累计 {boundButtonIds.Count} 个\n{details}");
+        Debug.Log($"[多语言] 语言按钮容器='{root.name}'，本次新绑 {newlyBound} 个，累计 {boundButtonIds.Count}\n{details}");
+    }
+
+    /// <summary>
+    /// 给按钮上的 TMP 文字挂 LocalizedText（运行时 AddComponent 避免污染预制体）。
+    /// 挂好后 Awake 会自动注册到 LocalizationManager 并 Refresh，保证当前语言下按钮文字正确。
+    /// </summary>
+    void EnsureButtonLabelLocalized(Button btn, string csvKey)
+    {
+        TMP_Text label = btn.GetComponentInChildren<TMP_Text>(true);
+        if (label == null) return;
+
+        // 已经有 LocalizedText 就不再重复挂（BoundLanguageButtons 会多次被调用）
+        if (label.GetComponent<LocalizedText>() != null) return;
+
+        var loc = label.gameObject.AddComponent<LocalizedText>();
+        loc.tableName = "ui";
+        loc.key = csvKey;
+        // AddComponent 后 Awake 已执行过（此时 Instance 已有，注册成功），
+        // 显式调一次 Refresh 保证第一次显示正确（避免 Awake 时 Instance 还没准备好的极端时序）
+        loc.Refresh();
+    }
+
+    // ==================== 面板开关 ====================
+
+    readonly HashSet<int> boundPanelBtnIds = new HashSet<int>();
+
+    /// <summary>
+    /// 只绑定手动拖的 closeButton，绝不自动推断。
+    /// languagePanel 拖哪个就关哪个；closeButton 拖哪个按钮就绑哪个。
+    /// 不想拖 closeButton 也可以——自己在 Inspector 里把按钮 OnClick 绑到 CloseLanguagePanel / ToggleLanguagePanel。
+    /// </summary>
+    void BindPanelControls()
+    {
+        if (closeButton != null && boundPanelBtnIds.Add(closeButton.GetInstanceID()))
+        {
+            closeButton.onClick.AddListener(() =>
+            {
+                if (languagePanel != null) CloseLanguagePanel();
+                else Debug.LogWarning("[多语言] 关闭按钮已绑，但 languagePanel 没拖，不知道关谁");
+            });
+            Debug.Log($"[多语言] 关闭按钮已绑定: {closeButton.name} -> 关 {languagePanel?.name ?? "(未指定)"}");
+        }
+        if (languagePanel != null)
+            Debug.Log($"[多语言] languagePanel 已就绪: {languagePanel.name}");
+    }
+
+    /// <summary>关闭 languagePanel（SetActive(false)）。Inspector 没拖 languagePanel 时啥也不做</summary>
+    public void CloseLanguagePanel()
+    {
+        if (languagePanel != null) languagePanel.SetActive(false);
+    }
+
+    /// <summary>打开 languagePanel（SetActive(true)）</summary>
+    public void OpenLanguagePanel()
+    {
+        if (languagePanel != null) languagePanel.SetActive(true);
+    }
+
+    /// <summary>切换 languagePanel 开关</summary>
+    public void ToggleLanguagePanel()
+    {
+        if (languagePanel != null) languagePanel.SetActive(!languagePanel.activeSelf);
     }
 
     /// <summary>按名字匹配语言（语言按钮节点名、CSV 表头列名都用它，兼容中文名与各语言本名/代码）</summary>
@@ -712,7 +928,7 @@ public class LocalizationManager : MonoBehaviour
             case "zh-tw": case "zh-hk": case "zh-hant": case "tw": return Language.ChineseTraditional;
         }
 
-        // 繁/简优先，避免被“中文”之类的宽泛词抢先匹配
+        // 繁/简优先，避免被"中文"之类的宽泛词抢先匹配
         if (n.Contains("繁") || n.Contains("traditional")) return Language.ChineseTraditional;
         if (n.Contains("简") || n.Contains("simplified")) return Language.ChineseSimplified;
         if (n.Contains("英") || n.Contains("english")) return Language.English;

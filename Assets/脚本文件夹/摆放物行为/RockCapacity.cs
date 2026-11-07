@@ -19,6 +19,9 @@ public class RockCapacity : MonoBehaviour
 
     // 以下两个字段为旧版"头顶 3D 数字"的位置参数，数字已搬进珊瑚UI 面板，字段保留仅为兼容旧序列化数据
     public float worldHeight = 0.45f;
+    
+    [Header("可放置提示UI位置")]
+    [Tooltip("提示文字显示在石头头顶上方多少世界单位。值越大，提示字越靠上（默认0.22）")]
     public float worldTopOffset = 0.22f;
 
     [Tooltip("白色描边壳的放大量（相对石头精灵尺寸，0.09≈每边多出4.5%）")]

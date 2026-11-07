@@ -14767,7 +14767,7 @@ MonoBehaviour:
   obstacleTag: Obstacle
   extraObstacleTag: wall
   fishTag: fish
-  dropCount: 120
+  dropCount: 1
   dropInterval: 10
   itemPrefab: {fileID: 647409291031311344, guid: ae3bf44df2dc7aa47a03ef53129e9610, type: 3}
   fallSpeed: 2

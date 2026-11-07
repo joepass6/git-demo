@@ -14778,7 +14778,7 @@ MonoBehaviour:
   fishSprite: {fileID: 0}
   playTime: 0
   treasureBuildTime: 0
-  orbitClockwise: 1
+  orbitClockwise: 0
   orbitCenter: {x: 0, y: 0}
   ellipseSemiMajor: 3.03
   ellipseSemiMinor: 0.98

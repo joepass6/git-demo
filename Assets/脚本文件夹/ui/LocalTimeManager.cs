@@ -132,7 +132,11 @@ public class LocalTimeManager : MonoBehaviour
         cachedDayHour = cachedHour;
         cachedMinute = DateTime.Now.Minute;
 
-        // 3. 初始化按钮绑定
+        // 3. 立刻把当前时间/图标写入 UI（不能等 Update——第一帧 cachedMinute==currentMinute 会跳过）
+        UpdateTimeDisplay();
+        UpdateSunMoonIcons();
+
+        // 4. 初始化按钮绑定
         InitializeButtons();
     }
 

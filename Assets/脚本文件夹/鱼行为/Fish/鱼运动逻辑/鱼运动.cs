@@ -410,13 +410,120 @@ public class 鱼运动 : MonoBehaviour
 
     // ==================== 掉落 ====================
 
+    // 掉落物出生时用的检测半径（和 DropItem 预制体的实心碰撞核对齐）
+    const float DropSpawnCheckRadius = 0.3f;
+    // 向上偏移的步进（出生在障碍物里时，每步往上挪这么多再检测）
+    const float DropSpawnStepUp = 0.2f;
+    // 最多往上挪多少步（超过就放弃偏移，用原始位置保底）
+    const int DropSpawnMaxSteps = 15;
+
+    // 有效掉落区域的边界（懒加载：第一次 Drop 时查 SpawnArea 或相机视口）
+    static Bounds? s_validDropBounds;
+    static float s_boundsCacheTime;
+    const float BoundsRefreshInterval = 3f; // 每 3 秒刷新一次（珊瑚可能被移动）
+
+    /// <summary>检测位置是否和障碍物（Obstacle 或 extraObstacleTag）的碰撞体重叠</summary>
+    bool IsPositionBlocked(Vector2 pos)
+    {
+        Collider2D[] hits = Physics2D.OverlapCircleAll(pos, DropSpawnCheckRadius);
+        foreach (var h in hits)
+        {
+            if (h == null) continue;
+            if (IsObstacle(h.gameObject)) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// 查找有效掉落区域：优先用 Tag=SpawnArea 的 BoxCollider2D，
+    /// 没有就用主相机视口的世界坐标边界，留一点内缩边距。
+    /// </summary>
+    static Bounds GetValidDropBounds()
+    {
+        float now = Time.time;
+        if (s_validDropBounds.HasValue && (now - s_boundsCacheTime) < BoundsRefreshInterval)
+            return s_validDropBounds.Value;
+
+        // 1. 找 SpawnArea
+        GameObject area = GameObject.FindGameObjectWithTag("SpawnArea");
+        if (area != null)
+        {
+            BoxCollider2D box = area.GetComponent<BoxCollider2D>();
+            if (box != null)
+            {
+                // BoxCollider2D.bounds 会自动包含 offset 和 size
+                // 内缩一点，防止掉落物贴边出生后往下掉刚好越过边界
+                Bounds b = box.bounds;
+                float pad = 0.3f;
+                b.Expand(-pad * 2f);
+                s_validDropBounds = b;
+                s_boundsCacheTime = now;
+                return b;
+            }
+        }
+
+        // 2. 兜底：用主相机视口
+        Camera cam = Camera.main;
+        if (cam != null)
+        {
+            Vector3 bl = cam.ViewportToWorldPoint(new Vector3(0, 0, -cam.transform.position.z));
+            Vector3 tr = cam.ViewportToWorldPoint(new Vector3(1, 1, -cam.transform.position.z));
+            Bounds b = new Bounds();
+            b.SetMinMax(new Vector3(bl.x, bl.y, 0), new Vector3(tr.x, tr.y, 0));
+            float pad = 0.3f;
+            b.Expand(-pad * 2f);
+            s_validDropBounds = b;
+            s_boundsCacheTime = now;
+            return b;
+        }
+
+        // 3. 最后兜底：一个大到离谱的区域（不会触发钳位）
+        Bounds fallback = new Bounds(Vector3.zero, new Vector3(1000f, 1000f, 1f));
+        s_validDropBounds = fallback;
+        s_boundsCacheTime = now;
+        return fallback;
+    }
+
+    /// <summary>
+    /// 找一个安全的掉落物出生位置：先钳位到有效区域内，再避开障碍物碰撞体。
+    /// </summary>
+    Vector3 FindSafeDropSpawn(Vector3 basePos)
+    {
+        // Step 1: 钳位到有效区域内
+        Bounds bounds = GetValidDropBounds();
+        Vector3 clamped = basePos;
+        clamped.x = Mathf.Clamp(clamped.x, bounds.min.x, bounds.max.x);
+        clamped.y = Mathf.Clamp(clamped.y, bounds.min.y, bounds.max.y);
+
+        // Step 2: 如果钳位后的位置已经在障碍物里，向上偏移直到出来
+        // （鱼碰到障碍物后会反向游走，但短时间内可能还在障碍物碰撞体内）
+        Vector2 testPos = new Vector2(clamped.x, clamped.y);
+        if (IsPositionBlocked(testPos))
+        {
+            for (int step = 1; step <= DropSpawnMaxSteps; step++)
+            {
+                testPos.y = clamped.y + step * DropSpawnStepUp;
+                // 偏移也不能超出区域顶部
+                if (testPos.y > bounds.max.y) break;
+                if (!IsPositionBlocked(testPos))
+                {
+                    clamped = new Vector3(testPos.x, testPos.y, clamped.z);
+                    return clamped;
+                }
+            }
+        }
+
+        return clamped;
+    }
+
     void Drop()
     {
         for (int i = 0; i < dropCount; i++)
         {
             if (itemPrefab != null)
             {
-                GameObject obj = Instantiate(itemPrefab, transform.position, Quaternion.identity);
+                Vector3 safePos = FindSafeDropSpawn(transform.position);
+                GameObject obj = Instantiate(itemPrefab, safePos, Quaternion.identity);
                 Rigidbody2D itemRb = obj.GetComponent<Rigidbody2D>();
                 if (itemRb != null) itemRb.velocity = Vector2.down * fallSpeed;
             }

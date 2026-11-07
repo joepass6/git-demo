@@ -60,12 +60,9 @@ public class SteamManager : MonoBehaviour
             return;
         }
 
-        // 传 Invalid 时 SteamAPI 自动读取游戏目录下的 steam_appid.txt（开发期用 480，上架后改文件即可）。
-        // DllNotFound（机器没装 Steam/steam_api64.dll 缺失）不算致命错误，降级纯本地。
+        // RestartAppIfNecessary 必须尽早执行：Steam 未运行时拉起客户端重启游戏，本次进程应退出。
         try
         {
-            // Steam 未运行/未通过 Steam 启动时，拉起 Steam 客户端并经它重启游戏（基本 DRM）。
-            // 返回 true 表示正在重启，本次进程应退出。
             if (SteamAPI.RestartAppIfNecessary(AppId_t.Invalid))
             {
                 Application.Quit();
@@ -78,10 +75,21 @@ public class SteamManager : MonoBehaviour
             return;
         }
 
+        // SteamAPI.Init() 是同步阻塞调用（Steam 客户端响应慢时会卡几百毫秒~几秒），
+        // 放在 Awake 里会阻塞整个 Unity 启动链路，导致窗口黑屏/空白几秒。
+        // 改到 Start 里延迟一帧执行，让首帧先渲染出来。
+        StartCoroutine(DelayedInit());
+    }
+
+    System.Collections.IEnumerator DelayedInit()
+    {
+        // 等一帧，确保首帧先渲染出来，用户打开游戏立刻能看到画面
+        yield return null;
+
         if (!SteamAPI.Init())
         {
             Debug.LogWarning("[Steam] SteamAPI.Init() 失败（Steam 未登录/未授权该 AppID），本次运行使用纯本地模式");
-            return;
+            yield break;
         }
 
         s_everInitialized = true;

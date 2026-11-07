@@ -22,11 +22,11 @@ public class LocalizedText : MonoBehaviour
     public bool useLanguageFont = true;
 
     TMP_Text tmp;
-    string fallbackText;   // 编辑器里摆好的原文，翻译缺失时回退用
+    string fallbackText;   // 编辑器里摆好的原文，翻译缺失时回退用；也是自动模式下的查词 key 来源
     bool registered;
 
-    // 自动模式下，整句查不到时，识别“中文前缀 + 结尾数字”（如 需要数量：200 / 拥有数量：0），
-    // 改用“前缀{0}”模板翻译并把数字填回去，数字不会因切换语言丢失
+    // 自动模式下，整句查不到时，识别"中文前缀 + 结尾数字"（如 需要数量：200 / 拥有数量：0），
+    // 改用"前缀{0}"模板翻译并把数字填回去，数字不会因切换语言丢失
     static readonly Regex TrailingNumber = new Regex(@"^(.+?\D)(\d+)$", RegexOptions.Compiled);
 
     TMP_Text Tmp
@@ -94,8 +94,16 @@ public class LocalizedText : MonoBehaviour
         var mgr = LocalizationManager.Instance;
         if (mgr == null) return;
 
-        // key 留空：把当前文字（去首尾空白）当 key 去查，实现“摆好中文即自动翻译”
-        string lookupKey = !string.IsNullOrWhiteSpace(key) ? key : (tmp.text ?? string.Empty).Trim();
+        // key 留空（自动模式）：用 Awake 时缓存的原始中文（fallbackText）当 key 去查。
+        // ★ 不能用当前 tmp.text——第一次翻译后它已经是目标语言的文本了，
+        // 第二次切换时用它当 key 永远查不到 CSV（CSV key 列是中文原文）。
+        string lookupKey;
+        if (!string.IsNullOrWhiteSpace(key))
+            lookupKey = key;
+        else if (!string.IsNullOrWhiteSpace(fallbackText))
+            lookupKey = fallbackText.Trim();
+        else
+            lookupKey = (tmp.text ?? string.Empty).Trim();
 
         bool found = false;
         if (!string.IsNullOrEmpty(lookupKey))
@@ -123,9 +131,9 @@ public class LocalizedText : MonoBehaviour
             }
             else
             {
-                // 整句/整 key 查不到：尝试“前缀{0}”模板并把结尾数字填回（数字保留）
-                //  · key 留空(自动模式)：前缀和数字都从原文拆，如 “需要数量：200”→查“需要数量：{0}”
-                //  · key 非空(如 key=“需要数量：”)：key 就是前缀，数字仍取原文结尾
+                // 整句/整 key 查不到：尝试"前缀{0}"模板并把结尾数字填回（数字保留）
+                //  · key 留空(自动模式)：前缀和数字都从原文拆，如 "需要数量：200"→查"需要数量：{0}"
+                //  · key 非空(如 key="需要数量：")：key 就是前缀，数字仍取原文结尾
                 TryTrailingNumber(mgr);
             }
             // 都查不到：原文字一字不动
@@ -142,8 +150,8 @@ public class LocalizedText : MonoBehaviour
     }
 
     /// <summary>
-    /// 整 key 查不到时的兜底：原文形如“需要数量：200”，就按“需要数量：{0}”模板翻译并保留结尾数字。
-    /// key 留空时前缀也从原文提取；key 非空时（如“需要数量：”）直接用 key 做前缀。
+    /// 整 key 查不到时的兜底：原文形如"需要数量：200"，就按"需要数量：{0}"模板翻译并保留结尾数字。
+    /// key 留空时前缀也从原文提取；key 非空时（如"需要数量："）直接用 key 做前缀。
     /// 数字从最初摆好的原文(fallbackText)提取，避免把其它语言译文里的字符误当数字。
     /// </summary>
     void TryTrailingNumber(LocalizationManager mgr)
@@ -175,7 +183,7 @@ public class LocalizedText : MonoBehaviour
 
         if (tpl == tplKey)
         {
-            // 回到中文：恢复原始“前缀+数字”
+            // 回到中文：恢复原始"前缀+数字"
             if (tmp.text != original) tmp.text = original;
         }
         else
