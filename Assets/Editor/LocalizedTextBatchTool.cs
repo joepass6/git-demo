@@ -303,6 +303,9 @@ public static class LocalizedTextBatchTool
             if (tmp == null) continue;
 
             string text = tmp.text ?? string.Empty;
+            // 剥掉 TMP rich text 标签（<color=...>、<b>、<size=...>、<br> 等），
+            // 否则 "放置成功时，<color=#FF8800>橙色鱼</color>概率增加" 永远匹配不上 CSV 里的纯文字 key
+            string stripped = StripRichTags(text);
             string path = location + "/" + GetPath(lt.transform);
 
             // 已填且能在表里查到：不动
@@ -311,10 +314,10 @@ public static class LocalizedTextBatchTool
                 if (IsKeyValid(map, lt.tableName, lt.key)) { c.valid++; continue; }
             }
 
-            if (string.IsNullOrWhiteSpace(text)) { c.empty++; continue; }
+            if (string.IsNullOrWhiteSpace(stripped)) { c.empty++; continue; }
 
             MatchEntry hit = null;
-            string trimmed = text.Trim();
+            string trimmed = stripped.Trim();
             if (map.exact.TryGetValue(trimmed, out MatchEntry e))
             {
                 hit = e;
@@ -373,6 +376,15 @@ public static class LocalizedTextBatchTool
         var sb = new StringBuilder(s.Length);
         foreach (char ch in s) if (!char.IsWhiteSpace(ch)) sb.Append(ch);
         return sb.ToString();
+    }
+
+    /// <summary>剥掉 TMP rich text 标签（<color=...>、<b>、<size=...>、<br>、<indent=...> 等），保留纯文字。</summary>
+    static System.Text.RegularExpressions.Regex _tagRegex =
+        new System.Text.RegularExpressions.Regex(@"<[^>]+>", System.Text.RegularExpressions.RegexOptions.Compiled);
+    static string StripRichTags(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return s;
+        return _tagRegex.Replace(s, "");
     }
 
     /// <summary>从 Resources/Localization 读全部 CSV，建立 简体文字 -> 表/key 的索引（key 列本身就是简体原文）</summary>

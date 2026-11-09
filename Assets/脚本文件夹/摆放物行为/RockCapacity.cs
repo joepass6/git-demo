@@ -20,9 +20,12 @@ public class RockCapacity : MonoBehaviour
     // 以下两个字段为旧版"头顶 3D 数字"的位置参数，数字已搬进珊瑚UI 面板，字段保留仅为兼容旧序列化数据
     public float worldHeight = 0.45f;
     
-    [Header("可放置提示UI位置")]
-    [Tooltip("提示文字显示在石头头顶上方多少世界单位。值越大，提示字越靠上（默认0.22）")]
+    [Header("可放置提示UI位置（世界单位）")]
+    [Tooltip("提示文字显示在石头头顶上方多少。值越大越靠上（默认0.22）")]
     public float worldTopOffset = 0.22f;
+    
+    [Tooltip("提示文字左右偏移。正值向右移，负值向左移（默认0=石头正上方）")]
+    public float worldSideOffset = 0f;
 
     [Tooltip("白色描边壳的放大量（相对石头精灵尺寸，0.09≈每边多出4.5%）")]
     public float outlineScaleRatio = 0.09f;
@@ -575,11 +578,11 @@ public class RockCapacity : MonoBehaviour
         Camera worldCam = Camera.main;
         if (worldCam == null || hostRect == null || hostCanvas == null) return;
 
-        // 头顶世界点：精灵上沿 + 旧的头顶偏移字段（世界单位）
+        // 头顶世界点：精灵上沿 + 头顶偏移 + 左右偏移（世界单位）
         Vector3 topWorld = transform.position;
         var sr = GetComponentInChildren<SpriteRenderer>();
         if (sr != null) topWorld.y = sr.bounds.max.y;
-        topWorld += Vector3.up * worldTopOffset;
+        topWorld += new Vector3(worldSideOffset, worldTopOffset, 0f);
 
         Vector3 screen = worldCam.WorldToScreenPoint(topWorld);
         if (screen.z <= 0f) return; // 石头在相机背后时不动

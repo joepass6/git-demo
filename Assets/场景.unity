@@ -115931,6 +115931,7 @@ MonoBehaviour:
   languageButtonRoot: {fileID: 0}
   fontRoots: []
   languagePanel: {fileID: 519419773}
+  languageEntryButton: {fileID: 0}
   closeButton: {fileID: 206992130}
 --- !u!1 &669687227
 GameObject:
@@ -118366,8 +118367,8 @@ MonoBehaviour:
   "\u73CA\u745A\u653E\u7F6E\u97F3\u6548": {fileID: 8300000, guid: 987d2bc3067c62c4c8d8828abb60c6d4, type: 3}
   "\u62FE\u53D6\u97F3\u6548": {fileID: 8300000, guid: 987d2bc3067c62c4c8d8828abb60c6d4, type: 3}
   "\u62D2\u7EDD\u97F3\u6548": {fileID: 8300000, guid: 78484813e5e31ac46ab24cdda5338862, type: 3}
-  "\u8BBE\u7F6E\u6309\u94AE\u97F3\u6548": {fileID: 8300000, guid: b64079200565c3a4a9bef7b340112114, type: 3}
-  "\u8BBE\u7F6E\u9762\u677F\u6839\u8282\u70B9": {fileID: 0}
+  "\u8BBE\u7F6E\u6309\u94AE\u97F3\u6548": {fileID: 8300000, guid: f788a02737f226c498903488c9390503, type: 3}
+  "\u8BBE\u7F6E\u9762\u677F\u6839\u8282\u70B9": {fileID: 1400312373}
   "SE\u64AD\u653E\u5668": {fileID: 0}
   "\u6309\u94AE\u97F3\u6548\u64AD\u653E\u5668": {fileID: 0}
   "\u9C7C\u97F3\u6548\u64AD\u653E\u5668": {fileID: 0}
@@ -123047,7 +123048,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 30s
+  m_text: 5000s
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f96eb889d5569cd49830c71f477db956, type: 2}
   m_sharedMaterial: {fileID: 107132694338599451, guid: f96eb889d5569cd49830c71f477db956, type: 2}
@@ -183185,7 +183186,7 @@ MonoBehaviour:
   centerTarget: {fileID: 253311951}
   centerOffset: {x: 0, y: 0}
   fitWindowToTarget: 1
-  fitHeightRatio: 0.95
+  fitHeightRatio: 0.438
   useManualFitSize: 0
   manualFitSize: {x: 7, y: 10}
   fitRadius: 5
@@ -209341,7 +209342,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1393921762}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -209354,7 +209355,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: fe732a3f40030184e9d49ec4bbd39ea0, type: 3}
+  m_Sprite: {fileID: 0}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -222627,7 +222628,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -450726952, guid: 6afc0d5bb88090644adae8f7050529e8, type: 3}
+  m_Sprite: {fileID: -638285713, guid: 2315c75ae426d8b4e841882ef9aa0ef4, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -232282,7 +232283,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 600s
+  m_text: 10s
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f96eb889d5569cd49830c71f477db956, type: 2}
   m_sharedMaterial: {fileID: 107132694338599451, guid: f96eb889d5569cd49830c71f477db956, type: 2}
@@ -238513,7 +238514,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u7B80\u4E2D\n"
+  m_text: "\u7B80\u4E2D"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f96eb889d5569cd49830c71f477db956, type: 2}
   m_sharedMaterial: {fileID: 107132694338599451, guid: f96eb889d5569cd49830c71f477db956, type: 2}
@@ -243458,7 +243459,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u897F\u73ED\u7259\n"
+  m_text: "\u897F\u73ED\u7259"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f96eb889d5569cd49830c71f477db956, type: 2}
   m_sharedMaterial: {fileID: 107132694338599451, guid: f96eb889d5569cd49830c71f477db956, type: 2}
@@ -254525,7 +254526,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 1800s
+  m_text: 50000s
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f96eb889d5569cd49830c71f477db956, type: 2}
   m_sharedMaterial: {fileID: 107132694338599451, guid: f96eb889d5569cd49830c71f477db956, type: 2}

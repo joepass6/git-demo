@@ -79,8 +79,11 @@ public class LocalizationManager : MonoBehaviour
     public Transform[] fontRoots;
 
     [Header("语言面板开关（可选）")]
-    [Tooltip("要关的那个 GameObject——你想关\"语言选择\"就拖它，想关\"语言\"板块根就拖那个。不自动推断，关哪个由你说了算")]
+    [Tooltip("语言选择面板 GameObject。留空则自动搜场景里名字含'语言选择'/'语言面板'/'LanguagePanel'的物体")]
     public GameObject languagePanel;
+
+    [Tooltip("打开语言面板的入口按钮（Button 组件）。留空则自动搜场景里名字含'语言'/'Language'/'切换语言'的外部按钮")]
+    public Button languageEntryButton;
 
     [Tooltip("关闭按钮（Button 组件）。不自动搜名字，你手动拖哪个就是哪个。也可以留空，自己在 Inspector 里把 OnClick 绑到 CloseLanguagePanel/ToggleLanguagePanel")]
     public Button closeButton;
@@ -397,6 +400,14 @@ public class LocalizationManager : MonoBehaviour
                 TMP_FontAsset builtin = GetBuiltinFont(lang);
                 if (builtin != null) fontDict[lang] = builtin;
             }
+        }
+
+        // ★ 诊断日志：打印每种语言最终用的字体
+        foreach (Language lang in Enum.GetValues(typeof(Language)))
+        {
+            fontDict.TryGetValue(lang, out TMP_FontAsset fa);
+            string fontName = fa != null ? fa.name : "(null)";
+            Debug.Log($"[多语言字体] {lang} -> {fontName}");
         }
     }
 
@@ -855,15 +866,26 @@ public class LocalizationManager : MonoBehaviour
         TMP_Text label = btn.GetComponentInChildren<TMP_Text>(true);
         if (label == null) return;
 
-        // 已经有 LocalizedText 就不再重复挂（BoundLanguageButtons 会多次被调用）
-        if (label.GetComponent<LocalizedText>() != null) return;
+        var loc = label.GetComponent<LocalizedText>();
+        if (loc == null)
+        {
+            loc = label.gameObject.AddComponent<LocalizedText>();
+        }
 
-        var loc = label.gameObject.AddComponent<LocalizedText>();
-        loc.tableName = "ui";
-        loc.key = csvKey;
-        // AddComponent 后 Awake 已执行过（此时 Instance 已有，注册成功），
-        // 显式调一次 Refresh 保证第一次显示正确（避免 Awake 时 Instance 还没准备好的极端时序）
-        loc.Refresh();
+        // ★ 关键：即使已经有 LocalizedText（比如批量工具之前加过），
+        // 只要 tableName 或 key 是空的，就补上（运行时 AddComponent 不会把空组件脏写回场景）
+        bool needRefresh = false;
+        if (string.IsNullOrEmpty(loc.tableName)) { loc.tableName = "ui"; needRefresh = true; }
+        if (string.IsNullOrEmpty(loc.key)) { loc.key = csvKey; needRefresh = true; }
+
+        // 清理一下 TMP 上可能残留的换行/空白（西班牙语按钮之前被人加了个 \n 在末尾）
+        if (!string.IsNullOrEmpty(label.text) && (label.text.StartsWith(" ") || label.text.EndsWith(" ") || label.text.Contains("\n")))
+        {
+            label.text = label.text.Trim();
+            needRefresh = true;
+        }
+
+        if (needRefresh) loc.Refresh();
     }
 
     // ==================== 面板开关 ====================
@@ -871,23 +893,105 @@ public class LocalizationManager : MonoBehaviour
     readonly HashSet<int> boundPanelBtnIds = new HashSet<int>();
 
     /// <summary>
-    /// 只绑定手动拖的 closeButton，绝不自动推断。
-    /// languagePanel 拖哪个就关哪个；closeButton 拖哪个按钮就绑哪个。
-    /// 不想拖 closeButton 也可以——自己在 Inspector 里把按钮 OnClick 绑到 CloseLanguagePanel / ToggleLanguagePanel。
+    /// 自动查找 + 自动绑定入口按钮和关闭按钮。
+    /// languagePanel 留空 → 搜名字含"语言选择"/"语言面板"/"LanguagePanel"的 GameObject
+    /// languageEntryButton 留空 → 搜名字含"语言"/"Language"/"切换语言"的外部 Button
+    /// closeButton 只绑手动拖的（不自动搜，避免误绑面板里的子按钮）
     /// </summary>
     void BindPanelControls()
     {
+        // ===== 1. 自动找 languagePanel（如果没手动拖）=====
+        if (languagePanel == null)
+        {
+            string[] panelKeywords = { "语言选择", "语言面板", "LanguagePanel", "Language Select", "LanguageSelect" };
+            foreach (var keyword in panelKeywords)
+            {
+                Transform found = FindInSceneByName(keyword);
+                if (found != null)
+                {
+                    languagePanel = found.gameObject;
+                    Debug.Log($"[多语言] ✅ 自动找到 languagePanel: {languagePanel.name}");
+                    break;
+                }
+            }
+            if (languagePanel == null)
+            {
+                // 更宽松的兜底：名字含"语言"的 GameObject
+                foreach (GameObject root in SceneManager.GetActiveScene().GetRootGameObjects())
+                {
+                    Transform hit = FindDeep(root.transform, t => t.name.Contains("语言") || t.name.Contains("anguage"));
+                    if (hit != null)
+                    {
+                        languagePanel = hit.gameObject;
+                        Debug.Log($"[多语言] ✅ 宽松匹配找到 languagePanel: {languagePanel.name}");
+                        break;
+                    }
+                }
+            }
+        }
+
+        // ===== 2. 强制默认隐藏语言面板（如果找到了）=====
+        if (languagePanel != null && languagePanel.activeSelf)
+        {
+            languagePanel.SetActive(false);
+            Debug.Log($"[多语言] 语言面板默认隐藏: {languagePanel.name}");
+        }
+
+        // ===== 3. 自动找入口按钮（如果没手动拖）=====
+        if (languageEntryButton == null)
+        {
+            string[] btnKeywords = { "切换语言", "语言按钮", "Language Button", "LanguageBtn" };
+            foreach (var keyword in btnKeywords)
+            {
+                Transform found = FindInSceneByName(keyword);
+                if (found != null)
+                {
+                    languageEntryButton = found.GetComponentInParent<Button>() ?? found.GetComponent<Button>() ?? found.GetComponentInChildren<Button>(true);
+                    if (languageEntryButton != null)
+                    {
+                        Debug.Log($"[多语言] ✅ 自动找到入口按钮(精确): {languageEntryButton.name}");
+                        break;
+                    }
+                }
+            }
+            // 兜底：找名字含"语言"的外部按钮
+            if (languageEntryButton == null)
+            {
+                foreach (var btn in FindObjectsOfType<Button>(true))
+                {
+                    if (btn == null) continue;
+                    string n = btn.name.ToLowerInvariant();
+                    if (n.Contains("语言") || n.Contains("language") || n.Contains("切换语言"))
+                    {
+                        languageEntryButton = btn;
+                        Debug.Log($"[多语言] ✅ 宽松匹配找到入口按钮: {btn.name}");
+                        break;
+                    }
+                }
+            }
+        }
+
+        // ===== 4. 绑定入口按钮 → Toggle 语言面板 =====
+        if (languageEntryButton != null && boundPanelBtnIds.Add(languageEntryButton.GetInstanceID()))
+        {
+            languageEntryButton.onClick.AddListener(() =>
+            {
+                if (languagePanel != null) ToggleLanguagePanel();
+                else Debug.LogWarning("[多语言] 入口按钮已绑，但 languagePanel 没找到，不知道开什么面板");
+            });
+            Debug.Log($"[多语言] ✅ 入口按钮已绑定: {languageEntryButton.name} -> Toggle {languagePanel?.name ?? "(未找到面板)"}");
+        }
+
+        // ===== 5. 绑定关闭按钮（只绑手动拖的，不自动搜）=====
         if (closeButton != null && boundPanelBtnIds.Add(closeButton.GetInstanceID()))
         {
             closeButton.onClick.AddListener(() =>
             {
                 if (languagePanel != null) CloseLanguagePanel();
-                else Debug.LogWarning("[多语言] 关闭按钮已绑，但 languagePanel 没拖，不知道关谁");
+                else Debug.LogWarning("[多语言] 关闭按钮已绑，但 languagePanel 没找到，不知道关什么");
             });
-            Debug.Log($"[多语言] 关闭按钮已绑定: {closeButton.name} -> 关 {languagePanel?.name ?? "(未指定)"}");
+            Debug.Log($"[多语言] ✅ 关闭按钮已绑定: {closeButton.name} -> 关 {languagePanel?.name ?? "(未找到面板)"}");
         }
-        if (languagePanel != null)
-            Debug.Log($"[多语言] languagePanel 已就绪: {languagePanel.name}");
     }
 
     /// <summary>关闭 languagePanel（SetActive(false)）。Inspector 没拖 languagePanel 时啥也不做</summary>
@@ -958,6 +1062,18 @@ public class LocalizationManager : MonoBehaviour
         foreach (Transform child in root)
         {
             Transform hit = FindDeep(child, targetName);
+            if (hit != null) return hit;
+        }
+        return null;
+    }
+
+    /// <summary>按条件查找（支持 lambda 谓词）</summary>
+    static Transform FindDeep(Transform root, System.Func<Transform, bool> predicate)
+    {
+        if (predicate(root)) return root;
+        foreach (Transform child in root)
+        {
+            Transform hit = FindDeep(child, predicate);
             if (hit != null) return hit;
         }
         return null;

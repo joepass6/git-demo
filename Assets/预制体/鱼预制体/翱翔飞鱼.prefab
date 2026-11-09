@@ -14663,7 +14663,7 @@ GameObject:
   - component: {fileID: 7795196677473724414}
   - component: {fileID: 6095502072857755692}
   - component: {fileID: 2525360904135216834}
-  - component: {fileID: -151601863902118592}
+  - component: {fileID: -4288753291349384553}
   m_Layer: 6
   m_Name: "\u7FF1\u7FD4\u98DE\u9C7C"
   m_TagString: fish
@@ -14750,7 +14750,7 @@ CapsuleCollider2D:
   m_Offset: {x: 0.0024728181, y: -0.00043137406}
   m_Size: {x: 0.31588757, y: 0.21281198}
   m_Direction: 1
---- !u!114 &-151601863902118592
+--- !u!114 &-4288753291349384553
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -14759,32 +14759,36 @@ MonoBehaviour:
   m_GameObject: {fileID: 4842934446307366073}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ae2277c7af3e65345b628cfdda97f998, type: 3}
+  m_Script: {fileID: 11500000, guid: 1ebdffde48b2deb439d5cf599ab5b440, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 0.1
+  moveSpeed: 2
+  scaleVariation: 0.3
   obstacleTag: Obstacle
-  extraObstacleTag: wall
+  extraObstacleTag: 
   fishTag: fish
   dropCount: 1
-  dropInterval: 600
-  itemPrefab: {fileID: 647409291031311344, guid: ed7fc4c3745500a42bf4f3b9ca31b403, type: 3}
-  fallSpeed: 1
-  destroyTime: 1800
+  dropInterval: 10
+  itemPrefab: {fileID: 0}
+  fallSpeed: 2
+  destroyTime: 50000
   enableParticle: 1
   emitCount: 1
-  fishName: "\u7FF1\u7FD4\u98DE\u9C7C"
-  fishSprite: {fileID: -450726952, guid: 6afc0d5bb88090644adae8f7050529e8, type: 3}
-  playTime: 1800
-  treasureBuildTime: 606
-  schoolSeparationDistance: 0.1
-  schoolSwimSpeed: 0.2
-  schoolGatherSpeedMultiplier: 1.5
-  schoolTurnSpeed: 540
-  schoolMinDistance: 0.1
-  swimAreaTag: SpawnArea
-  areaSteerSpeed: 360
-  viewMargin: 0.5
+  fishName: "\u672A\u547D\u540D\u9C7C"
+  fishSprite: {fileID: 0}
+  playTime: 0
+  treasureBuildTime: 0
+  orbitClockwise: 1
+  orbitCenter: {x: 0, y: 0}
+  semiMajor: 1.98
+  semiMinor: 0.06
+  orbitSpeed: 0.37
+  turnSpeed: 540
+  minDistance: 0.3
+  layerNormal: Foreground
+  layerHidden: Default
+  hiddenDirectionThreshold: -0.1
+  hiddenHysteresis: 0.1
 --- !u!1 &6938092234998911703
 GameObject:
   m_ObjectHideFlags: 0

@@ -528,6 +528,7 @@ public class DragAndPlaceSystem : MonoBehaviour
             SetToTopLayer(currentDragObject);
             PlayPlaceEffect(currentDragObject);
             TriggerCoralSkill(currentDragObject, primaryRock);
+            SpawnBubbleRing(placePos, currentDragObject);
 
             // 6. 扣除珊瑚数量并更新文本显示
             float newCount = GetCoralCount() - GetCost();
@@ -592,28 +593,140 @@ public class DragAndPlaceSystem : MonoBehaviour
     }
 
     /// <summary>
-    /// 播放放置特效（查找所有粒子系统并播放，带调试日志）
+    /// 放置成功播放特效：遍历所有粒子系统，先 Clear+Stop 清干净 playOnAwake 自动播的残留，
+    /// 再 Play() 一次（loop=false 的粒子自然播完就停；loop=true 的也只触发一次 burst）。
+    /// 顺序在 TriggerCoralSkill 之前：放置特效和技能特效可能是同一粒子，先播放置、技能再管持续。
     /// </summary>
     void PlayPlaceEffect(GameObject obj)
     {
-        ParticleSystem[] allPs = obj.GetComponentsInChildren<ParticleSystem>(true);
-        Debug.Log($"[DragAndPlace] 查找特效: 在 {obj.name} 上找到 {allPs.Length} 个 ParticleSystem");
-
-        if (allPs.Length == 0)
-        {
-            Debug.LogWarning($"[DragAndPlace] 未找到 ParticleSystem! 请确认特效是粒子系统类型");
-            return;
-        }
-
+        var allPs = obj.GetComponentsInChildren<ParticleSystem>(true);
+        if (allPs.Length == 0) return;
         foreach (var ps in allPs)
         {
-            if (ps != null)
+            if (ps == null) continue;
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            ps.Play();
+        }
+    }
+
+    // ======================== 放置气泡特效 ========================
+
+    /// <summary>缓存运行时生成的白色圆形气泡 sprite（第一次用的时候才生成，避免占内存）</summary>
+    static Sprite _bubbleSprite;
+
+    /// <summary>运行时画一个 64x64 白色圆形，带软边缘（alpha 渐变到 0），用作气泡 sprite</summary>
+    static Sprite GetBubbleSprite()
+    {
+        if (_bubbleSprite != null) return _bubbleSprite;
+        const int size = 64;
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+        tex.wrapMode = TextureWrapMode.Clamp;
+        float cx = size * 0.5f, cy = size * 0.5f, r = size * 0.45f;
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
             {
-                ps.gameObject.SetActive(true);
-                ps.Play();
-                Debug.Log($"[DragAndPlace] 已播放特效: {ps.gameObject.name}");
+                float dx = x - cx, dy = y - cy;
+                float d = Mathf.Sqrt(dx * dx + dy * dy);
+                float a = Mathf.Clamp01(r - d) / r;
+                // 边缘 10% 用二次方让过渡更柔和
+                a = a > 0.8f ? 1f : a * a * a;
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, a));
             }
         }
+        tex.Apply();
+        _bubbleSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
+        return _bubbleSprite;
+    }
+
+    /// <summary>
+    /// 放置成功时在落点位置生成一圈气泡提示——告诉玩家"放下了"。
+    /// 动态建一个临时 FX GameObject，挂 N 个小气泡沿圆周分布、向上浮起同时淡出，0.7s 后整体销毁。
+    /// sortingOrder 跟随珊瑚当前值 +1，保证在珊瑚 sprite 之上可见。
+    /// </summary>
+    void SpawnBubbleRing(Vector3 worldPos, GameObject coral)
+    {
+        // 取珊瑚的 sorting layer / order（珊瑚是 SpriteRenderer 物体）
+        var coralSr = coral.GetComponentInChildren<SpriteRenderer>();
+        int layer = coralSr != null ? coralSr.sortingLayerID : 0;
+        int order = coralSr != null ? coralSr.sortingOrder : 10;
+
+        var fx = new GameObject("FX_PlaceBubbles");
+        fx.transform.position = worldPos + new Vector3(0, 0.05f, 0); // 稍微抬一点，避免穿石头
+        var sr = fx.AddComponent<SpriteRenderer>();
+        sr.sortingLayerID = layer;
+        sr.sortingOrder = order + 1;
+        sr.enabled = false; // 主物体不用渲染，下面的子气泡负责
+
+        StartCoroutine(BubbleRoutine(fx.transform, layer, order + 1));
+    }
+
+    System.Collections.IEnumerator BubbleRoutine(Transform root, int layer, int order)
+    {
+        Sprite bubbleSprite = GetBubbleSprite();
+        int count = 16;                  // 一圈 16 个小气泡
+        float ringRadius = 0.7f;         // 圈半径（世界单位）
+        float duration = 0.7f;           // 总时长
+
+        var spawned = new System.Collections.Generic.List<Transform>(count);
+        for (int i = 0; i < count; i++)
+        {
+            float angle = (i / (float)count) * Mathf.PI * 2f + Random.Range(-0.05f, 0.05f);
+            float rr = ringRadius + Random.Range(-0.08f, 0.08f);
+            Vector3 pos = root.position + new Vector3(Mathf.Cos(angle) * rr, Mathf.Sin(angle) * rr * 0.5f, 0);
+            var go = new GameObject("bub_" + i);
+            go.transform.position = pos;
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = bubbleSprite;
+            sr.color = new Color(0.85f, 0.95f, 1f, 0.9f); // 淡蓝半透明白
+            sr.sortingLayerID = layer;
+            sr.sortingOrder = order + i;                 // 每个气泡稍微错开 order 避免 z-fighting
+            float baseScale = Random.Range(0.08f, 0.16f);
+            go.transform.localScale = Vector3.one * baseScale;
+            spawned.Add(go.transform);
+        }
+
+        // 主协程：0→duration，每个气泡按自己的 lifetime 向上浮 + 淡出 + 缩放
+        float t = 0f;
+        float[] lifetimes = new float[count];
+        Vector3[] targets = new Vector3[count];
+        for (int i = 0; i < count; i++)
+        {
+            lifetimes[i] = Random.Range(0.55f, duration);
+            float tx = Random.Range(-0.15f, 0.15f);
+            float ty = Random.Range(0.5f, 0.9f);
+            targets[i] = spawned[i].position + new Vector3(tx, ty, 0);
+        }
+
+        while (t < duration && root != null)
+        {
+            t += Time.deltaTime;
+            for (int i = 0; i < count; i++)
+            {
+                var tr = spawned[i];
+                if (tr == null) continue;
+                float lt = Mathf.Clamp01(t / lifetimes[i]);
+                // 位置：起点 → target，前快后慢（EaseOutQuad）
+                float e = 1f - (1f - lt) * (1f - lt);
+                tr.position = Vector3.Lerp(tr.position, targets[i], Time.deltaTime * 8f);
+                // 淡出
+                var bsr = tr.GetComponent<SpriteRenderer>();
+                if (bsr != null)
+                {
+                    Color c = bsr.color;
+                    c.a = 1f - lt;
+                    bsr.color = c;
+                }
+                // 微微放大（气泡上浮会略微变大）
+                float baseScale = Random.Range(0.08f, 0.16f); // 每帧略抖一下大小
+                tr.localScale = Vector3.one * baseScale * (1f + lt * 0.4f);
+            }
+            yield return null;
+        }
+
+        // 最后销毁整个 FX 物体
+        if (root != null) Destroy(root.gameObject);
     }
 
     /// <summary>

@@ -53,6 +53,18 @@ public class 鱼运动_群游 : 鱼运动
     private static Dictionary<string, List<鱼运动_群游>> schoolGroups = new Dictionary<string, List<鱼运动_群游>>();
     private static Dictionary<string, float> schoolFlipCooldowns = new Dictionary<string, float>(); // 整群掉头冷却
 
+    // 性能优化：聚拢后只留一条领头鱼做碰撞检测，其余全关掉
+    // （20 条鱼 = 1 个 Collider2D 做物理查询，省 95%）
+    private static Dictionary<string, int> schoolLeaderInstanceIDs = new Dictionary<string, int>();
+    private Collider2D[] _myColliders;  // 缓存，避免每帧 GetComponentsInChildren
+
+    // 刚聚拢的豁免期（秒）：leader 在此期间不处理 Obstacle 回调，
+    // 让整群先游开障碍边缘再正常避障（聚拢瞬间 leader 经常刚好贴在 Obstacle 上，
+    // 之前就因为一聚拢就疯狂整群掉头 = 左右乱扭）
+    private static Dictionary<string, float> schoolLeaderGraceUntil = new Dictionary<string, float>();
+    const float LeaderGracePeriod = 1.5f;
+
+
     protected override void Start()
     {
         base.Start();
@@ -61,6 +73,10 @@ public class 鱼运动_群游 : 鱼运动
         // 但把刚体设为 Kinematic：物理引擎不再处理碰撞响应，
         // 否则脚本每帧用 transform.position 把鱼往群方向推，物理引擎又把重叠的鱼弹开 → 抽搐
         if (rb != null) rb.bodyType = RigidbodyType2D.Kinematic;
+
+        // 缓存自己 + 子物体的所有 Collider2D（鱼的碰撞体可能在子物体上）
+        _myColliders = GetComponentsInChildren<Collider2D>(true);
+        SetCollidersEnabled(true);  // Start 时默认全开（孤单状态需要完整碰撞）
 
         // 预制体基础名（群游分组用，实例化后名字为 "预制体名(Clone)"）
         prefabBaseName = gameObject.name.Replace("(Clone)", "").Trim();
@@ -87,6 +103,14 @@ public class 鱼运动_群游 : 鱼运动
 
     private void OnDestroy()
     {
+        // 如果自己是 leader，先清掉 leader 字典让其他鱼立刻顶上
+        if (!string.IsNullOrEmpty(prefabBaseName) &&
+            schoolLeaderInstanceIDs.TryGetValue(prefabBaseName, out int leaderId) &&
+            leaderId == GetInstanceID())
+        {
+            schoolLeaderInstanceIDs.Remove(prefabBaseName);
+            schoolLeaderGraceUntil.Remove(prefabBaseName);
+        }
         RemoveFromSchool();
     }
 
@@ -113,6 +137,11 @@ public class 鱼运动_群游 : 鱼运动
         lastDeflectTime = 0f;
         if (schoolTurnRoutine != null) { StopCoroutine(schoolTurnRoutine); schoolTurnRoutine = null; }
         if (rb != null) rb.bodyType = RigidbodyType2D.Kinematic;  // 对象池复用也确保不改回 Dynamic
+
+        // 对象池复用：碰撞体重新全开（孤单状态），并从 leader 字典里清掉自己
+        SetCollidersEnabled(true);
+        if (schoolLeaderInstanceIDs.TryGetValue(prefabBaseName, out int leaderId) && leaderId == GetInstanceID())
+            schoolLeaderInstanceIDs.Remove(prefabBaseName);
 
         if (!string.IsNullOrEmpty(prefabBaseName))
         {
@@ -197,7 +226,13 @@ public class 鱼运动_群游 : 鱼运动
         if (sameKindCount == 0)
         {
             // ===== 状态1：孤单 → 完全继承自由游动（不调整朝向）=====
-            hasGathered = false;
+            if (hasGathered)
+            {
+                hasGathered = false;
+                // 群散了：全部开碰撞体
+                RestoreAllColliders();
+            }
+            SetCollidersEnabled(true);  // 孤单=自己就是"整群"，需要碰撞体
             if (forward.sqrMagnitude > 0.0001f)
             {
                 transform.position += (Vector3)(forward * moveSpeed * Time.deltaTime);
@@ -212,6 +247,8 @@ public class 鱼运动_群游 : 鱼运动
             }
             // 平滑转向同类位置
             SmoothTurnTowardPosition(nearestPos);
+            // 状态2还没聚拢，每条鱼都需要完整碰撞体
+            SetCollidersEnabled(true);
         }
         else
         {
@@ -221,16 +258,43 @@ public class 鱼运动_群游 : 鱼运动
                 // 刚聚拢：设置朝向共享方向，和群体保持一致
                 hasGathered = true;
                 SetRotationToDirection(schoolDirections[prefabBaseName]);
+                // 聚拢后选 leader：全群第一条（按顺序）保留碰撞体，其余关掉
+                PickLeaderAndOptimizeColliders();
+            }
+            else
+            {
+                // 已聚拢中：每帧验证 leader 是否还活着（字典 key 存在 ≠ leader 鱼有效）
+                bool leaderValid = false;
+                if (schoolLeaderInstanceIDs.TryGetValue(prefabBaseName, out int leaderId) && leaderId != 0)
+                {
+                    foreach (var f in group)
+                    {
+                        if (f != null && f.GetInstanceID() == leaderId && f.gameObject.activeInHierarchy)
+                        { leaderValid = true; break; }
+                    }
+                }
+
+                if (!leaderValid)
+                {
+                    // leader 没了（被卖/被回池/被 SetActive(false)/离群），从剩下的活跃鱼里重新选
+                    PickLeaderAndOptimizeColliders();
+                }
+                else
+                {
+                    SetCollidersEnabled(GetInstanceID() == leaderId);
+                }
             }
 
             // 检查是否脱离群体（离最近同类太远则回到状态2重新聚拢）
             if (nearestDist > schoolSeparationDistance * 2f)
             {
                 hasGathered = false;
+                RestoreAllColliders();
             }
             else
             {
                 // 弱间距分离：只在完全重合时推开位置（允许重叠，但不完全重合）
+                // 注意：这个检测是脚本逻辑，和物理碰撞无关，关掉 Collider2D 也不影响
                 for (int i = group.Count - 1; i >= 0; i--)
                 {
                     鱼运动_群游 other = group[i];
@@ -248,7 +312,6 @@ public class 鱼运动_群游 : 鱼运动
                 }
 
                 // 全群沿同一个共享方向移动（同时、同速、同向，保证整群一起游）
-                // 不能用各自的forward：转向途中每条鱼角度不同，会各游各的散开
                 Vector2 schoolDir = schoolDirections[prefabBaseName];
                 transform.position += (Vector3)(schoolDir * schoolSwimSpeed * Time.deltaTime);
             }
@@ -458,7 +521,7 @@ public class 鱼运动_群游 : 鱼运动
     void FlipSchoolDirection()
     {
         if (!schoolDirections.ContainsKey(prefabBaseName)) return;
-        if (Time.time - schoolFlipCooldowns[prefabBaseName] < 0.5f) return;  // 冷却中
+        if (Time.time - schoolFlipCooldowns[prefabBaseName] < 1.2f) return;  // 冷却 1.2 秒：掉头后给整群足够时间游开障碍
         schoolFlipCooldowns[prefabBaseName] = Time.time;
 
         // 反向 + 少量随机偏转，避免原路折返卡死
@@ -520,8 +583,72 @@ public class 鱼运动_群游 : 鱼运动
         }
     }
 
+    // ==================== 碰撞体性能优化 ====================
+
+    /// <summary>开关自己所有 Collider2D（缓存了数组，零 GC）</summary>
+    void SetCollidersEnabled(bool enabled)
+    {
+        if (_myColliders == null) return;
+        for (int i = 0; i < _myColliders.Length; i++)
+            if (_myColliders[i] != null && _myColliders[i].enabled != enabled)
+                _myColliders[i].enabled = enabled;
+    }
+
+    /// <summary>全群恢复所有碰撞体（群散时调用）</summary>
+    void RestoreAllColliders()
+    {
+        if (!schoolGroups.ContainsKey(prefabBaseName)) return;
+        foreach (var fish in schoolGroups[prefabBaseName])
+        {
+            if (fish != null && fish.gameObject.activeInHierarchy)
+                fish.SetCollidersEnabled(true);
+        }
+        schoolLeaderInstanceIDs.Remove(prefabBaseName);
+        schoolLeaderGraceUntil.Remove(prefabBaseName);
+    }
+
+    /// <summary>刚聚拢时：选 leader + 全群开关碰撞体（只调用一次，不是每帧）</summary>
+    void PickLeaderAndOptimizeColliders()
+    {
+        if (!schoolGroups.ContainsKey(prefabBaseName)) return;
+
+        var group = schoolGroups[prefabBaseName];
+        if (group.Count == 0) return;
+
+        // 找第一个 active 的当 leader
+        鱼运动_群游 leader = null;
+        foreach (var fish in group)
+        {
+            if (fish != null && fish.gameObject.activeInHierarchy)
+            {
+                leader = fish;
+                break;
+            }
+        }
+        if (leader == null) return;
+
+        schoolLeaderInstanceIDs[prefabBaseName] = leader.GetInstanceID();
+
+        // 聚拢那一刻给 leader 1.5 秒豁免期：让整群先游开障碍边缘
+        schoolLeaderGraceUntil[prefabBaseName] = Time.time + LeaderGracePeriod;
+
+        // leader 开、其余关
+        foreach (var fish in group)
+        {
+            if (fish == null || !fish.gameObject.activeInHierarchy) continue;
+            fish.SetCollidersEnabled(fish == leader);
+        }
+    }
+
     protected override void ObstacleHitResponse(Transform obstacle)
     {
+        // 刚聚拢的豁免期内 leader 不处理 Obstacle：让整群先游开障碍边缘，
+        // 否则一聚拢就立刻整群掉头 → 每 0.5 秒掉头一次 = 左右乱扭
+        if (hasGathered && schoolLeaderGraceUntil.TryGetValue(prefabBaseName, out float until))
+        {
+            if (Time.time < until) return;
+        }
+
         if (hasGathered)
         {
             // 状态3：整群转向（防止卡住）
@@ -530,7 +657,6 @@ public class 鱼运动_群游 : 鱼运动
         else
         {
             // 状态1/2：在当前前进方向基础上随机偏转，并同步朝向标记
-            // （之前直接设绝对角度，移动方向和朝向脱节：鱼看着朝A走实际朝B，会游出画面=消失）
             // 限频0.4秒：贴在障碍上时Stay每帧触发，不限频会反复乱转=抽搐
             if (Time.time - lastDeflectTime < 0.4f) return;
             lastDeflectTime = Time.time;
