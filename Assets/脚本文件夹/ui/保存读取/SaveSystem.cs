@@ -39,7 +39,15 @@ public class SaveSystem : MonoBehaviour
     static HashSet<ObjectSpawner> _initialSceneSpawners = new HashSet<ObjectSpawner>();
     static bool _initialSpawnersRecorded = false;
 
-    /// <summary>预制体名称 → 预制体引用。启动时从所有 DragAndPlaceSystem 收集，供加载时按 name 找回预制体</summary>
+    /// <summary>
+    /// 玩家运行时放置的 ObjectSpawner（DragAndPlaceSystem 成功放置时主动登记）。
+    /// 🔑 这个集合不依赖 Unity 的 FindObjectsOfType 或 ObjectSpawner.AllSpawners——
+    ///    退出阶段 Unity 会先 Destroy 所有物体，AllSpawners 在 OnDestroy 时被清空；
+    ///    这个集合是"主动登记"的，任何时机都能拿到完整列表。
+    /// </summary>
+    static readonly HashSet<ObjectSpawner> _playerPlacedSpawners = new HashSet<ObjectSpawner>();
+
+    /// <summary>预制体名称 → 预制体引用。启动时从所有 DragAndPlaceSystem 收集</summary>
     static readonly Dictionary<string, GameObject> _prefabRegistry = new Dictionary<string, GameObject>();
     static bool _prefabRegistryBuilt = false;
 
@@ -83,16 +91,70 @@ public class SaveSystem : MonoBehaviour
         if (_initialSpawnersRecorded) return;
         _initialSpawnersRecorded = true;
         _initialSceneSpawners.Clear();
-        foreach (var sp in FindObjectsOfType<ObjectSpawner>())
+        // 优先用 ObjectSpawner.AllSpawners（静态 HashSet，最可靠）
+        foreach (var sp in ObjectSpawner.AllSpawners)
         {
             if (sp != null) _initialSceneSpawners.Add(sp);
         }
+        // 兜底：AllSpawners 理论上和 FindObjectsOfType 数量一致
         Debug.Log($"[保存系统] 📍 记录了 {_initialSceneSpawners.Count} 个初始场景 ObjectSpawner（策划预设，不保存）");
+    }
+
+    // ==================== 玩家珊瑚登记 API ====================
+
+    /// <summary>
+    /// DragAndPlaceSystem 成功放置珊瑚后调用，登记到玩家珊瑚集合。
+    /// 这个集合不依赖 Unity 生命周期，退出阶段也能拿到完整列表。
+    /// </summary>
+    public static void RegisterPlacedSpawner(ObjectSpawner spawner)
+    {
+        if (spawner == null) return;
+        _playerPlacedSpawners.Add(spawner);
+    }
+
+    /// <summary>
+    /// 玩家放置的珊瑚被销毁时调用（OnDestroy 里反向登记），保持集合干净。
+    /// 不在 ObjectSpawner 里自动调，避免引入新依赖；由 SaveSystem 扫描时顺便清理 null 引用。
+    /// </summary>
+    public static void UnregisterPlacedSpawner(ObjectSpawner spawner)
+    {
+        if (spawner == null) return;
+        _playerPlacedSpawners.Remove(spawner);
+    }
+
+    /// <summary>清档/清场时重置玩家珊瑚集合（恢复初始状态）</summary>
+    public static void ClearPlacedSpawnersRegistry()
+    {
+        _playerPlacedSpawners.Clear();
+    }
+
+    /// <summary>
+    /// 获取所有当前活跃的玩家放置 ObjectSpawner（自动清理已销毁的 null 引用）。
+    /// 优先用主动登记的集合（最可靠），再合并 AllSpawners 兜底（处理移动系统等其他放置路径）。
+    /// </summary>
+    static IEnumerable<ObjectSpawner> GetAllPlayerSpawners()
+    {
+        // 清理已被销毁的 null 引用
+        _playerPlacedSpawners.RemoveWhere(s => s == null);
+
+        // 用一个临时 HashSet 去重
+        var result = new HashSet<ObjectSpawner>(_playerPlacedSpawners);
+
+        // 兜底：合并 AllSpawners 里符合 coral tag 且不是初始场景的
+        foreach (var sp in ObjectSpawner.AllSpawners)
+        {
+            if (sp == null) continue;
+            if (_initialSceneSpawners.Contains(sp)) continue;
+            if (!HasTagInHierarchy(sp.gameObject, CoralTag)) continue;
+            result.Add(sp);
+        }
+        return result;
     }
 
     /// <summary>
     /// 构建预制体名称 → 预制体引用的注册表。
-    /// 保存时只存 prefab.name（字符串），加载时靠这个字典找回 Unity 预制体引用再 Instantiate。
+    /// 🔑 保存时只存 prefab.name（字符串），加载时靠这个字典找回 Unity 预制体引用再 Instantiate。
+    /// 注意：预制体文件名可能带尾部空格（比如"澳大利亚沙群海葵 .prefab"），统一 Trim 掉。
     /// </summary>
     void BuildPrefabRegistry()
     {
@@ -101,32 +163,45 @@ public class SaveSystem : MonoBehaviour
         _prefabRegistry.Clear();
 
         // 1. 从 DragAndPlaceSystem 收集（主要来源）
+        int fromDrag = 0;
         foreach (var dps in FindObjectsOfType<DragAndPlaceSystem>())
         {
             if (dps == null || dps.prefabToSpawn == null) continue;
-            string name = dps.prefabToSpawn.name;
+            string name = dps.prefabToSpawn.name.Trim(); // ← 关键！Trim 掉尾部空格
             if (!_prefabRegistry.ContainsKey(name))
             {
                 _prefabRegistry[name] = dps.prefabToSpawn;
+                fromDrag++;
             }
         }
 
-        // 2. 兜底：从所有 ObjectSpawner 的 spawnEntries 里也收集一下（以防有些预制体不是通过 DragAndPlaceSystem 放置的）
-        foreach (var sp in FindObjectsOfType<ObjectSpawner>())
+        // 2. 兜底：从所有 ObjectSpawner 的 spawnEntries 里也收集一下
+        int fromSpawn = 0;
+        foreach (var sp in ObjectSpawner.AllSpawners)
         {
             if (sp == null || sp.spawnEntries == null) continue;
             foreach (var entry in sp.spawnEntries)
             {
                 if (entry.prefab == null) continue;
-                string name = entry.prefab.name;
+                string name = entry.prefab.name.Trim();
                 if (!_prefabRegistry.ContainsKey(name))
                 {
                     _prefabRegistry[name] = entry.prefab;
+                    fromSpawn++;
                 }
             }
         }
 
-        Debug.Log($"[保存系统] 📦 预制体注册表已构建，共 {_prefabRegistry.Count} 种可恢复预制体");
+        // 3. 兜底：遍历 Resources.LoadAll("") 下所有预制体（如果有的话）
+        //    以及 Project 里 Assets/预制体/珊瑚预制体/ 下的所有 .prefab
+        //    （通过 Resources.LoadAll 兜底需要预制体在 Resources 文件夹里，不现实）
+
+        Debug.Log($"[保存系统] 📦 预制体注册表已构建: 从DragAndPlace={fromDrag}, 从Spawner={fromSpawn}, 共 {_prefabRegistry.Count} 种");
+        // 打印所有 key 方便排查找不到的问题
+        foreach (var kv in _prefabRegistry)
+        {
+            Debug.Log($"[保存系统] 📦   key=\"{kv.Key}\"  prefab={kv.Value.name}");
+        }
     }
 
     IEnumerator LoadAfterDelay()
@@ -287,22 +362,20 @@ public class SaveSystem : MonoBehaviour
             data.totalCoralsSold = GameStats.TotalCoralsSold;
 
             // 4. 保存玩家运行时放置的珊瑚（ObjectSpawner）
-            //    🔑 很多珊瑚预制体根节点 Tag 是 Untagged，coral tag 在子物体上——必须递归查
+            //    🔑 GetAllPlayerSpawners 优先用玩家主动登记集合（_playerPlacedSpawners），
+            //       兜底合并 AllSpawners。这样退出阶段也能拿到完整列表。
             RecordInitialSpawners(); // 兜底
-            int scanTotal = 0, scanPass = 0;
-            foreach (var sp in FindObjectsOfType<ObjectSpawner>())
+            int scanPass = 0, scanFromRegistry = 0, scanFromAll = 0;
+            var seen = new HashSet<ObjectSpawner>();
+            // 先扫主动登记的（最可靠，退出阶段也有）
+            foreach (var sp in _playerPlacedSpawners)
             {
-                scanTotal++;
-                if (sp == null) { continue; }
-                if (!sp.enabled) { Debug.Log($"[保存系统] 🪸 跳过 disabled: {sp.name}"); continue; }
-                if (_initialSceneSpawners.Contains(sp)) { continue; } // 初始场景预设不保存
-                bool hasTag = HasTagInHierarchy(sp.gameObject, CoralTag);
-                if (!hasTag) { Debug.Log($"[保存系统] 🪸 跳过 无coralTag: {sp.name}"); continue; }
-
-                scanPass++;
+                if (sp == null || !sp.enabled) continue;
+                seen.Add(sp);
+                scanFromRegistry++;
                 var entry = new PlacedObjectData
                 {
-                    prefabName = sp.name.Replace("(Clone)", ""),
+                    prefabName = sp.name.Replace("(Clone)", "").Trim(), // ← Trim 掉尾部空格
                     posX = sp.transform.position.x,
                     posY = sp.transform.position.y,
                     posZ = sp.transform.position.z,
@@ -310,8 +383,29 @@ public class SaveSystem : MonoBehaviour
                     bonusDropCount = sp.bonusDropCount,
                 };
                 data.placedObjects.Add(entry);
+                scanPass++;
             }
-            Debug.Log($"[保存系统] 🪸 扫描完成: 共 {scanTotal} 个 ObjectSpawner, 玩家珊瑚 {scanPass} 个");
+            // 再扫 AllSpawners 兜底（处理没走主动登记路径的情况）
+            foreach (var sp in ObjectSpawner.AllSpawners)
+            {
+                if (sp == null || !sp.enabled) continue;
+                if (seen.Contains(sp)) continue;
+                if (_initialSceneSpawners.Contains(sp)) continue;
+                if (!HasTagInHierarchy(sp.gameObject, CoralTag)) continue;
+                var entry = new PlacedObjectData
+                {
+                    prefabName = sp.name.Replace("(Clone)", "").Trim(),
+                    posX = sp.transform.position.x,
+                    posY = sp.transform.position.y,
+                    posZ = sp.transform.position.z,
+                    bonusDestroyTime = sp.bonusDestroyTime,
+                    bonusDropCount = sp.bonusDropCount,
+                };
+                data.placedObjects.Add(entry);
+                scanFromAll++;
+                scanPass++;
+            }
+            Debug.Log($"[保存系统] 🪸 扫描完成: 主动登记 {scanFromRegistry} + AllSpawners兜底 {scanFromAll} = 玩家珊瑚 {scanPass} 个");
 
             string json = JsonUtility.ToJson(data, true);
             File.WriteAllText(savePath, json);
@@ -495,7 +589,7 @@ public class SaveSystem : MonoBehaviour
         // --- 清场：删掉当前场景里所有玩家放置的 ObjectSpawner（保留初始场景自带的）---
         RecordInitialSpawners();
         var toDestroy = new List<ObjectSpawner>();
-        foreach (var sp in FindObjectsOfType<ObjectSpawner>())
+        foreach (var sp in ObjectSpawner.AllSpawners)
         {
             if (sp == null) continue;
             if (_initialSceneSpawners.Contains(sp)) continue;
@@ -522,12 +616,13 @@ public class SaveSystem : MonoBehaviour
             int missing = 0;
             foreach (var entry in data.placedObjects)
             {
-                if (string.IsNullOrEmpty(entry.prefabName)) { missing++; continue; }
+                string prefabName = entry.prefabName?.Trim() ?? "";
+                if (string.IsNullOrEmpty(prefabName)) { missing++; continue; }
 
                 GameObject prefab;
-                if (!_prefabRegistry.TryGetValue(entry.prefabName, out prefab) || prefab == null)
+                if (!_prefabRegistry.TryGetValue(prefabName, out prefab) || prefab == null)
                 {
-                    Debug.LogWarning($"[保存系统] 🪸 找不到预制体 '{entry.prefabName}'（注册表没收录？），跳过恢复");
+                    Debug.LogWarning($"[保存系统] 🪸 找不到预制体 '{prefabName}'（注册表没收录？），跳过恢复");
                     missing++;
                     continue;
                 }
@@ -539,12 +634,13 @@ public class SaveSystem : MonoBehaviour
                 // Instantiate 出来的实例可能会自动带上 "(Clone)"，但不影响 ObjectSpawner 自身
                 obj.name = entry.prefabName; // 还原成预制体原名（方便 Hierarchy 查看）
 
-                // 关键：在 Start 执行之前把 bonus 写入
+                // 关键：在 Start 执行之前把 bonus 写入 + 立即登记到玩家集合
                 var spawner = obj.GetComponent<ObjectSpawner>();
                 if (spawner != null)
                 {
                     spawner.bonusDestroyTime = entry.bonusDestroyTime;
                     spawner.bonusDropCount = entry.bonusDropCount;
+                    RegisterPlacedSpawner(spawner); // ← 恢复出来的珊瑚立刻登记，让玩家再存档能存到
                 }
 
                 restored++;
@@ -590,20 +686,28 @@ public class SaveSystem : MonoBehaviour
     {
         if (!_initialSpawnersRecorded) return;
         var toDelete = new List<ObjectSpawner>();
-        foreach (var sp in FindObjectsOfType<ObjectSpawner>())
+        foreach (var sp in _playerPlacedSpawners)
+        {
+            if (sp == null) continue;
+            toDelete.Add(sp);
+        }
+        foreach (var sp in ObjectSpawner.AllSpawners)
         {
             if (sp == null) continue;
             if (_initialSceneSpawners.Contains(sp)) continue;
             if (!HasTagInHierarchy(sp.gameObject, CoralTag)) continue;
+            if (_playerPlacedSpawners.Contains(sp)) continue; // 已经在上面处理过
             toDelete.Add(sp);
         }
         foreach (var sp in toDelete)
         {
             if (sp != null) Destroy(sp.gameObject);
         }
+        // 清空玩家登记集合（物体都销毁了，集合也该重置）
+        ClearPlacedSpawnersRegistry();
         if (toDelete.Count > 0)
         {
-            Debug.Log($"[保存系统] 🗑️ ClearPlacedCorals: 删掉了 {toDelete.Count} 个玩家放置的珊瑚");
+            Debug.Log($"[保存系统] 🗑️ ClearPlacedCorals: 删掉了 {toDelete.Count} 个玩家放置的珊瑚 + 重置登记集合");
         }
     }
 }

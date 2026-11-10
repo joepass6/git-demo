@@ -490,6 +490,18 @@ public class DragAndPlaceSystem : MonoBehaviour
             currentDragObject = Instantiate(prefabToSpawn, placePos, Quaternion.identity);
             Debug.Log($"[DragAndPlace] 生成真实物体: {currentDragObject.name}");
 
+            // 🔑 登记到 SaveSystem：让它在任何时机（包括退出阶段）都能保存这个玩家珊瑚
+            var spawner = currentDragObject.GetComponent<ObjectSpawner>();
+            if (spawner != null)
+            {
+                SaveSystem.RegisterPlacedSpawner(spawner);
+                Debug.Log($"[DragAndPlace] ✅ 已登记到 SaveSystem: {currentDragObject.name}");
+            }
+            else
+            {
+                Debug.LogWarning($"[DragAndPlace] ⚠️ {currentDragObject.name} 没有 ObjectSpawner，SaveSystem 无法追踪保存");
+            }
+
             触发放置事件(currentDragObject);
             SetToTopLayer(currentDragObject);
             PlayPlaceEffect(currentDragObject);
