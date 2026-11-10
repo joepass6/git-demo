@@ -33,6 +33,19 @@ public class SaveSystem : MonoBehaviour
     // 防重入标志：避免 Load() 执行中被快捷键再次触发
     private bool isLoading = false;
 
+    // ===== 放置物保存/恢复辅助 =====
+
+    /// <summary>启动时场景里已有的 ObjectSpawner（策划预先摆好的，不用保存/恢复）</summary>
+    static HashSet<ObjectSpawner> _initialSceneSpawners = new HashSet<ObjectSpawner>();
+    static bool _initialSpawnersRecorded = false;
+
+    /// <summary>预制体名称 → 预制体引用。启动时从所有 DragAndPlaceSystem 收集，供加载时按 name 找回预制体</summary>
+    static readonly Dictionary<string, GameObject> _prefabRegistry = new Dictionary<string, GameObject>();
+    static bool _prefabRegistryBuilt = false;
+
+    /// <summary>Tag=coral 的名称常量（与 DragAndPlaceSystem/ObjectSpawner 上的 coral tag 一致）</summary>
+    const string CoralTag = "coral";
+
     void Awake()
     {
         // 单例保护：场景里不小心挂多个 SaveSystem 时，后创建的自动销毁
@@ -42,6 +55,9 @@ public class SaveSystem : MonoBehaviour
             return;
         }
         Instance = this;
+
+        // 记录启动时场景里已有的 ObjectSpawner → 这些是策划预先摆好的，不需要保存/恢复
+        RecordInitialSpawners();
     }
 
     void Start()
@@ -50,8 +66,67 @@ public class SaveSystem : MonoBehaviour
         GameStats.OnCodexChanged -= OnCodexChanged;
         GameStats.OnCodexChanged += OnCodexChanged;
 
+        // 构建预制体注册表（从 DragAndPlaceSystem 收集所有可放置的预制体）
+        BuildPrefabRegistry();
+
         Debug.Log($"[保存系统] savePath = {savePath}");
         StartCoroutine(LoadAfterDelay());
+    }
+
+    /// <summary>
+    /// 记录启动时场景里已有的 ObjectSpawner。
+    /// 这些是策划预先摆好的，每次 Play 都会自动 Start 生成鱼，
+    /// 不属于玩家运行时放置的东西，所以不用保存/恢复。
+    /// </summary>
+    void RecordInitialSpawners()
+    {
+        if (_initialSpawnersRecorded) return;
+        _initialSpawnersRecorded = true;
+        _initialSceneSpawners.Clear();
+        foreach (var sp in FindObjectsOfType<ObjectSpawner>())
+        {
+            if (sp != null) _initialSceneSpawners.Add(sp);
+        }
+        Debug.Log($"[保存系统] 📍 记录了 {_initialSceneSpawners.Count} 个初始场景 ObjectSpawner（策划预设，不保存）");
+    }
+
+    /// <summary>
+    /// 构建预制体名称 → 预制体引用的注册表。
+    /// 保存时只存 prefab.name（字符串），加载时靠这个字典找回 Unity 预制体引用再 Instantiate。
+    /// </summary>
+    void BuildPrefabRegistry()
+    {
+        if (_prefabRegistryBuilt) return;
+        _prefabRegistryBuilt = true;
+        _prefabRegistry.Clear();
+
+        // 1. 从 DragAndPlaceSystem 收集（主要来源）
+        foreach (var dps in FindObjectsOfType<DragAndPlaceSystem>())
+        {
+            if (dps == null || dps.prefabToSpawn == null) continue;
+            string name = dps.prefabToSpawn.name;
+            if (!_prefabRegistry.ContainsKey(name))
+            {
+                _prefabRegistry[name] = dps.prefabToSpawn;
+            }
+        }
+
+        // 2. 兜底：从所有 ObjectSpawner 的 spawnEntries 里也收集一下（以防有些预制体不是通过 DragAndPlaceSystem 放置的）
+        foreach (var sp in FindObjectsOfType<ObjectSpawner>())
+        {
+            if (sp == null || sp.spawnEntries == null) continue;
+            foreach (var entry in sp.spawnEntries)
+            {
+                if (entry.prefab == null) continue;
+                string name = entry.prefab.name;
+                if (!_prefabRegistry.ContainsKey(name))
+                {
+                    _prefabRegistry[name] = entry.prefab;
+                }
+            }
+        }
+
+        Debug.Log($"[保存系统] 📦 预制体注册表已构建，共 {_prefabRegistry.Count} 种可恢复预制体");
     }
 
     IEnumerator LoadAfterDelay()
@@ -135,6 +210,8 @@ public class SaveSystem : MonoBehaviour
         public List<string> droppedFish = new List<string>();
         public int totalCoralsPlaced;
         public int totalCoralsSold;
+        // 玩家运行时放置的珊瑚（ObjectSpawner）
+        public List<PlacedObjectData> placedObjects = new List<PlacedObjectData>();
     }
 
     [System.Serializable]
@@ -149,6 +226,20 @@ public class SaveSystem : MonoBehaviour
     {
         public float posX, posY;
         public float windowScale = 1f;
+    }
+
+    /// <summary>
+    /// 玩家运行时放置的一个珊瑚（ObjectSpawner）的序列化数据。
+    /// 只存关键字段：预制体名（加载时从注册表找引用）、世界坐标（唯一恢复位置的信息）、
+    /// bonus 修正（技能永久叠加值需要原样恢复）。
+    /// </summary>
+    [System.Serializable]
+    public class PlacedObjectData
+    {
+        public string prefabName;
+        public float posX, posY, posZ;
+        public float bonusDestroyTime;
+        public int bonusDropCount;
     }
 
     // ==================== 保存 ====================
@@ -195,14 +286,42 @@ public class SaveSystem : MonoBehaviour
             data.totalCoralsPlaced = GameStats.TotalCoralsPlaced;
             data.totalCoralsSold = GameStats.TotalCoralsSold;
 
+            // 4. 保存玩家运行时放置的珊瑚（ObjectSpawner）
+            //    🔑 很多珊瑚预制体根节点 Tag 是 Untagged，coral tag 在子物体上——必须递归查
+            RecordInitialSpawners(); // 兜底
+            int scanTotal = 0, scanPass = 0;
+            foreach (var sp in FindObjectsOfType<ObjectSpawner>())
+            {
+                scanTotal++;
+                if (sp == null) { continue; }
+                if (!sp.enabled) { Debug.Log($"[保存系统] 🪸 跳过 disabled: {sp.name}"); continue; }
+                if (_initialSceneSpawners.Contains(sp)) { continue; } // 初始场景预设不保存
+                bool hasTag = HasTagInHierarchy(sp.gameObject, CoralTag);
+                if (!hasTag) { Debug.Log($"[保存系统] 🪸 跳过 无coralTag: {sp.name}"); continue; }
+
+                scanPass++;
+                var entry = new PlacedObjectData
+                {
+                    prefabName = sp.name.Replace("(Clone)", ""),
+                    posX = sp.transform.position.x,
+                    posY = sp.transform.position.y,
+                    posZ = sp.transform.position.z,
+                    bonusDestroyTime = sp.bonusDestroyTime,
+                    bonusDropCount = sp.bonusDropCount,
+                };
+                data.placedObjects.Add(entry);
+            }
+            Debug.Log($"[保存系统] 🪸 扫描完成: 共 {scanTotal} 个 ObjectSpawner, 玩家珊瑚 {scanPass} 个");
+
             string json = JsonUtility.ToJson(data, true);
             File.WriteAllText(savePath, json);
 
-            // 4. 同步 Steam 云存档（Steam 不可用时自动跳过，异常也不影响本地）
+            // 5. 同步 Steam 云存档（Steam 不可用时自动跳过，异常也不影响本地）
             try { SteamCloudStorage.UploadFromLocal(savePath); }
             catch (System.Exception e) { Debug.LogWarning($"[保存系统] Steam云存档上传异常：{e.Message}"); }
 
             Debug.Log($"[保存系统] ✅ 已保存到 {savePath}，物品类型 {data.itemCounts.Count}，" +
+                      $"玩家珊瑚 {data.placedObjects.Count}，" +
                       $"窗口=({data.windowState.posX:F0},{data.windowState.posY:F0}) 缩放={data.windowState.windowScale:F2}，" +
                       $"已见鱼 {data.seenFish.Count} 种，已掉宝 {data.droppedFish.Count} 种");
         }
@@ -277,6 +396,7 @@ public class SaveSystem : MonoBehaviour
             }
 
             Debug.Log($"[保存系统] 📋 JSON 解析成功：itemCounts={data.itemCounts?.Count ?? 0}, " +
+                      $"placedObjects={data.placedObjects?.Count ?? 0}, " +
                       $"seenFish={data.seenFish?.Count ?? 0}, droppedFish={data.droppedFish?.Count ?? 0}");
 
             // Step 4: 恢复掉落物品数量
@@ -296,7 +416,10 @@ public class SaveSystem : MonoBehaviour
                 Debug.Log("[保存系统] 🔢 存档中没有 itemCounts（物品数量未保存）");
             }
 
-            // Step 5: 恢复窗口状态
+            // Step 5: 清场 + 恢复玩家放置的珊瑚
+            ClearAndRestorePlacedObjects(data);
+
+            // Step 6: 恢复窗口状态
             DesktopWindowController dwc = FindObjectOfType<DesktopWindowController>();
             if (dwc != null)
             {
@@ -309,8 +432,6 @@ public class SaveSystem : MonoBehaviour
                 {
                     Debug.Log("[保存系统] 🪟 跳过恢复窗口位置（存档值为 0,0 或未设置）");
                 }
-                // 不恢复旧的 windowScale——用当前 DesktopWindowController 的默认值
-                // 旧存档里的 0.73/0.785 等会让 orthoSize 变大、场景看起来缩小
                 Debug.Log($"[保存系统] 🪟 跳过恢复 windowScale（存档值={data.windowState.windowScale:F2}），使用默认值 1.0");
             }
             else
@@ -318,7 +439,7 @@ public class SaveSystem : MonoBehaviour
                 Debug.Log("[保存系统] 🪟 场景中没找到 DesktopWindowController，跳过窗口恢复");
             }
 
-            // Step 6: 恢复 GameStats 进度
+            // Step 7: 恢复 GameStats 进度
             GameStats.Restore(data.seenFish, data.droppedFish, data.totalCoralsPlaced, data.totalCoralsSold);
             Debug.Log($"[保存系统] 🐟 图鉴进度恢复：已见 {data.seenFish?.Count ?? 0} 种，" +
                       $"已掉宝 {data.droppedFish?.Count ?? 0} 种，" +
@@ -327,6 +448,7 @@ public class SaveSystem : MonoBehaviour
             int itemTypeCount = data.itemCounts?.Count ?? 0;
 
             Debug.Log($"[保存系统] ✅ 加载完成！物品类型 {itemTypeCount}，" +
+                      $"玩家珊瑚 {data.placedObjects?.Count ?? 0}，" +
                       $"已见鱼 {data.seenFish?.Count ?? 0} 种，已掉宝 {data.droppedFish?.Count ?? 0} 种");
 
             // 通知所有订阅者存档已加载完成
@@ -339,6 +461,149 @@ public class SaveSystem : MonoBehaviour
         finally
         {
             isLoading = false;
+        }
+    }
+
+    // ==================== 工具方法 ====================
+
+    /// <summary>
+    /// 递归检查物体自身及所有子物体是否带指定 Tag。
+    /// 很多珊瑚预制体的根节点 Tag 是 Untagged，coral tag 在子物体上——必须递归查。
+    /// </summary>
+    static bool HasTagInHierarchy(GameObject go, string tag)
+    {
+        if (go == null) return false;
+        if (go.CompareTag(tag)) return true;
+        for (int i = 0; i < go.transform.childCount; i++)
+        {
+            if (HasTagInHierarchy(go.transform.GetChild(i).gameObject, tag)) return true;
+        }
+        return false;
+    }
+
+    // ==================== 放置物恢复 ====================
+
+    /// <summary>
+    /// 清场当前玩家放置的珊瑚 → 按存档数据重建 → 重算 RockCapacity。
+    /// 
+    /// 时序细节：Instantiate 后 Unity 只会同步执行 Awake，Start 要等到下一帧。
+    /// 所以 bonusDestroyTime/bonusDropCount 在 Instantiate 之后、Start 之前写入，
+    /// 等到 Start 执行 SpawnInitialObjects 时，鱼就已经吃到正确的永久修正了。
+    /// </summary>
+    void ClearAndRestorePlacedObjects(SaveData data)
+    {
+        // --- 清场：删掉当前场景里所有玩家放置的 ObjectSpawner（保留初始场景自带的）---
+        RecordInitialSpawners();
+        var toDestroy = new List<ObjectSpawner>();
+        foreach (var sp in FindObjectsOfType<ObjectSpawner>())
+        {
+            if (sp == null) continue;
+            if (_initialSceneSpawners.Contains(sp)) continue;
+            if (!HasTagInHierarchy(sp.gameObject, CoralTag)) continue;
+            toDestroy.Add(sp);
+        }
+        foreach (var sp in toDestroy)
+        {
+            if (sp != null) Destroy(sp.gameObject);
+        }
+        if (toDestroy.Count > 0)
+        {
+            Debug.Log($"[保存系统] 🗑️ 清掉了 {toDestroy.Count} 个旧玩家珊瑚");
+        }
+
+        // --- 恢复：按存档逐个 Instantiate ---
+        if (data.placedObjects == null || data.placedObjects.Count == 0)
+        {
+            Debug.Log("[保存系统] 🪸 存档中没有玩家珊瑚（跳过恢复）");
+        }
+        else
+        {
+            int restored = 0;
+            int missing = 0;
+            foreach (var entry in data.placedObjects)
+            {
+                if (string.IsNullOrEmpty(entry.prefabName)) { missing++; continue; }
+
+                GameObject prefab;
+                if (!_prefabRegistry.TryGetValue(entry.prefabName, out prefab) || prefab == null)
+                {
+                    Debug.LogWarning($"[保存系统] 🪸 找不到预制体 '{entry.prefabName}'（注册表没收录？），跳过恢复");
+                    missing++;
+                    continue;
+                }
+
+                // Instantiate → 只触发 Awake，Start 要等下一帧
+                Vector3 pos = new Vector3(entry.posX, entry.posY, entry.posZ);
+                var obj = Instantiate(prefab, pos, Quaternion.identity);
+
+                // Instantiate 出来的实例可能会自动带上 "(Clone)"，但不影响 ObjectSpawner 自身
+                obj.name = entry.prefabName; // 还原成预制体原名（方便 Hierarchy 查看）
+
+                // 关键：在 Start 执行之前把 bonus 写入
+                var spawner = obj.GetComponent<ObjectSpawner>();
+                if (spawner != null)
+                {
+                    spawner.bonusDestroyTime = entry.bonusDestroyTime;
+                    spawner.bonusDropCount = entry.bonusDropCount;
+                }
+
+                restored++;
+            }
+            Debug.Log($"[保存系统] 🪸 恢复了 {restored} 个玩家珊瑚（预制体缺失 {missing} 个）");
+        }
+
+        // --- RockCapacity 重算 ---
+        // 读档时所有石头还是场景初始状态（没被 RestoreAllMax 重置过），
+        // 但我们新恢复的珊瑚已经 Instantiate 好了，Start 执行后会生成鱼——
+        // 等鱼生成完再 RefreshAll 就能拿到正确的"已放置数量"。
+        // 注意：这里调的是静态方法，会遍历所有 RockCapacity 组件。
+        string placementTag = FindPlacementTag();
+        if (!string.IsNullOrEmpty(placementTag))
+        {
+            RockCapacity.RefreshAll(placementTag, CoralTag);
+        }
+    }
+
+    /// <summary>
+    /// 从所有 DragAndPlaceSystem 里取 placementTag。
+    /// 理论上所有 DragAndPlaceSystem 应该用同一个 placementTag，取第一个非空的就行。
+    /// </summary>
+    static string FindPlacementTag()
+    {
+        foreach (var dps in FindObjectsOfType<DragAndPlaceSystem>())
+        {
+            if (dps != null && !string.IsNullOrEmpty(dps.placementTag))
+            {
+                return dps.placementTag;
+            }
+        }
+        return "Obstacle"; // 兜底
+    }
+
+    // ==================== 对外工具方法 ====================
+
+    /// <summary>
+    /// 清档时调用：删掉场景中所有玩家运行时放置的 ObjectSpawner（保留策划初始摆好的）。
+    /// 供 ClearSaveSystem 等外部系统使用。
+    /// </summary>
+    public static void ClearPlacedCorals()
+    {
+        if (!_initialSpawnersRecorded) return;
+        var toDelete = new List<ObjectSpawner>();
+        foreach (var sp in FindObjectsOfType<ObjectSpawner>())
+        {
+            if (sp == null) continue;
+            if (_initialSceneSpawners.Contains(sp)) continue;
+            if (!HasTagInHierarchy(sp.gameObject, CoralTag)) continue;
+            toDelete.Add(sp);
+        }
+        foreach (var sp in toDelete)
+        {
+            if (sp != null) Destroy(sp.gameObject);
+        }
+        if (toDelete.Count > 0)
+        {
+            Debug.Log($"[保存系统] 🗑️ ClearPlacedCorals: 删掉了 {toDelete.Count} 个玩家放置的珊瑚");
         }
     }
 }

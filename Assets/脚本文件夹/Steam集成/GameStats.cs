@@ -84,9 +84,10 @@ public static class GameStats
         return new List<string>(s_droppedFish);
     }
 
-    /// <summary>清除存档时归零（Steam 已解锁成就不受影响）。</summary>
+    /// <summary>清除存档时归零（Steam 已解锁成就不受影响）。同时清空鱼运动内存图鉴，保持 Restore/Reset 对称。</summary>
     public static void Reset()
     {
+        鱼运动.ResetCodex();
         s_seenFish.Clear();
         s_droppedFish.Clear();
         TotalCoralsPlaced = 0;

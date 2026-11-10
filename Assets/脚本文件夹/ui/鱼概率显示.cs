@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Text.RegularExpressions;
+using System.Collections.Generic;
 
 /// <summary>
 /// 鱼图鉴页面显示组件（挂在每个鱼槽位上）
@@ -22,11 +23,16 @@ public class FishJournalPage : MonoBehaviour
 
     // ===== 图鉴收集：哪些鱼被发现过 =====
     static readonly string FoundPrefix = "FishFound_";
+    // 追踪所有登记过的 PlayerPrefs key（兼容 Unity 旧版本没有 PlayerPrefs.Count/GetKey）
+    static readonly HashSet<string> s_registeredKeys = new HashSet<string>();
+
     public static void MarkFound(string key)
     {
         if (string.IsNullOrEmpty(key)) return;
-        PlayerPrefs.SetInt(FoundPrefix + key, 1);
+        string fullKey = FoundPrefix + key;
+        PlayerPrefs.SetInt(fullKey, 1);
         PlayerPrefs.Save();
+        s_registeredKeys.Add(fullKey);
         // 自动刷新所有 FishJournalPage（图鉴页面跟着变色）
         foreach (var page in FindObjectsOfType<FishJournalPage>(true))
         {
@@ -35,7 +41,16 @@ public class FishJournalPage : MonoBehaviour
         }
     }
     public static bool IsFound(string key) { return string.IsNullOrEmpty(key) ? false : PlayerPrefs.GetInt(FoundPrefix + key, 0) == 1; }
-    public static void ClearAllFound() { PlayerPrefs.DeleteKey(FoundPrefix); }
+
+    /// <summary>清除所有 FishFound_* 图鉴标记（用运行时登记的 key 逐个删，不依赖 PlayerPrefs.Count/GetKey）</summary>
+    public static void ClearAllFound()
+    {
+        int count = s_registeredKeys.Count;
+        foreach (var k in s_registeredKeys) PlayerPrefs.DeleteKey(k);
+        s_registeredKeys.Clear();
+        PlayerPrefs.Save();
+        Debug.Log($"[FishJournalPage] 已清除 {count} 个 FishFound_* 图鉴标记");
+    }
 
     void Reset() { AutoBind(); Refresh(); }
     void OnValidate() { AutoBind(); Refresh(); }

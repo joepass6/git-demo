@@ -3953,8 +3953,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 20
-  m_fontSizeBase: 20
+  m_fontSize: 25
+  m_fontSizeBase: 25
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -26225,7 +26225,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxCapacity: 3
   worldHeight: 0.45
-  worldTopOffset: 2.56
+  worldTopOffset: 2
+  worldSideOffset: 1.3
   outlineScaleRatio: 0.09
 --- !u!1 &158452093
 GameObject:
@@ -27775,7 +27776,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 10s
+  m_text: 10000s
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f96eb889d5569cd49830c71f477db956, type: 2}
   m_sharedMaterial: {fileID: 107132694338599451, guid: f96eb889d5569cd49830c71f477db956, type: 2}
@@ -47594,7 +47595,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &297281780
 RectTransform:
   m_ObjectHideFlags: 0
@@ -66261,7 +66262,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &404655481
 RectTransform:
   m_ObjectHideFlags: 0
@@ -72050,7 +72051,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxCapacity: 3
   worldHeight: 0.45
-  worldTopOffset: 0.22
+  worldTopOffset: 2
+  worldSideOffset: 1.3
   outlineScaleRatio: 0.09
 --- !u!1 &410662982
 GameObject:
@@ -97965,7 +97967,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxCapacity: 3
   worldHeight: 0.45
-  worldTopOffset: 2.56
+  worldTopOffset: 2
+  worldSideOffset: 1.3
   outlineScaleRatio: 0.09
 --- !u!1 &541700376
 GameObject:
@@ -109456,7 +109459,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &610784527
 RectTransform:
   m_ObjectHideFlags: 0
@@ -117408,7 +117411,7 @@ MonoBehaviour:
   m_text: "\u589E\u52A0\u540C\u4E00\u5757\u77F3\u5934\u4E0A\u7684\u73CA\u745A\u4EA7\u751F\u7684\u9C7C\u5B58\u5728\u7684\u65F6\u95F4"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f96eb889d5569cd49830c71f477db956, type: 2}
-  m_sharedMaterial: {fileID: -3044269488372098649, guid: f96eb889d5569cd49830c71f477db956, type: 2}
+  m_sharedMaterial: {fileID: 107132694338599451, guid: f96eb889d5569cd49830c71f477db956, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -117432,8 +117435,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 20
-  m_fontSizeBase: 20
+  m_fontSize: 25
+  m_fontSizeBase: 25
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -118360,7 +118363,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   "\u767D\u5929BGM": {fileID: 8300000, guid: 633db15bec8fbfa4c92d7d05d7b26217, type: 3}
-  "\u591C\u665ABGM": {fileID: 8300000, guid: d44ee0667b894fe4d8ee487f402b8546, type: 3}
+  "\u591C\u665ABGM": {fileID: 8300000, guid: 4e13e3b00b915ec4db60e9e3e3d8a0e1, type: 3}
   "BGM\u64AD\u653E\u5668": {fileID: 0}
   "\u6309\u94AE\u97F3\u6548": {fileID: 8300000, guid: 8ddc7950176f63947b0c92ee9bf2d1f9, type: 3}
   "\u9C7C\u97F3\u6548": {fileID: 8300000, guid: f788a02737f226c498903488c9390503, type: 3}
@@ -123838,7 +123841,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxCapacity: 3
   worldHeight: 0.75
-  worldTopOffset: 3.91
+  worldTopOffset: 2
+  worldSideOffset: 1.3
   outlineScaleRatio: 0.09
 --- !u!1 &723587680
 GameObject:
@@ -135332,7 +135336,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxCapacity: 3
   worldHeight: 0.45
-  worldTopOffset: 2.56
+  worldTopOffset: 2
+  worldSideOffset: 1.3
   outlineScaleRatio: 0.09
 --- !u!1 &823060567
 GameObject:
@@ -140689,8 +140694,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 6.0999756, y: 0}
-  m_SizeDelta: {x: 163.3898, y: 112.7003}
+  m_AnchoredPosition: {x: 0.6019, y: 0}
+  m_SizeDelta: {x: 152.3938, y: 112.7003}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &866125606
 MonoBehaviour:
@@ -162366,8 +162371,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 10.599915, y: -8.1}
-  m_SizeDelta: {x: 187.0986, y: 112.55}
+  m_AnchoredPosition: {x: 10.3, y: -2.225}
+  m_SizeDelta: {x: 180.601, y: 112.55}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1038272305
 MonoBehaviour:
@@ -162392,7 +162397,7 @@ MonoBehaviour:
   m_text: "\u5927\u5E45\u964D\u4F4E\u540C\u4E00\u5757\u77F3\u5934\u4E0A\u7684\u73CA\u745A\u4EA7\u751F\u7684\u7C89\u8272\u6CE1\u9C7C\u7684\u6982\u7387"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f96eb889d5569cd49830c71f477db956, type: 2}
-  m_sharedMaterial: {fileID: -3044269488372098649, guid: f96eb889d5569cd49830c71f477db956, type: 2}
+  m_sharedMaterial: {fileID: 107132694338599451, guid: f96eb889d5569cd49830c71f477db956, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -162416,8 +162421,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 20
-  m_fontSizeBase: 20
+  m_fontSize: 25
+  m_fontSizeBase: 25
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -171159,7 +171164,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1105644185
 RectTransform:
   m_ObjectHideFlags: 0
@@ -175072,7 +175077,7 @@ MonoBehaviour:
   m_text: "\u5927\u5E45\u964D\u4F4E\u540C\u4E00\u5757\u77F3\u5934\u4E0A\u7684\u73CA\u745A\u4EA7\u751F\u7684\u7D2B\u8272\u6CE1\u9C7C\u7684\u6982\u7387"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f96eb889d5569cd49830c71f477db956, type: 2}
-  m_sharedMaterial: {fileID: -3044269488372098649, guid: f96eb889d5569cd49830c71f477db956, type: 2}
+  m_sharedMaterial: {fileID: 107132694338599451, guid: f96eb889d5569cd49830c71f477db956, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -175096,8 +175101,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 20
-  m_fontSizeBase: 20
+  m_fontSize: 25
+  m_fontSizeBase: 25
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -176275,7 +176280,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 6.0999756, y: 0}
+  m_AnchoredPosition: {x: 9.6, y: 0}
   m_SizeDelta: {x: 163.3898, y: 112.7003}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1146972553
@@ -176301,7 +176306,7 @@ MonoBehaviour:
   m_text: "\u589E\u52A0\u540C\u4E00\u5757\u77F3\u5934\u4E0A\u7684\u73CA\u745A\u4EA7\u751F\u7684\u6A59\u8272\u6CE1\u9C7C\u7684\u6982\u7387"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f96eb889d5569cd49830c71f477db956, type: 2}
-  m_sharedMaterial: {fileID: -3044269488372098649, guid: f96eb889d5569cd49830c71f477db956, type: 2}
+  m_sharedMaterial: {fileID: 107132694338599451, guid: f96eb889d5569cd49830c71f477db956, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -176325,8 +176330,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 20
-  m_fontSizeBase: 20
+  m_fontSize: 25
+  m_fontSizeBase: 25
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -182342,7 +182347,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxCapacity: 3
   worldHeight: 0.45
-  worldTopOffset: 2.56
+  worldTopOffset: 2
+  worldSideOffset: 1.3
   outlineScaleRatio: 0.09
 --- !u!1 &1207354570
 GameObject:
@@ -195595,7 +195601,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1305370129
 RectTransform:
   m_ObjectHideFlags: 0
@@ -264405,7 +264411,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxCapacity: 3
   worldHeight: 0.45
-  worldTopOffset: 2.56
+  worldTopOffset: 2
+  worldSideOffset: 1.3
   outlineScaleRatio: 0.09
 --- !u!1 &1738183728
 GameObject:
@@ -278143,7 +278150,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxCapacity: 3
   worldHeight: 0.45
-  worldTopOffset: 2.56
+  worldTopOffset: 2
+  worldSideOffset: 1.3
   outlineScaleRatio: 0.09
 --- !u!1 &1811983039
 GameObject:
@@ -320931,8 +320939,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 20
-  m_fontSizeBase: 20
+  m_fontSize: 25
+  m_fontSizeBase: 25
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -321291,7 +321299,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxCapacity: 3
   worldHeight: 0.45
-  worldTopOffset: 2.56
+  worldTopOffset: 2
+  worldSideOffset: 1.3
   outlineScaleRatio: 0.09
 --- !u!1 &2092597767
 GameObject:
@@ -326498,7 +326507,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxCapacity: 3
   worldHeight: 0.45
-  worldTopOffset: 2.56
+  worldTopOffset: 2
+  worldSideOffset: 1.3
   outlineScaleRatio: 0.09
 --- !u!1 &2129446283
 GameObject:

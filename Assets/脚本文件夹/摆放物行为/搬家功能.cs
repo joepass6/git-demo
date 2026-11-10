@@ -392,26 +392,19 @@ public class MoveSystem : MonoBehaviour
         }
     }
 
-    /// <summary>每帧 OverlapBox 找当前悬停的 placementTag 石头</summary>
+    /// <summary>
+    /// 每帧收集所有接触的石头 → 选 Y 最靠下的"主石头"显示 UI + 描边。
+    /// 🔑 和 DragAndPlaceSystem/RefreshAll 用完全相同的 SkillCaster.DetectRocksUnder：
+    ///    同样加 RockTouchTolerance=0.05f、同样的 attachedRigidbody+Tag 检测，
+    ///    保证搬家中"亮的那块"就是"放下时扣容量的那块"。
+    /// </summary>
     void UpdateHoverRock()
     {
-        GameObject newRock = null;
-        Collider2D[] myCols = GetComponentsInChildren<Collider2D>();
-        HashSet<Collider2D> checkedOthers = new HashSet<Collider2D>();
+        List<GameObject> allHit = SkillSystem.SkillCaster.DetectRocksUnder(
+            gameObject, placementTag, SkillSystem.SkillCaster.RockTouchTolerance);
 
-        foreach (var col in myCols)
-        {
-            if (col == null) continue;
-            Collider2D[] overlaps = Physics2D.OverlapBoxAll(col.bounds.center, col.bounds.size, 0f);
-            foreach (var other in overlaps)
-            {
-                if (checkedOthers.Contains(other)) continue;
-                checkedOthers.Add(other);
-                if (other.transform.IsChildOf(transform) || other.gameObject == gameObject) continue;
-                if (other.CompareTag(placementTag)) { newRock = other.gameObject; break; }
-            }
-            if (newRock != null) break;
-        }
+        // 和 DragAndPlaceSystem/RefreshAll 用完全相同的 FindPrimaryRock
+        GameObject newRock = DragAndPlaceSystem.FindPrimaryRock(allHit);
 
         if (newRock != currentHoverRock)
         {
@@ -432,27 +425,17 @@ public class MoveSystem : MonoBehaviour
     // ==================== 放置检测 ====================
     void TryPlace()
     {
-        Collider2D[] myCols = GetComponentsInChildren<Collider2D>();
-        Collider2D hit = null;
-        HashSet<Collider2D> checkedOthers = new HashSet<Collider2D>();
+        // 🔑 和 EndDrag/RefreshAll 完全相同的 DetectRocksUnder + RockTouchTolerance
+        List<GameObject> allHit = SkillSystem.SkillCaster.DetectRocksUnder(
+            gameObject, placementTag, SkillSystem.SkillCaster.RockTouchTolerance);
 
-        foreach (var col in myCols)
-        {
-            Collider2D[] overlaps = Physics2D.OverlapBoxAll(col.bounds.center, col.bounds.size, 0f);
-            foreach (var other in overlaps)
-            {
-                if (checkedOthers.Contains(other)) continue;
-                checkedOthers.Add(other);
-                if (other.transform.IsChildOf(transform) || other.gameObject == gameObject) continue;
-                if (other.CompareTag(placementTag)) { hit = other; break; }
-            }
-            if (hit != null) break;
-        }
+        // 和 DragAndPlaceSystem.EndDrag 完全一致：选 Y 最靠下的主石头 → 检查主石头容量
+        GameObject primaryRock = DragAndPlaceSystem.FindPrimaryRock(allHit);
 
-        // ====== 关键修复：搬家放置也必须检查石头容量 ======
-        if (hit != null && RockCapacity.IsAvailable(hit.gameObject))
+        // ====== 关键修复：搬家放置也必须检查主石头容量 ======
+        if (primaryRock != null && RockCapacity.IsAvailable(primaryRock))
         {
-            Debug.Log("[MoveSystem] 放置成功: 接触 " + hit.gameObject.name);
+            Debug.Log("[MoveSystem] 放置成功: 主石头 " + primaryRock.name + " (共命中 " + allHit.Count + " 块)");
 
             // 复用珊瑚放置事件：AudioManager 订阅播音效，教程系统也用
             // 注意：C# event 的 Invoke 只能在声明类内部调，外部通过代理方法触发放置事件
@@ -476,10 +459,10 @@ public class MoveSystem : MonoBehaviour
             RockCapacity.SetCarryIgnore(null);
             RockCapacity.RefreshAll(placementTag);
         }
-        else if (hit != null)
+        else if (primaryRock != null)
         {
-            // 碰到了石头但满了 → 不取消搬家，让用户继续找别的石头
-            Debug.LogWarning("[MoveSystem] 这块石头已满! 继续搬找别的石头: " + hit.gameObject.name);
+            // 碰到了石头但主石头满了 → 不取消搬家，让用户继续找别的石头
+            Debug.LogWarning("[MoveSystem] 主石头已满! 继续搬找别的石头: " + primaryRock.name);
         }
         else
         {

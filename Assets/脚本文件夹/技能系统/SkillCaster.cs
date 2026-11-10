@@ -33,11 +33,10 @@ namespace SkillSystem
                     if (other == null || seen.Contains(other)) continue;
                     seen.Add(other);
                     if (other.transform.IsChildOf(coral.transform) || other.gameObject == coral) continue;
-                    if (other.CompareTag(placementTag))
-                    {
-                        var go = other.attachedRigidbody != null ? other.attachedRigidbody.gameObject : other.gameObject;
-                        if (!result.Contains(go)) result.Add(go);
-                    }
+
+                    // 先取 attachedRigidbody 的 GameObject（Collider2D 可能在子物体上，Tag/Rigidbody 在父物体上）
+                    var go = other.attachedRigidbody != null ? other.attachedRigidbody.gameObject : other.gameObject;
+                    if (go.CompareTag(placementTag) && !result.Contains(go)) result.Add(go);
                 }
             }
             return result;

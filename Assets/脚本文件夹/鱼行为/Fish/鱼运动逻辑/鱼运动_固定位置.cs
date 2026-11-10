@@ -18,8 +18,10 @@ public class 鱼运动_固定位置 : 鱼运动
     private float? pendingAngle;
     private float breathT;
 
-    void Start()
+    protected override void Start()
     {
+        base.Start();
+
         transform.rotation = Quaternion.Euler(0, 0, fixedAngle);
         // 锁定 Rigidbody：Kinematic + 全轴位置旋转冻结 → 彻底不受物理/重力影响
         Rigidbody2D rb = GetComponent<Rigidbody2D>();

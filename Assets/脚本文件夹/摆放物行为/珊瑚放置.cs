@@ -218,44 +218,19 @@ public class DragAndPlaceSystem : MonoBehaviour
     /// 与 EndDrag/CollectHitRocks 保持一致：先取 attachedRigidbody.gameObject，
     /// 因为 Collider2D 可能挂在子物体上，而 tag/Rigidbody2D 在父物体上。
     /// </summary>
+    /// <summary>
+    /// 预览体每帧收集所有接触的石头 → 选 Y 最靠下的"主石头"显示 UI + 描边。
+    /// 🔑 和 EndDrag/RefreshAll 用完全相同的 SkillCaster.DetectRocksUnder：
+    ///    同样加 RockTouchTolerance=0.05f、同样的 attachedRigidbody+Tag 检测、
+    ///    保证拖拽过程中"亮的那块"就是松手后"扣容量的那块"。
+    /// </summary>
     void UpdateHoverRock()
     {
-        GameObject newRock = null;
+        List<GameObject> allHit = SkillCaster.DetectRocksUnder(
+            currentDragObject, placementTag, SkillCaster.RockTouchTolerance);
 
-        Collider2D[] myCols = currentDragObject.GetComponentsInChildren<Collider2D>();
-        HashSet<Collider2D> checkedOthers = new HashSet<Collider2D>();
-        if (myCols.Length > 0)
-        {
-            foreach (var col in myCols)
-            {
-                if (col == null) continue;
-                Collider2D[] overlaps = Physics2D.OverlapBoxAll(col.bounds.center, col.bounds.size, 0f);
-                foreach (var other in overlaps)
-                {
-                    if (checkedOthers.Contains(other)) continue;
-                    checkedOthers.Add(other);
-                    if (other.transform.IsChildOf(currentDragObject.transform) || other.gameObject == currentDragObject) continue;
-                    var rockGo = other.attachedRigidbody != null ? other.attachedRigidbody.gameObject : other.gameObject;
-                    if (rockGo.CompareTag(placementTag)) { newRock = rockGo; break; }
-                }
-                if (newRock != null) break;
-            }
-        }
-        else
-        {
-            // 兜底：SpriteRenderer bounds
-            SpriteRenderer sr = currentDragObject.GetComponentInChildren<SpriteRenderer>();
-            if (sr != null)
-            {
-                Collider2D[] hits = Physics2D.OverlapAreaAll(sr.bounds.min, sr.bounds.max);
-                foreach (var other in hits)
-                {
-                    if (other.transform.IsChildOf(currentDragObject.transform) || other.gameObject == currentDragObject) continue;
-                    var rockGo = other.attachedRigidbody != null ? other.attachedRigidbody.gameObject : other.gameObject;
-                    if (rockGo.CompareTag(placementTag)) { newRock = rockGo; break; }
-                }
-            }
-        }
+        // 统一选最靠下那块当主石头（和 EndDrag/RefreshAll 完全一致）
+        GameObject newRock = FindPrimaryRock(allHit);
 
         // 切换了石头
         if (newRock != currentHoverRock)
@@ -470,32 +445,28 @@ public class DragAndPlaceSystem : MonoBehaviour
 
         // 用物体的体积检测：收集所有接触的 placementTag 石头（一个珊瑚可能同时压多块）
         Vector3 placePos = currentDragObject.transform.position;
-        Collider2D[] myCols = currentDragObject.GetComponentsInChildren<Collider2D>();
-        HashSet<Collider2D> checkedOthers = new HashSet<Collider2D>();
-        List<GameObject> allHitRocks = new List<GameObject>();
 
-        Debug.Log($"[DragAndPlace] 体积检测: 位置={placePos}, 自身碰撞器数量={myCols.Length}");
+        Debug.Log($"[DragAndPlace] 体积检测: 位置={placePos}");
 
-        if (myCols.Length == 0)
+        // 🔑 关键：用 SkillCaster.DetectRocksUnder —— 和 RefreshAll/技能系统**完全相同的检测逻辑**：
+        //    同样加 RockTouchTolerance=0.05f 容差、同样先取 attachedRigidbody 再查 Tag、
+        //    同样的 OverlapBoxAll 算法。保证"放置时选的石头"和"容量统计扣的石头"是同一块。
+        var allHitRocks = new List<GameObject>(SkillCaster.DetectRocksUnder(
+            currentDragObject, placementTag, SkillCaster.RockTouchTolerance));
+
+        // 兜底：预览体既没 Collider2D 也没 SpriteRenderer（罕见）
+        if (allHitRocks.Count == 0)
         {
             SpriteRenderer previewSr = currentDragObject.GetComponentInChildren<SpriteRenderer>();
-            if (previewSr == null)
+            if (previewSr != null)
             {
-                Debug.LogWarning("[DragAndPlace] 预览物体既没有Collider2D也没有SpriteRenderer，无法做体积检测!");
-                Destroy(currentDragObject);
-                currentDragObject = null;
-                return;
-            }
-            Bounds b = previewSr.bounds;
-            CollectHitRocks(Physics2D.OverlapAreaAll(b.min, b.max), currentDragObject, placementTag, checkedOthers, allHitRocks);
-        }
-        else
-        {
-            foreach (var col in myCols)
-            {
-                if (col == null) continue;
-                CollectHitRocks(Physics2D.OverlapBoxAll(col.bounds.center, col.bounds.size, 0f),
-                    currentDragObject, placementTag, checkedOthers, allHitRocks);
+                Collider2D[] hits = Physics2D.OverlapAreaAll(previewSr.bounds.min, previewSr.bounds.max);
+                foreach (var other in hits)
+                {
+                    if (other.transform.IsChildOf(currentDragObject.transform) || other.gameObject == currentDragObject) continue;
+                    var go = other.attachedRigidbody != null ? other.attachedRigidbody.gameObject : other.gameObject;
+                    if (go.CompareTag(placementTag) && !allHitRocks.Contains(go)) allHitRocks.Add(go);
+                }
             }
         }
 
@@ -504,20 +475,15 @@ public class DragAndPlaceSystem : MonoBehaviour
         // ====== 成功判定 ======
         // 1. 命中至少一块石头
         // 2. 玩家珊瑚道具数量够
-        // 3. 命中的石头中至少有一块还有空位（只要有一块能放就 OK）
-        bool hasAnyRoom = false;
-        foreach (var rock in allHitRocks)
-        {
-            if (RockCapacity.IsAvailable(rock)) { hasAnyRoom = true; break; }
-        }
-        bool allPass = allHitRocks.Count > 0 && canPlace && hasAnyRoom;
+        // 3. **主石头（Y 最靠下那块）** 还有空位 —— 和 UpdateHoverRock 显示的是同一块！
+        GameObject primaryRock = FindPrimaryRock(allHitRocks);
+        bool primaryHasRoom = primaryRock != null && RockCapacity.IsAvailable(primaryRock);
+        bool allPass = allHitRocks.Count > 0 && canPlace && primaryHasRoom;
 
-        Debug.Log($"[DragAndPlace] 放置判定: 命中石头数={allHitRocks.Count}, canPlace={canPlace}, hasAnyRoom={hasAnyRoom}, pass={allPass}");
+        Debug.Log($"[DragAndPlace] 放置判定: 命中石头数={allHitRocks.Count}, canPlace={canPlace}, primaryRock={primaryRock?.name}, primaryHasRoom={primaryHasRoom}, pass={allPass}");
 
         if (allPass)
         {
-            // 选"最靠下"的那块当主石头（通常是珊瑚底座那块），技能/日志用
-            GameObject primaryRock = FindPrimaryRock(allHitRocks);
             Debug.Log($"[DragAndPlace] 放置成功! 主石头: {primaryRock?.name}");
 
             Destroy(currentDragObject);
@@ -547,8 +513,8 @@ public class DragAndPlaceSystem : MonoBehaviour
                 Debug.LogWarning("[DragAndPlace] 放置失败: 没碰到石头");
             else if (!canPlace)
                 Debug.LogWarning("[DragAndPlace] 放置失败: 珊瑚道具数量不足");
-            else if (!hasAnyRoom)
-                Debug.LogWarning("[DragAndPlace] 放置失败: 所有命中的石头都已满! 石头=" + string.Join(", ", allHitRocks.ConvertAll(r => r.name)));
+            else if (!primaryHasRoom)
+                Debug.LogWarning("[DragAndPlace] 放置失败: 主石头已满! 主石头=" + primaryRock?.name + ", 所有命中=" + string.Join(", ", allHitRocks.ConvertAll(r => r.name)));
             Destroy(currentDragObject);
         }
 
@@ -769,17 +735,19 @@ public class DragAndPlaceSystem : MonoBehaviour
             if (checkedOthers.Contains(other)) continue;
             checkedOthers.Add(other);
             if (other.transform.IsChildOf(self.transform) || other.gameObject == self) continue;
-            if (!other.CompareTag(placementTag)) continue;
 
+            // 先取 attachedRigidbody 的 GameObject（Collider2D 可能在子物体上，Tag/Rigidbody 在父物体上）
             var go = other.attachedRigidbody != null ? other.attachedRigidbody.gameObject : other.gameObject;
+            if (!go.CompareTag(placementTag)) continue;
             if (!hitRocks.Contains(go)) hitRocks.Add(go);
         }
     }
 
     /// <summary>
     /// 从命中的多块石头里挑"主石头"——Y 坐标最靠下的那块（通常是珊瑚真正站在上面的底座）
+    /// internal 供 MoveSystem 复用，保证两套系统选石头的规则完全一致
     /// </summary>
-    static GameObject FindPrimaryRock(List<GameObject> hitRocks)
+    internal static GameObject FindPrimaryRock(List<GameObject> hitRocks)
     {
         if (hitRocks == null || hitRocks.Count == 0) return null;
         GameObject best = hitRocks[0];
