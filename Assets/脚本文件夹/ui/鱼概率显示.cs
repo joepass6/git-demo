@@ -30,9 +30,10 @@ public class FishJournalPage : MonoBehaviour
     {
         if (string.IsNullOrEmpty(key)) return;
         string fullKey = FoundPrefix + key;
+        s_registeredKeys.Add(fullKey);   // 先登记，保证 ClearAllFound 仍能删到（与写盘无关）
+        if (PlayerPrefs.GetInt(fullKey, 0) == 1) return; // 已发现：不再写盘、不再全场景扫描、不再刷 UI
         PlayerPrefs.SetInt(fullKey, 1);
         PlayerPrefs.Save();
-        s_registeredKeys.Add(fullKey);
         // 自动刷新所有 FishJournalPage（图鉴页面跟着变色）
         foreach (var page in FindObjectsOfType<FishJournalPage>(true))
         {
@@ -42,14 +43,31 @@ public class FishJournalPage : MonoBehaviour
     }
     public static bool IsFound(string key) { return string.IsNullOrEmpty(key) ? false : PlayerPrefs.GetInt(FoundPrefix + key, 0) == 1; }
 
-    /// <summary>清除所有 FishFound_* 图鉴标记（用运行时登记的 key 逐个删，不依赖 PlayerPrefs.Count/GetKey）</summary>
+    /// <summary>
+    /// 清除所有 FishFound_* 图鉴标记。
+    /// 不能只删运行时登记的 key：重启后 s_registeredKeys 是空的，旧会话写下的标记会残留。
+    /// 因此同时扫描图鉴页与所有珊瑚生成器的鱼预制体，按名字重建 key 集合。
+    /// </summary>
     public static void ClearAllFound()
     {
-        int count = s_registeredKeys.Count;
-        foreach (var k in s_registeredKeys) PlayerPrefs.DeleteKey(k);
+        var keys = new HashSet<string>(s_registeredKeys);
+
+        foreach (var page in FindObjectsOfType<FishJournalPage>(true))
+            if (page != null && page.fishPrefab != null)
+                keys.Add(FoundPrefix + page.fishPrefab.name);
+
+        foreach (var spawner in FindObjectsOfType<ObjectSpawner>(true))
+        {
+            if (spawner == null || spawner.spawnEntries == null) continue;
+            foreach (var entry in spawner.spawnEntries)
+                if (entry != null && entry.prefab != null)
+                    keys.Add(FoundPrefix + entry.prefab.name);
+        }
+
+        foreach (var k in keys) PlayerPrefs.DeleteKey(k);
         s_registeredKeys.Clear();
         PlayerPrefs.Save();
-        Debug.Log($"[FishJournalPage] 已清除 {count} 个 FishFound_* 图鉴标记");
+        Debug.Log($"[FishJournalPage] 已清除 {keys.Count} 个 FishFound_* 图鉴标记");
     }
 
     void Reset() { AutoBind(); Refresh(); }

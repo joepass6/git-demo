@@ -15,6 +15,8 @@
  [Header("窗口行为 - 可选：设置面板里放 Toggle 并拖进来")]
  public Toggle 置顶Toggle;
  public Toggle 开机自启动Toggle;
+ [Tooltip("控制神明显隐的 Toggle；留空则按名字（含\"神明\"）自动查找")]
+ public Toggle 神明Toggle;
 
  [Header("窗口控制器")]
  public DesktopWindowController windowController;
@@ -57,6 +59,33 @@
          开机自启动Toggle.isOn = RegistryHelper.IsAutoStartEnabled();
          开机自启动Toggle.onValueChanged.AddListener(OnAutoStartChanged);
      }
+
+     // 神明开关：场景里新加的 Toggle 没拖也能用，按名字自动查找
+     if (神明Toggle == null)
+     {
+         foreach (Toggle t in FindObjectsOfType<Toggle>(true))
+         {
+             if (t != null && t.name.Contains("神明")) { 神明Toggle = t; break; }
+         }
+     }
+     if (神明Toggle != null)
+     {
+         神明Toggle.onValueChanged.RemoveAllListeners();
+         神明Toggle.isOn = windowController != null && windowController.IsGodVisible();
+         神明Toggle.onValueChanged.AddListener(OnGodVisibleChanged);
+         Debug.Log($"[设置] 神明开关已绑定: {神明Toggle.name}, controller={(windowController != null ? "有" : "空")}, 初始 isOn={神明Toggle.isOn}");
+     }
+     else
+     {
+         Debug.LogWarning("[设置] 没找到名字含“神明”的 Toggle，神明开关不会生效");
+     }
+
+     // 兜底本地化：设置面板里没挂 LocalizedText 的文本（含 Legacy Text）按当前文字自动认领 key
+     if (LocalizationManager.Instance != null)
+     {
+         if (分辨率 != null) LocalizationManager.Instance.LocalizeTree(分辨率.transform);
+         if (panel != null) LocalizationManager.Instance.LocalizeTree(panel.transform);
+     }
  }
 
  void OnTopMostChanged(bool isOn)
@@ -68,6 +97,12 @@
  void OnAutoStartChanged(bool isOn)
  {
      RegistryHelper.SetAutoStart(isOn);
+ }
+
+ void OnGodVisibleChanged(bool isOn)
+ {
+     if (windowController != null)
+         windowController.SetGodVisible(isOn);
  }
 
  public void Click_加qq玩家群()

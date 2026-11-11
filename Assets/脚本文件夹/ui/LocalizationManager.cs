@@ -329,15 +329,43 @@ public class LocalizationManager : MonoBehaviour
     public static void FitToBox(TMP_Text tmp)
     {
         if (tmp == null) return;
-        if (!tmp.enableAutoSizing)
+
+        // 设计师手动开了 Auto Size：尊重原设置
+        if (tmp.enableAutoSizing) { tmp.ForceMeshUpdate(); return; }
+
+        // 记住第一次见到的"设计字号"，之后无论译文怎么变都以它为准（避免反复缩小越跑越小）
+        if (!fitBaseFontSizes.TryGetValue(tmp, out float baseSize) || baseSize <= 0f)
         {
-            float baseSize = tmp.fontSize; // 开启前读取设计师字号作为上限
-            tmp.fontSizeMax = baseSize;
-            tmp.fontSizeMin = Mathf.Max(4f, baseSize * 0.45f);
-            tmp.enableAutoSizing = true;
+            baseSize = tmp.fontSize;
+            if (baseSize <= 0f) baseSize = 36f;
+            fitBaseFontSizes[tmp] = baseSize;
         }
+
+        // 关键：先按设计字号测一次，放得下就绝不开 Auto Size ——
+        // 运行后会无条件开启 Auto Size 是"进游戏字体就变小"的直接原因。
+        tmp.fontSize = baseSize;
+        tmp.ForceMeshUpdate();
+        Vector2 preferred = tmp.GetPreferredValues(tmp.text);
+        Rect rect = tmp.rectTransform.rect;
+        bool rectValid = rect.width > 1f && rect.height > 1f;
+        bool fits = rectValid && preferred.x <= rect.width + 0.5f && preferred.y <= rect.height + 0.5f;
+        if (!rectValid || fits)
+        {
+            tmp.enableAutoSizing = false;
+            tmp.fontSize = baseSize;
+            tmp.ForceMeshUpdate();
+            return;
+        }
+
+        // 放不下才开启自动缩小，上限=设计字号
+        tmp.fontSizeMax = baseSize;
+        tmp.fontSizeMin = Mathf.Max(4f, baseSize * 0.45f);
+        tmp.enableAutoSizing = true;
         tmp.ForceMeshUpdate();
     }
+
+    // FitToBox 的基准字号（仅运行时缓存，不写回场景）
+    static readonly Dictionary<TMP_Text, float> fitBaseFontSizes = new Dictionary<TMP_Text, float>();
 
     void RefreshDynamicLabel(TMP_Text tmp, string table, string key, object[] args)
     {
@@ -376,6 +404,78 @@ public class LocalizationManager : MonoBehaviour
     public void Unregister(LocalizedText localized)
     {
         if (localized != null) registeredTexts.Remove(localized);
+    }
+
+    // ==================== 运行期兜底：没挂 LocalizedText 的文本 ====================
+    // 场景里后来手加的文本（如"是否置顶"下的 Label、新加的"神明显示开关"）常常没挂 LocalizedText，
+    // 切语言时不会变。这里在不改场景结构的前提下，按"当前文字正好等于 ui 表 key"自动认领并记住 key。
+
+    readonly Dictionary<TMP_Text, string> autoTmpKeys = new Dictionary<TMP_Text, string>();
+    readonly Dictionary<Text, string> autoLegacyKeys = new Dictionary<Text, string>();
+
+    /// <summary>
+    /// 扫描 root 下所有文本，把"当前文字正好是 ui.csv 里的 key"的控件登记为可翻译，
+    /// 并立即按当前语言刷新。可重复调用（已有记录不会重复登记）。
+    /// </summary>
+    public void LocalizeTree(Transform root)
+    {
+        if (root == null) return;
+        RegisterAutoTexts(root);
+        ApplyAutoTexts();
+    }
+
+    void RegisterAutoTexts(Transform root)
+    {
+        foreach (TMP_Text tmp in root.GetComponentsInChildren<TMP_Text>(true))
+        {
+            if (tmp == null || tmp.GetComponent<LocalizedText>() != null) continue;
+            if (autoTmpKeys.ContainsKey(tmp)) continue;
+            string key = MatchUiKey(tmp.text);
+            if (key != null) autoTmpKeys[tmp] = key;
+        }
+        foreach (Text legacy in root.GetComponentsInChildren<Text>(true))
+        {
+            if (legacy == null || autoLegacyKeys.ContainsKey(legacy)) continue;
+            string key = MatchUiKey(legacy.text);
+            if (key != null) autoLegacyKeys[legacy] = key;
+        }
+    }
+
+    /// <summary>当前文字（去掉换行/首尾空白后）正好是 ui 表里的 key 才认领，避免误翻译动态内容</summary>
+    string MatchUiKey(string text)
+    {
+        if (tables == null || string.IsNullOrEmpty(text)) return null;
+        if (!tables.TryGetValue("ui", out var ui)) return null;
+        string key = text.Replace("\\n", "").Trim();
+        return !string.IsNullOrEmpty(key) && ui.ContainsKey(key) ? key : null;
+    }
+
+    void ApplyAutoTexts()
+    {
+        TMP_FontAsset font = GetFont(CurrentLanguage);
+
+        var deadTmp = new List<TMP_Text>();
+        foreach (var kv in autoTmpKeys)
+        {
+            TMP_Text tmp = kv.Key;
+            if (tmp == null) { deadTmp.Add(tmp); continue; }
+            string value = GetText("ui", kv.Value, null);
+            if (string.IsNullOrEmpty(value)) continue;
+            tmp.text = value;
+            if (font != null && tmp.font != font) tmp.font = font;
+            FitToBox(tmp);
+        }
+        foreach (TMP_Text d in deadTmp) autoTmpKeys.Remove(d);
+
+        var deadLegacy = new List<Text>();
+        foreach (var kv in autoLegacyKeys)
+        {
+            Text text = kv.Key;
+            if (text == null) { deadLegacy.Add(text); continue; }
+            string value = GetText("ui", kv.Value, null);
+            if (!string.IsNullOrEmpty(value)) text.text = value;
+        }
+        foreach (Text d in deadLegacy) autoLegacyKeys.Remove(d);
     }
 
     // ==================== CSV 表格加载 ====================
@@ -788,6 +888,9 @@ public class LocalizationManager : MonoBehaviour
 
         // 代码直接赋值的动态文本（鱼名/珊瑚名等）
         RefreshAllDynamicLabels();
+
+        // 运行期兜底认领的文本（没挂 LocalizedText 的）
+        ApplyAutoTexts();
 
         // 额外范围：只换字体（这些文本不翻译）
         if (fontRoots != null)

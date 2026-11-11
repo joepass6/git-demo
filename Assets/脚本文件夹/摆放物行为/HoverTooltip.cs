@@ -92,8 +92,7 @@ public class HoverTooltip : MonoBehaviour
         _col3D = GetComponent<Collider>();
         _col2D = GetComponent<Collider2D>();
 
-        if (_parentCanvas != null && _parentCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
-            _canvasCam = _parentCanvas.worldCamera;
+        _canvasCam = ResolveCanvasCamera();
 
         if (forceRaycastMode)
             _mode = (_col3D != null || _col2D != null) ? Mode.Collider_Raycast : Mode.UI_FrameCheck;
@@ -170,14 +169,43 @@ public class HoverTooltip : MonoBehaviour
 
         if (targets.Count == 0)
         {
-            Debug.LogWarning($"[HoverTooltip] '{gameObject.name}' 未配置 targets，自动禁用。");
-            enabled = false;
-            return;
+            // 只配了“悬停放大”、没有配显隐目标（外层按钮基本都是这种），
+            // 以前这里直接 enabled=false，把放大逻辑一起关掉了。
+            if (!enableScale)
+            {
+                Debug.LogWarning($"[HoverTooltip] '{gameObject.name}' 未配置 targets，自动禁用。");
+                enabled = false;
+                return;
+            }
         }
 
         foreach (var t in targets) if (t != null) t.SetActive(false);
 
-        Debug.Log($"[HoverTooltip] '{gameObject.name}' 模式={_mode} targets={targets.Count} 就绪");
+        Debug.Log($"[HoverTooltip] '{gameObject.name}' 模式={_mode} targets={targets.Count} 就绪 canvas={(_parentCanvas != null ? _parentCanvas.name + "/" + _parentCanvas.renderMode : "无")} cam={(_canvasCam != null ? _canvasCam.name : "null")}");
+    }
+
+    /// <summary>
+    /// 取出真正渲染当前 UI 的相机。
+    /// Overlay 必须返回 null（传相机会让 ScreenPointToLocalPointInRectangle 算错）；
+    /// 嵌套 Canvas（如「显示面板」序列化成 WorldSpace）自身 worldCamera 通常为空，
+    /// 真正渲染它的是根 Canvas 的 worldCamera —— 该值由 DesktopWindowController.EnsureCanvasesOnTop
+    /// 在运行时设成上屏相机。旧代码只读自身 worldCamera，得到 null，
+    /// 于是外层按钮的悬停判定坐标整体偏移、永远进不了 Enter。
+    /// </summary>
+    private Camera ResolveCanvasCamera()
+    {
+        if (_parentCanvas == null) return null;
+        if (_parentCanvas.renderMode == RenderMode.ScreenSpaceOverlay) return null;
+
+        var selfCam = _parentCanvas.worldCamera;
+        if (selfCam != null) return selfCam;
+
+        var root = _parentCanvas.rootCanvas;
+        if (root != null && root != _parentCanvas &&
+            root.renderMode != RenderMode.ScreenSpaceOverlay && root.worldCamera != null)
+            return root.worldCamera;
+
+        return Camera.main;
     }
 
     // ====== Collider 消息（3D/2D 主路径）======
@@ -380,10 +408,34 @@ public class HoverTooltip : MonoBehaviour
     }
 
     // ====== 检测辅助 ======
+    /// <summary>
+    /// 把屏幕鼠标坐标换算到相机实际渲染的分辨率。
+    /// 本项目的相机渲染到 RenderTexture（桌宠窗口上屏），Camera.pixelWidth/Height 是 RT 尺寸，
+    /// 而 Input.mousePosition 是窗口坐标。两者不一致时不换算，UI 矩形判定和射线都会整体偏移，
+    /// 打包版里就会出现“鼠标明明在按钮上却没反应”。编辑器里 Screen 与 RT 通常一致，所以看不出问题。
+    /// </summary>
+    private static Vector3 ToCameraScreenPoint(Camera cam, Vector3 screenPos)
+    {
+        if (cam == null || cam.targetTexture == null) return screenPos;
+        float tw = cam.targetTexture.width;
+        float th = cam.targetTexture.height;
+        if (tw <= 0f || th <= 0f || Screen.width <= 0 || Screen.height <= 0) return screenPos;
+
+        screenPos.x *= tw / Screen.width;
+        screenPos.y *= th / Screen.height;
+        return screenPos;
+    }
+
     private bool IsMouseInsideRect()
     {
+        // Awake 时根 Canvas 的 worldCamera 可能还没被 DesktopWindowController 赋上（脚本执行顺序不定），
+        // 这里补一次解析，避免相机为 null 时整块外层按钮永远判不到悬停。
+        if (_canvasCam == null && _parentCanvas != null && _parentCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
+            _canvasCam = ResolveCanvasCamera();
+
+        Vector2 mouse = ToCameraScreenPoint(_canvasCam, Input.mousePosition);
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            _selfRT, Input.mousePosition, _canvasCam, out var local);
+            _selfRT, mouse, _canvasCam, out var local);
         return _selfRT.rect.Contains(local);
     }
 
@@ -392,15 +444,19 @@ public class HoverTooltip : MonoBehaviour
         var cam = Camera.main != null ? Camera.main : Camera.current;
         if (cam == null) return;
 
+        Vector3 mouse = ToCameraScreenPoint(cam, Input.mousePosition);
         bool hitSelf = false;
         if (_col3D != null)
         {
-            var ray = cam.ScreenPointToRay(Input.mousePosition);
+            var ray = cam.ScreenPointToRay(mouse);
             if (Physics.Raycast(ray, out var hit) && hit.collider == _col3D) hitSelf = true;
         }
         else if (_col2D != null)
         {
-            var worldPt = cam.ScreenToWorldPoint(Input.mousePosition);
+            // ScreenToWorldPoint 的 z 是“距相机的距离”，传 0 会得到相机自身位置，
+            // 之前这里 2D 判定永远打不中；取到物体所在的 z=0 平面。
+            float depth = Mathf.Abs(cam.transform.position.z);
+            var worldPt = cam.ScreenToWorldPoint(new Vector3(mouse.x, mouse.y, depth));
             hitSelf = Physics2D.OverlapPoint(worldPt) == _col2D;
         }
 

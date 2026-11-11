@@ -56,29 +56,34 @@ public class SaveSystem : MonoBehaviour
 
     void Awake()
     {
-        // 单例保护：场景里不小心挂多个 SaveSystem 时，后创建的自动销毁
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
+        // 单例保护
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
-
-        // 记录启动时场景里已有的 ObjectSpawner → 这些是策划预先摆好的，不需要保存/恢复
-        RecordInitialSpawners();
+        // 🔑 RecordInitialSpawners / BuildPrefabRegistry 都不在 Awake/Start 里调——
+        // 那时候 ObjectSpawner.Awake 还没跑完，AllSpawners HashSet 是空的
     }
 
     void Start()
     {
-        // 订阅 GameStats 变化事件（图鉴发现新鱼、新掉宝时立即写盘）
         GameStats.OnCodexChanged -= OnCodexChanged;
         GameStats.OnCodexChanged += OnCodexChanged;
-
-        // 构建预制体注册表（从 DragAndPlaceSystem 收集所有可放置的预制体）
-        BuildPrefabRegistry();
-
         Debug.Log($"[保存系统] savePath = {savePath}");
         StartCoroutine(LoadAfterDelay());
+    }
+
+    IEnumerator LoadAfterDelay()
+    {
+        DropItem.SeedAllInitialInLoadedScene();
+
+        // 🔑 关键：等一帧，让场景里所有物体的 Awake + Start 全部执行完毕
+        // 这样 ObjectSpawner.AllSpawners 和 FindObjectsOfType 才能拿到完整数据
+        yield return null;
+
+        // 所有脚本 Awake+Start 都跑完了，现在扫描才准确
+        RecordInitialSpawners();
+        BuildPrefabRegistry();
+
+        Load();
     }
 
     /// <summary>
@@ -153,8 +158,9 @@ public class SaveSystem : MonoBehaviour
 
     /// <summary>
     /// 构建预制体名称 → 预制体引用的注册表。
-    /// 🔑 保存时只存 prefab.name（字符串），加载时靠这个字典找回 Unity 预制体引用再 Instantiate。
-    /// 注意：预制体文件名可能带尾部空格（比如"澳大利亚沙群海葵 .prefab"），统一 Trim 掉。
+    /// 🔥 终极方案：用 Resources.FindObjectsOfTypeAll 扫 Project 里所有 GameObject 资产，
+    ///    不依赖任何脚本的 Awake/Start 执行时机，任何时机都能扫到完整数据！
+    /// 过滤条件：带 coral tag + 有 ObjectSpawner 组件 + 不是场景实例（scene 无效）
     /// </summary>
     void BuildPrefabRegistry()
     {
@@ -162,59 +168,26 @@ public class SaveSystem : MonoBehaviour
         _prefabRegistryBuilt = true;
         _prefabRegistry.Clear();
 
-        // 1. 从 DragAndPlaceSystem 收集（主要来源）
-        int fromDrag = 0;
-        foreach (var dps in FindObjectsOfType<DragAndPlaceSystem>())
+        // 🔥 暴力扫 Project 所有 GameObject 资产——绕开所有生命周期问题
+        foreach (var go in Resources.FindObjectsOfTypeAll<GameObject>())
         {
-            if (dps == null || dps.prefabToSpawn == null) continue;
-            string name = dps.prefabToSpawn.name.Trim(); // ← 关键！Trim 掉尾部空格
-            if (!_prefabRegistry.ContainsKey(name))
+            if (go == null) continue;
+            if (go.scene.IsValid()) continue; // 跳过场景实例，只保留 Project 资产（预制体）
+            if (!HasTagInHierarchy(go, CoralTag)) continue; // 没有 coral tag 的跳过
+            if (go.GetComponent<ObjectSpawner>() == null) continue; // 没有 ObjectSpawner 组件的跳过
+
+            string key = go.name.Replace("(Clone)", "").Trim();
+            if (!_prefabRegistry.ContainsKey(key))
             {
-                _prefabRegistry[name] = dps.prefabToSpawn;
-                fromDrag++;
+                _prefabRegistry[key] = go;
             }
         }
 
-        // 2. 兜底：从所有 ObjectSpawner 的 spawnEntries 里也收集一下
-        int fromSpawn = 0;
-        foreach (var sp in ObjectSpawner.AllSpawners)
-        {
-            if (sp == null || sp.spawnEntries == null) continue;
-            foreach (var entry in sp.spawnEntries)
-            {
-                if (entry.prefab == null) continue;
-                string name = entry.prefab.name.Trim();
-                if (!_prefabRegistry.ContainsKey(name))
-                {
-                    _prefabRegistry[name] = entry.prefab;
-                    fromSpawn++;
-                }
-            }
-        }
-
-        // 3. 兜底：遍历 Resources.LoadAll("") 下所有预制体（如果有的话）
-        //    以及 Project 里 Assets/预制体/珊瑚预制体/ 下的所有 .prefab
-        //    （通过 Resources.LoadAll 兜底需要预制体在 Resources 文件夹里，不现实）
-
-        Debug.Log($"[保存系统] 📦 预制体注册表已构建: 从DragAndPlace={fromDrag}, 从Spawner={fromSpawn}, 共 {_prefabRegistry.Count} 种");
-        // 打印所有 key 方便排查找不到的问题
+        Debug.Log($"[保存系统] 📦 预制体注册表已构建（扫Project资产），共 {_prefabRegistry.Count} 种");
         foreach (var kv in _prefabRegistry)
         {
-            Debug.Log($"[保存系统] 📦   key=\"{kv.Key}\"  prefab={kv.Value.name}");
+            Debug.Log($"[保存系统] 📦   key=\"{kv.Key}\"  →  {kv.Value.name}");
         }
-    }
-
-    IEnumerator LoadAfterDelay()
-    {
-        // 先播种所有 DropItemCounterUI 的初始库存值
-        DropItem.SeedAllInitialInLoadedScene();
-
-        // 场景所有脚本的 Awake + Start 都是同步串行执行的，进第一帧前就全部完成了。
-        // 之前硬等 1.5 秒完全没必要，改成等一帧即可——让首帧先渲染出来，
-        // 存档加载从第二帧开始跑，用户几乎感知不到延迟。
-        yield return null;
-
-        Load();
     }
 
     void OnDestroy()
@@ -318,7 +291,14 @@ public class SaveSystem : MonoBehaviour
     }
 
     // ==================== 保存 ====================
-    public void Save()
+    public void Save() { Save(null); }
+
+    /// <summary>
+    /// 保存。
+    /// windowStateOverride 非空时用它作为窗口状态（清档时保留窗口位置/缩放），
+    /// 为空时照旧从 DesktopWindowController 读取当前窗口状态。
+    /// </summary>
+    public void Save(WindowStateData windowStateOverride)
     {
         try
         {
@@ -346,13 +326,20 @@ public class SaveSystem : MonoBehaviour
                 }
             }
 
-            // 2. 保存窗口状态
-            DesktopWindowController dwc = FindObjectOfType<DesktopWindowController>();
-            if (dwc != null)
+            // 2. 保存窗口状态（清档时由调用方传入保留值，避免把显示状态一起清掉）
+            if (windowStateOverride != null)
             {
-                data.windowState.posX = dwc.GetWindowPosition().x;
-                data.windowState.posY = dwc.GetWindowPosition().y;
-                data.windowState.windowScale = dwc.GetWindowScale();
+                data.windowState = windowStateOverride;
+            }
+            else
+            {
+                DesktopWindowController dwc = FindObjectOfType<DesktopWindowController>();
+                if (dwc != null)
+                {
+                    data.windowState.posX = dwc.GetWindowPosition().x;
+                    data.windowState.posY = dwc.GetWindowPosition().y;
+                    data.windowState.windowScale = dwc.GetWindowScale();
+                }
             }
 
             // 3. 保存 GameStats 进度（图鉴、放置/卖出计数）
@@ -513,20 +500,33 @@ public class SaveSystem : MonoBehaviour
             // Step 5: 清场 + 恢复玩家放置的珊瑚
             ClearAndRestorePlacedObjects(data);
 
-            // Step 6: 恢复窗口状态
+            // Step 6: 恢复窗口状态（位置 + 缩放）
             DesktopWindowController dwc = FindObjectOfType<DesktopWindowController>();
             if (dwc != null)
             {
-                if (data.windowState.posX != 0 || data.windowState.posY != 0)
+                if (data.windowState != null)
                 {
-                    dwc.SetWindowPosition(data.windowState.posX, data.windowState.posY);
-                    Debug.Log($"[保存系统] 🪟 窗口位置恢复为 ({data.windowState.posX:F0}, {data.windowState.posY:F0})");
+                    if (data.windowState.posX != 0 || data.windowState.posY != 0)
+                    {
+                        dwc.SetWindowPosition(data.windowState.posX, data.windowState.posY);
+                        Debug.Log($"[保存系统] 🪟 窗口位置恢复为 ({data.windowState.posX:F0}, {data.windowState.posY:F0})");
+                    }
+                    else
+                    {
+                        Debug.Log("[保存系统] 🪟 跳过恢复窗口位置（存档值为 0,0 或未设置）");
+                    }
+
+                    float savedScale = data.windowState.windowScale;
+                    if (savedScale > 0.01f)
+                    {
+                        dwc.SetWindowScale(savedScale);
+                        Debug.Log($"[保存系统] 🪟 窗口缩放恢复为 {savedScale:F2}");
+                    }
+                    else
+                    {
+                        Debug.Log("[保存系统] 🪟 跳过恢复 windowScale（存档值无效），使用默认值 1.0");
+                    }
                 }
-                else
-                {
-                    Debug.Log("[保存系统] 🪟 跳过恢复窗口位置（存档值为 0,0 或未设置）");
-                }
-                Debug.Log($"[保存系统] 🪟 跳过恢复 windowScale（存档值={data.windowState.windowScale:F2}），使用默认值 1.0");
             }
             else
             {

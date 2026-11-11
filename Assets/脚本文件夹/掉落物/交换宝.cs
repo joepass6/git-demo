@@ -501,36 +501,10 @@ public class 交换宝 : MonoBehaviour
 
     void Update()
     {
-        // ============ 手动鼠标点击检测（绕过 Button.onClick 的所有坑）============
-        if(Input.GetMouseButtonDown(0))
-        {
-            Vector2 mousePos = Input.mousePosition;
-            var am = AudioManager.Instance;
-            
-            // 面板打开时：手动 Hit Test 面板内按钮
-            if(缓存面板根 != null && 缓存面板根.gameObject.activeSelf)
-            {
-                if(上一个按钮 != null && RectTransformUtility.RectangleContainsScreenPoint(上一个按钮.GetComponent<RectTransform>(), mousePos))
-                {
-                    Debug.Log("[交换宝] 🖱️ 手动命中 上一个鱼宝");
-                    if(am != null) am.播放按钮音效();
-                    点击上一个();
-                }
-                else if(下一个按钮 != null && RectTransformUtility.RectangleContainsScreenPoint(下一个按钮.GetComponent<RectTransform>(), mousePos))
-                {
-                    Debug.Log("[交换宝] 🖱️ 手动命中 下一个鱼宝");
-                    if(am != null) am.播放按钮音效();
-                    点击下一个();
-                }
-                else if(转换按钮 != null && RectTransformUtility.RectangleContainsScreenPoint(转换按钮.GetComponent<RectTransform>(), mousePos))
-                {
-                    Debug.Log("[交换宝] 🖱️ 手动命中 转换按钮");
-                    if(am != null) am.播放按钮音效();
-                    点击转换();
-                }
-            }
-        }
-        
+        // 按钮点击只走 Button.onClick 这一条路径（由 延迟绑定按钮() 注册）。
+        // 原 Update 里还有一套 RectangleContainsScreenPoint 手动命中，两者会同时触发，
+        // 导致一次点击执行两次（转换扣双倍、翻页跳一个），此处已移除手动命中。
+
         // 每 0.5 秒校准一次
         选择检查计时 -= Time.deltaTime;
         if (选择检查计时 > 0f) return;

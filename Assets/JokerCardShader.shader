@@ -22,7 +22,10 @@ Shader "Custom/NeonPsychedelic2D"
 
         Pass
         {
-            Blend SrcAlpha OneMinusSrcAlpha
+            // 桌面窗口管线要求 RT 里是预乘 alpha（与 Sprites/Default 一致）：
+            // 片元先把 rgb 乘 alpha，再用 One OneMinusSrcAlpha 混合，
+            // 否则 alpha 通道会在透明 RT 上被平方（a²），再被上屏阶段二次压暗。
+            Blend One OneMinusSrcAlpha
             ZWrite Off
             Cull Off
 
@@ -159,8 +162,9 @@ Shader "Custom/NeonPsychedelic2D"
                 
                 float3 finalColor = lerp(texColor.rgb, texColor.rgb + neonColor * _EffectStrength, _EffectStrength);
                 float finalAlpha = texColor.a * i.color.a;
-                
-                return float4(finalColor, finalAlpha);
+
+                // 预乘 alpha 输出：rgb 先乘 alpha，配合上面的 Blend One OneMinusSrcAlpha
+                return float4(finalColor * finalAlpha, finalAlpha);
             }
             ENDCG
         }

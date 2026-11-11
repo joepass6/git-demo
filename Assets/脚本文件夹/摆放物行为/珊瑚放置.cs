@@ -213,21 +213,13 @@ public class DragAndPlaceSystem : MonoBehaviour
     }
 
     /// <summary>
-    /// 预览体每帧 OverlapBox，找当前悬停的 placementTag 石头。
-    /// 切换石头时自动 SetVisible/SetOutline。
-    /// 与 EndDrag/CollectHitRocks 保持一致：先取 attachedRigidbody.gameObject，
-    /// 因为 Collider2D 可能挂在子物体上，而 tag/Rigidbody2D 在父物体上。
-    /// </summary>
-    /// <summary>
-    /// 预览体每帧收集所有接触的石头 → 选 Y 最靠下的"主石头"显示 UI + 描边。
-    /// 🔑 和 EndDrag/RefreshAll 用完全相同的 SkillCaster.DetectRocksUnder：
-    ///    同样加 RockTouchTolerance=0.05f、同样的 attachedRigidbody+Tag 检测、
-    ///    保证拖拽过程中"亮的那块"就是松手后"扣容量的那块"。
+    /// 预览体每帧收集所有“底座贴合”的石头 → 选 Y 最靠下的"主石头"显示 UI + 描边。
+    /// 🔑 和 EndDrag 用完全相同的 FindSupportRocks（珊瑚底座探针 + 石头顶面判定），
+    ///    保证拖拽过程中"亮的那块"就是松手后"落下去的那块"。
     /// </summary>
     void UpdateHoverRock()
     {
-        List<GameObject> allHit = SkillCaster.DetectRocksUnder(
-            currentDragObject, placementTag, SkillCaster.RockTouchTolerance);
+        List<GameObject> allHit = FindSupportRocks(currentDragObject, placementTag, SkillCaster.RockTouchTolerance);
 
         // 统一选最靠下那块当主石头（和 EndDrag/RefreshAll 完全一致）
         GameObject newRock = FindPrimaryRock(allHit);
@@ -448,27 +440,10 @@ public class DragAndPlaceSystem : MonoBehaviour
 
         Debug.Log($"[DragAndPlace] 体积检测: 位置={placePos}");
 
-        // 🔑 关键：用 SkillCaster.DetectRocksUnder —— 和 RefreshAll/技能系统**完全相同的检测逻辑**：
-        //    同样加 RockTouchTolerance=0.05f 容差、同样先取 attachedRigidbody 再查 Tag、
-        //    同样的 OverlapBoxAll 算法。保证"放置时选的石头"和"容量统计扣的石头"是同一块。
-        var allHitRocks = new List<GameObject>(SkillCaster.DetectRocksUnder(
-            currentDragObject, placementTag, SkillCaster.RockTouchTolerance));
-
-        // 兜底：预览体既没 Collider2D 也没 SpriteRenderer（罕见）
-        if (allHitRocks.Count == 0)
-        {
-            SpriteRenderer previewSr = currentDragObject.GetComponentInChildren<SpriteRenderer>();
-            if (previewSr != null)
-            {
-                Collider2D[] hits = Physics2D.OverlapAreaAll(previewSr.bounds.min, previewSr.bounds.max);
-                foreach (var other in hits)
-                {
-                    if (other.transform.IsChildOf(currentDragObject.transform) || other.gameObject == currentDragObject) continue;
-                    var go = other.attachedRigidbody != null ? other.attachedRigidbody.gameObject : other.gameObject;
-                    if (go.CompareTag(placementTag) && !allHitRocks.Contains(go)) allHitRocks.Add(go);
-                }
-            }
-        }
+        // 🔑 底座检测：珊瑚底边要真实压在石头表面附近才算命中。
+        //    珊瑚预制体没有 Collider2D，旧逻辑走 SpriteRenderer.bounds 的 AABB 兜底，
+        //    只判断“包围盒与任意 Obstacle 相交”，所以悬在水中擦到窗框也会通过。
+        var allHitRocks = FindSupportRocks(currentDragObject, placementTag, SkillCaster.RockTouchTolerance);
 
         Debug.Log($"[DragAndPlace] 共命中 {allHitRocks.Count} 块石头: {string.Join(", ", allHitRocks.ConvertAll(r => r.name))}");
 
@@ -732,6 +707,77 @@ public class DragAndPlaceSystem : MonoBehaviour
         {
             Debug.LogError($"[DragAndPlace]   技能施放出错: {e.Message}");
         }
+    }
+
+    /// <summary>
+    /// 收集“珊瑚底座真正贴在其表面”的石头。
+    /// 珊瑚预制体没有 Collider2D，只能用渲染包围盒求底座：
+    ///   1. 在珊瑚底边中段取一条窄探针，要求它和石头碰撞体实际重叠（不是只看 AABB 相交）；
+    ///   2. 石头的顶面必须就在珊瑚底边附近——高出太多=悬空，低太多=珊瑚嵌在石头腰部，
+    ///      也顺便排除塔身上那些细高的「窗口」碰撞体（珊瑚悬在窗口中段时底边远低于窗顶）。
+    /// </summary>
+    static List<GameObject> FindSupportRocks(GameObject coral, string placementTag, float touchTolerance)
+    {
+        var result = new List<GameObject>();
+        if (coral == null || string.IsNullOrEmpty(placementTag)) return result;
+
+        if (!TryGetCoralBaseProbe(coral, out Vector2 probeCenter, out Vector2 probeSize, out Bounds coralBounds))
+            return result;
+
+        var seen = new HashSet<Collider2D>();
+        foreach (var other in Physics2D.OverlapBoxAll(probeCenter, probeSize, 0f))
+        {
+            if (other == null || seen.Contains(other)) continue;
+            seen.Add(other);
+            if (other.transform.IsChildOf(coral.transform) || other.gameObject == coral) continue;
+
+            var go = other.attachedRigidbody != null ? other.attachedRigidbody.gameObject : other.gameObject;
+            if (!go.CompareTag(placementTag) || result.Contains(go)) continue;
+
+            Bounds rockBounds = other.bounds;
+            float baseY = coralBounds.min.y;
+            // 塔身上的「窗口」是细高的长条碰撞体（高/宽≈4~5），珊瑚不可能“踩”在它上面；
+            // 石头的高宽比都在 2 以内，这里用 3 倍作为分界。
+            if (rockBounds.size.y > rockBounds.size.x * 3f) continue;
+            // 允许的最大“陷入深度”：小石头按 45% 高度、最少 0.3，避免把正常压边误判成悬空/嵌入
+            float sinkLimit = Mathf.Max(0.3f, rockBounds.size.y * 0.45f);
+            if (baseY > rockBounds.max.y + touchTolerance) continue; // 悬空
+            if (baseY < rockBounds.max.y - sinkLimit) continue;      // 嵌在石头腰部/窗框中段
+
+            result.Add(go);
+        }
+        return result;
+    }
+
+    /// <summary>取珊瑚所有 SpriteRenderer 的世界包围盒，在底边生成一条横向探针</summary>
+    static bool TryGetCoralBaseProbe(GameObject coral, out Vector2 center, out Vector2 size, out Bounds bounds)
+    {
+        center = Vector2.zero;
+        size = Vector2.zero;
+        bounds = default;
+
+        bool has = false;
+        foreach (var sr in coral.GetComponentsInChildren<SpriteRenderer>(true))
+        {
+            if (sr == null) continue;
+            if (!has) { bounds = sr.bounds; has = true; }
+            else bounds.Encapsulate(sr.bounds);
+        }
+        if (!has)
+        {
+            foreach (var col in coral.GetComponentsInChildren<Collider2D>(true))
+            {
+                if (col == null) continue;
+                if (!has) { bounds = col.bounds; has = true; }
+                else bounds.Encapsulate(col.bounds);
+            }
+        }
+        if (!has || bounds.size.x <= 0.0001f) return false;
+
+        // 探针跨过底边上下各 0.1，允许最多约 0.1 的视觉缝隙（透明边距）
+        size = new Vector2(Mathf.Max(0.08f, bounds.size.x * 0.8f), 0.2f);
+        center = new Vector2(bounds.center.x, bounds.min.y);
+        return true;
     }
 
     /// <summary>

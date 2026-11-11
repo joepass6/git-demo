@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 /// 桌宠窗口控制器 —— 每像素真透明（UpdateLayeredWindow），无插件、无色键
 ///   1. 无边框 + 置顶
 ///   2. 窗口自动贴合塔大小（自动找塔主体，排除夜市背景）
-///   3. 相机渲到 RT → CPU 预乘 alpha 转 BGRA → ULW 每帧上屏
+///   3. 相机渲到 RT（预乘 alpha）→ GPU 通道重排为 BGRA → ULW 每帧上屏
 ///   4. 滚轮缩放 = 窗口等比放大缩小（打包版），窗口位置不跳
 ///   5. 场景任意位置可拖窗口（UI 上按下除外）
 ///   6. 时钟拱门钉在塔顶，Ctrl+方向键微调 + 自动存档
@@ -39,11 +39,33 @@ public class DesktopWindowController : MonoBehaviour
 
     [Header("窗口贴合场景")]
     public bool fitWindowToTarget = true;
-    [Range(0.3f, 1f)] public float fitHeightRatio = 0.95f;
+    [Range(0.3f, 1f)] public float fitHeightRatio = 0.75f;
     public bool useManualFitSize = false;
     public Vector2 manualFitSize = new Vector2(7f, 10f);
     [Tooltip("自动贴合只统计塔主体周围这个半径内的 Sprite，排除远处大图")]
     public float fitRadius = 5f;
+    [Tooltip("白名单：这些名字的对象（含其子物体）不受 fitRadius 距离限制，强制并入贴合包围盒")]
+    public string[] fitAlwaysIncludeNames = { "神明" };
+
+    [Header("神明显隐")]
+    [Tooltip("神明物体；留空则运行时按名字自动查找")]
+    public GameObject godRoot;
+    public string godRootName = "神明";
+    const string GodVisibleKey = "WindowGodVisible";
+    bool godVisible = true;
+    bool godStateLoaded;
+
+    // 旧场景里序列化的是 0.438（历史默认）。改字段初始值不会影响已保存的场景，
+    // 所以这里显式把“旧默认值”迁移为新默认值；用户手动改成其他值时仍然尊重用户值。
+    // 0.62 是上一版默认（正方形改版前），也一起迁移到 0.75。
+    const float LegacyFitHeightRatio = 0.438f;
+    const float LegacyFitHeightRatio2 = 0.62f;
+    const float DefaultFitHeightRatio = 0.75f;
+    float EffectiveFitHeightRatio =>
+        (Mathf.Abs(fitHeightRatio - LegacyFitHeightRatio) < 0.001f ||
+         Mathf.Abs(fitHeightRatio - LegacyFitHeightRatio2) < 0.001f)
+            ? DefaultFitHeightRatio
+            : fitHeightRatio;
 
     [Header("窗口行为")]
     public bool topMost = true;
@@ -117,7 +139,7 @@ public class DesktopWindowController : MonoBehaviour
     const int  GWL_STYLE = -16, GWL_EXSTYLE = -20;
     const uint WS_CAPTION = 0x00C00000, WS_THICKFRAME = 0x00040000;
     const uint WS_MINIMIZEBOX = 0x00020000, WS_MAXIMIZEBOX = 0x00010000, WS_SYSMENU = 0x00080000;
-    const uint WS_EX_LAYERED = 0x00080000;
+    const uint WS_EX_LAYERED = 0x00080000, WS_EX_TOPMOST = 0x00000008;
     const uint SWP_NOSIZE = 0x0001, SWP_NOMOVE = 0x0002, SWP_NOZORDER = 0x0004, SWP_FRAMECHANGED = 0x0020, SWP_NOACTIVATE = 0x0010;
     const int  SW_MINIMIZE = 6;
     const uint WM_NCLBUTTONDOWN = 0xA1;
@@ -127,6 +149,8 @@ public class DesktopWindowController : MonoBehaviour
     IntPtr hwnd;
     bool transparentReady;
     RenderTexture rt;
+    RenderTexture rtPremul;      // GPU 预乘后的中间 RT（无深度，尺寸与 rt 一致），每帧复用
+    Material premulMat;          // 预乘 + BGR 重排材质，创建一次后复用
     Texture2D readback;
     IntPtr memDC = IntPtr.Zero, dib = IntPtr.Zero, dibOld = IntPtr.Zero, dibBits = IntPtr.Zero;
     int texW, texH;
@@ -176,6 +200,9 @@ public class DesktopWindowController : MonoBehaviour
         if (PlayerPrefs.HasKey(TopMostKey))
             topMost = PlayerPrefs.GetInt(TopMostKey) == 1;
 
+        // 神明开关：必须先按存档显隐，再算贴合包围盒（否则关掉后仍会被白名单撑大窗口）
+        LoadGodState();
+
         Application.runInBackground = true;
 
 #if !UNITY_EDITOR
@@ -206,13 +233,34 @@ public class DesktopWindowController : MonoBehaviour
 
     void FixCanvasScalers()
     {
-        foreach (CanvasScaler s in FindObjectsOfType<CanvasScaler>())
+        // 必须包含未激活的 Canvas（设置页等默认隐藏），否则它们的参考分辨率停留在 800x600，
+        // 下次打开时会按 600 的设计高度算，UI 反而被放大。
+        foreach (CanvasScaler s in FindObjectsOfType<CanvasScaler>(true))
         {
+            // 统一“设计高度”=1080：两个 1:1 的页面 Canvas 本来没有参考分辨率，
+            // 必须给一个共同基准，后面 CanvasBaseScaleFactor 才能按同一高度换算。
             s.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             s.referenceResolution = new Vector2(1920, 1080);
             s.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
             s.matchWidthOrHeight = 1f; // 按高度匹配
         }
+    }
+
+    /// <summary>
+    /// UI 的基准缩放系数：固定按高度匹配（等价于 CanvasScaler 的 MatchWidthOrHeight=1）。
+    ///
+    /// 不能用 min(宽比, 高比)：桌宠窗口又高又窄（如 453x730），按宽度算只有 0.24，
+    /// 而场景是按高度装满窗口的（约 0.68），UI 会被额外压小 2~3 倍，缩在塔顶。
+    /// 滚轮缩放时再额外乘 windowScale，保证 UI 与场景同步放大/缩小。
+    /// </summary>
+    float CanvasBaseScaleFactor(Vector2 referenceResolution)
+    {
+        if (referenceResolution.x < 100f || referenceResolution.y < 100f)
+            referenceResolution = new Vector2(1920f, 1080f);
+
+        float designHeight = Mathf.Max(1f, referenceResolution.y);
+        float pixelHeight = texH > 0 ? texH : Screen.height;
+        return pixelHeight / designHeight;
     }
 
     void CenterCameraOnTarget()
@@ -318,13 +366,30 @@ public class DesktopWindowController : MonoBehaviour
             Vector3 towerC = towerBody.bounds.center;
             b = towerBody.bounds;
             int count = 1;
+            int forced = 0;
+            List<string> excluded = new List<string>();
             foreach (Renderer r in sprites)
             {
                 if (r == towerBody) continue;
-                if (fitRadius > 0f && Vector3.Distance(r.bounds.center, towerC) > fitRadius) continue;
+                if (IsForceIncluded(r))
+                {
+                    b.Encapsulate(r.bounds);
+                    count++;
+                    forced++;
+                    continue;
+                }
+                if (fitRadius > 0f && Vector3.Distance(r.bounds.center, towerC) > fitRadius)
+                {
+                    if (excluded.Count < 12) excluded.Add($"{r.name}({Vector3.Distance(r.bounds.center, towerC):F1}m)");
+                    continue;
+                }
                 b.Encapsulate(r.bounds);
                 count++;
             }
+
+            // 诊断：列出被 fitRadius 排除的远处 Sprite，便于确认某些背景/装饰是否被裁出窗口
+            if (excluded.Count > 0)
+                Debug.Log($"[桌面窗口] 贴合排除 {excluded.Count} 个远处 Sprite（>{fitRadius}m）: {string.Join(", ", excluded)}");
 
             // 兜底：塔身边没内容 → 退回全场景
             if (b.size.y < 0.5f)
@@ -334,44 +399,53 @@ public class DesktopWindowController : MonoBehaviour
                 foreach (Renderer r in sprites) b.Encapsulate(r.bounds);
             }
 
-            // 防退化钳制：宽高比超出 0.45~1.2 → 以塔群为中心把宽度撑回来
-            if (b.size.y > 0.01f)
-            {
-                float rawAspect = b.size.x / b.size.y;
-                float clampedAspect = Mathf.Clamp(rawAspect, 0.45f, 1.2f);
-                if (!Mathf.Approximately(rawAspect, clampedAspect))
-                {
-                    b.size = new Vector3(b.size.y * clampedAspect, b.size.y, 1f);
-                    Debug.Log($"[桌面窗口] 包围盒宽高比 {rawAspect:F2} 钳制为 {clampedAspect:F2}");
-                }
-            }
-
-            Debug.Log($"[桌面窗口] 贴合: 塔主体={towerBody.name} ({towerBody.bounds.size.x:F1}x{towerBody.bounds.size.y:F1}), {count} 个 Sprite, 总包围盒 {b.size.x:F1}x{b.size.y:F1}");
+            Debug.Log($"[桌面窗口] 贴合: 塔主体={towerBody.name} ({towerBody.bounds.size.x:F1}x{towerBody.bounds.size.y:F1}), {count} 个 Sprite（其中强制纳入 {forced} 个）, 总包围盒 {b.size.x:F1}x{b.size.y:F1}");
         }
 
         lastFitBounds = b;
         hasFitBounds = true;
 
-        // 相机对准包围盒中心，正交高度正好包住内容
+        // 1:1 取景：正交尺寸取包围盒宽/高的较大值，正方形视野两个方向都能完整容纳，
+        // 塔身不会被上下裁掉；水平多出来的部分是透明留白。
+        float halfExtent = Mathf.Max(b.extents.x, b.extents.y);
         cam.transform.position = new Vector3(
             b.center.x + centerOffset.x,
             b.center.y + centerOffset.y,
             cam.transform.position.z);
-        cam.orthographicSize = b.extents.y;
-        baseOrthoSize = b.extents.y; // 记住基准值，缩放时用
+        cam.orthographicSize = halfExtent;
+        baseOrthoSize = halfExtent; // 记住基准值，缩放时用
 
-        // 窗口宽高比 = 包围盒宽高比
+        // 窗口固定 1:1（高度占比 → 边长），不再跟随包围盒宽高比
 #if !UNITY_EDITOR
-        float boxAspect = b.size.x / b.size.y;
-        int h = Mathf.Max(200, Mathf.RoundToInt((float)Display.main.systemHeight * fitHeightRatio));
-        int w = Mathf.Max(200, Mathf.RoundToInt(h * boxAspect));
-        ClampToWorkArea(ref w, ref h);
+        int h = Mathf.Max(200, Mathf.RoundToInt((float)Display.main.systemHeight * EffectiveFitHeightRatio));
+        int w = h;
+        ClampToWorkArea(ref w, ref h); // 等比缩放，正方形不会变形
         fitW = w; fitH = h;
         windowScale = Mathf.Clamp(windowScale, minWindowScale, maxWindowScale);
 
         // 窗口物理尺寸固定不变，用 orthographicSize 做缩放
-        Debug.Log($"[桌面窗口] 窗口贴合: 基础orthoSize={baseOrthoSize:F2}, 窗口={fitW}x{fitH}, 当前缩放=x{windowScale:F2}");
+        Debug.Log($"[桌面窗口] 窗口贴合(1:1): 基础orthoSize={baseOrthoSize:F2}, 窗口={fitW}x{fitH}, 当前缩放=x{windowScale:F2}");
 #endif
+    }
+
+    /// <summary>
+    /// 白名单判定：对象自身或任一祖先（到 centerTarget 为止）名字命中 fitAlwaysIncludeNames 时，
+    /// 跳过 fitRadius 距离过滤，强制并入贴合包围盒。
+    /// </summary>
+    bool IsForceIncluded(Renderer r)
+    {
+        // 神明被开关关掉时，白名单不再强制纳入，窗口才能正确收缩
+        if (!godVisible && godRoot != null && r.transform.IsChildOf(godRoot.transform)) return false;
+        if (fitAlwaysIncludeNames == null || fitAlwaysIncludeNames.Length == 0) return false;
+        for (Transform t = r.transform; t != null; t = t.parent)
+        {
+            foreach (string n in fitAlwaysIncludeNames)
+            {
+                if (!string.IsNullOrEmpty(n) && t.name == n) return true;
+            }
+            if (centerTarget != null && t == centerTarget) break;
+        }
+        return false;
     }
 
     // ==================== 延迟初始化 ====================
@@ -397,10 +471,13 @@ public class DesktopWindowController : MonoBehaviour
 #endif
 
         EnsureBorderless();
-        ApplyTopMost();
 
         int ex = GetWindowLong(hwnd, GWL_EXSTYLE);
         SetWindowLong(hwnd, GWL_EXSTYLE, ex | (int)WS_EX_LAYERED);
+
+        // 置顶放到所有样式写入之后：SetWindowLong(GWL_EXSTYLE)/SWP_FRAMECHANGED 都会让窗口
+        // 重新走一遍非客户区计算，置顶位在它之前设，容易被这一步覆盖掉。
+        ApplyTopMost();
     }
 
     void EnsureBorderless()
@@ -437,6 +514,64 @@ public class DesktopWindowController : MonoBehaviour
     /// </summary>
     public bool IsTopMost() => topMost;
 
+    // ==================== 神明显隐 ====================
+    /// <summary>
+    /// 设置面板查询：神明当前是否显示（供 Toggle 初始化用）
+    /// </summary>
+    public bool IsGodVisible()
+    {
+        if (!godStateLoaded) LoadGodState();
+        return godVisible;
+    }
+
+    void LoadGodState()
+    {
+        godStateLoaded = true;
+        // 没有存档时默认显示，保持旧行为
+        godVisible = !PlayerPrefs.HasKey(GodVisibleKey) || PlayerPrefs.GetInt(GodVisibleKey) == 1;
+        FindGodRoot();
+        if (godRoot != null) godRoot.SetActive(godVisible);
+        Debug.Log($"[桌面窗口] 神明状态: {(godVisible ? "显示" : "隐藏")}（存档{(PlayerPrefs.HasKey(GodVisibleKey) ? "有" : "无")}）, godRoot={(godRoot != null ? godRoot.name : "未找到")}");
+    }
+
+    /// <summary>
+    /// 按名字找神明根节点。注意 GameObject.Find 查不到未激活对象，
+    /// 而场景里神明默认是未激活的（m_IsActive: 0），所以这里必须用包含未激活对象的遍历。
+    /// </summary>
+    GameObject FindGodRoot()
+    {
+        if (godRoot != null) return godRoot;
+        if (string.IsNullOrEmpty(godRootName)) return null;
+        // 先精确同名（避免命中「神明显示开关」这类 UI 物体），再退化为包含匹配
+        Transform[] all = FindObjectsOfType<Transform>(true);
+        foreach (Transform t in all)
+            if (t != null && t.name == godRootName) { godRoot = t.gameObject; return godRoot; }
+        foreach (Transform t in all)
+            if (t != null && t.name.Contains(godRootName)) { godRoot = t.gameObject; return godRoot; }
+        Debug.LogWarning($"[桌面窗口] 找不到神明根节点（名字含“{godRootName}”），显隐开关不会生效");
+        return null;
+    }
+
+    /// <summary>
+    /// 设置面板调用：切换神明显隐并持久化。
+    /// 只做显隐，不重算取景/窗口尺寸：
+    /// 运行时改 fitW/fitH 会重建 RT 并重设相机正交尺寸，ScreenSpaceCamera 画布与世界坐标的
+    /// 内层画布（显示面板）会一起错位，导致整个 UI 布局崩掉。
+    /// 神明是几乎全在画面内的远景淡影，显隐不需要重新取景。
+    /// </summary>
+    public void SetGodVisible(bool value)
+    {
+        godVisible = value;
+        godStateLoaded = true;
+        PlayerPrefs.SetInt(GodVisibleKey, godVisible ? 1 : 0);
+        PlayerPrefs.Save();
+
+        if (godRoot == null) FindGodRoot();
+        if (godRoot != null) godRoot.SetActive(godVisible);
+
+        Debug.Log($"[桌面窗口] 神明开关: {(godVisible ? "显示" : "隐藏")}（godRoot={(godRoot != null ? godRoot.name : "未找到")}，保持窗口 {fitW}x{fitH} 与 UI 缩放不变）");
+    }
+
     // ==================== UI 永远置顶 ====================
     // Canvas 保持 ScreenSpaceCamera 模式（不变形），CanvasScaler.scaleFactor 同步缩放
     void EnsureCanvasesOnTop(Camera cam)
@@ -472,35 +607,36 @@ public class DesktopWindowController : MonoBehaviour
             cam.cullingMask = newMask;
         }
 
-        // scaleFactor 每个 Canvas 独立算：先模拟 ScaleWithScreenSize 的 baseFactor（RT÷referenceRes），再乘 windowScale
-        // 这样每个 Canvas 按自己的 referenceResolution 得到正确的 baseFactor，不会统一被 windowScale 压小/放大
+        // scaleFactor 每个 Canvas 统一 = 按高度算的基准系数 × windowScale，
+        // 与相机“按高度装满窗口”保持同一基准，避免窄窗口下 UI 被按宽度额外压小
 
         foreach (Canvas c in cachedCanvases)
         {
             if (c == null || !c.isRootCanvas) continue;
 
             // ScreenSpaceCamera：不变形，GraphicRaycaster 正常工作
+            // 全部带“值变了才写”的判定：这个函数每 5 秒被调用一次，
+            // 无条件重设 renderMode / worldCamera / scaleFactor 会让 Canvas 周期性重建，表现为 UI 闪一下。
             if (c.renderMode != RenderMode.ScreenSpaceCamera)
             {
                 c.renderMode = RenderMode.ScreenSpaceCamera;
             }
-            c.worldCamera = cam;
-            c.planeDistance = cam.farClipPlane * 0.9f;
+            if (c.worldCamera != cam) c.worldCamera = cam;
+            float targetPlane = cam.farClipPlane * 0.9f;
+            if (!Mathf.Approximately(c.planeDistance, targetPlane)) c.planeDistance = targetPlane;
 
             // CanvasScaler 切 ConstantPixelSize 模式，不会自动覆盖我们设的 scaleFactor
             var scaler = c.GetComponent<CanvasScaler>();
             if (scaler != null)
             {
                 scaler.enabled = true;
-                Vector2 refRes = scaler.referenceResolution;
-                if (refRes.x < 100f) refRes = new Vector2(1920, 1080);
-                float scaleH = (texH > 0 ? texH : Screen.height) / refRes.y;
-                float scaleW = (texW > 0 ? texW : Screen.width) / refRes.x;
-                float rtAspect = (float)texW / Mathf.Max(1, texH);
-                float refAspect = refRes.x / Mathf.Max(1f, refRes.y);
-                float baseFactor = rtAspect > refAspect ? scaleH : scaleW;
-                scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
-                scaler.scaleFactor = baseFactor * Mathf.Max(0.01f, windowScale);
+                if (scaler.uiScaleMode != CanvasScaler.ScaleMode.ConstantPixelSize)
+                    scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+
+                float targetSF = CanvasBaseScaleFactor(scaler.referenceResolution)
+                                 * Mathf.Max(0.01f, windowScale);
+                if (!Mathf.Approximately(scaler.scaleFactor, targetSF))
+                    scaler.scaleFactor = targetSF;
             }
 
             // 确保有 CustomGraphicRaycaster（Screen 坐标 ≠ RT 坐标）
@@ -552,6 +688,15 @@ public class DesktopWindowController : MonoBehaviour
         readback = new Texture2D(texW, texH, TextureFormat.RGBA32, false);
         bgra = new byte[texW * texH * 4];
 
+        // 预乘中间 RT：尺寸/格式与 rt 保持一致，只建一次，之后每帧复用
+        if (rtPremul != null) { rtPremul.Release(); Destroy(rtPremul); }
+        rtPremul = new RenderTexture(texW, texH, 0, RenderTextureFormat.ARGB32);
+        rtPremul.name = "桌面窗口_预乘";
+        rtPremul.filterMode = FilterMode.Point;
+        rtPremul.wrapMode = TextureWrapMode.Clamp;
+        rtPremul.Create();
+        EnsurePremulMaterial();
+
         CreateDib();
 #if !UNITY_EDITOR
         transparentReady = true;
@@ -560,7 +705,28 @@ public class DesktopWindowController : MonoBehaviour
         // 初始缩放
         cam.orthographicSize = baseOrthoSize / Mathf.Max(0.01f, windowScale);
 
-        Debug.Log($"[桌面窗口] ULW 已启动 ({texW}x{texH}), orthoSize={cam.orthographicSize:F2} (base={baseOrthoSize:F2}/scale={windowScale:F2})");
+        Debug.Log($"[桌面窗口] ULW 已启动 ({texW}x{texH}), orthoSize={cam.orthographicSize:F2} (base={baseOrthoSize:F2}/scale={windowScale:F2}), UI基准={CanvasBaseScaleFactor(new Vector2(1920f, 1080f)):F2}");
+    }
+
+    /// <summary>
+    /// 懒创建预乘材质。Shader 放在 Resources 下（PremultiplyBGRA.shader），
+    /// 因为 Shader.Find 对"没有任何材质引用"的 shader 在发布版里会返回 null（被剥离），
+    /// Resources.Load 能保证它被打进包里，同时不用去改 ProjectSettings 的 Always Included Shaders。
+    /// </summary>
+    void EnsurePremulMaterial()
+    {
+        if (premulMat != null) return;
+
+        Shader sh = Resources.Load<Shader>("PremultiplyBGRA");
+        if (sh == null) sh = Shader.Find("Hidden/Haodong/PremultiplyBGRA");
+        if (sh == null)
+        {
+            Debug.LogError("[桌面窗口] 找不到预乘 Shader，本次运行回退到 CPU 逐像素预乘");
+            return;
+        }
+
+        premulMat = new Material(sh);
+        premulMat.hideFlags = HideFlags.DontSave;
     }
 
     void CreateDib()
@@ -597,6 +763,8 @@ public class DesktopWindowController : MonoBehaviour
 #endif
         DestroyDib();
         if (rt != null) { rt.Release(); rt = null; }
+        if (rtPremul != null) { rtPremul.Release(); Destroy(rtPremul); rtPremul = null; }
+        if (premulMat != null) { Destroy(premulMat); premulMat = null; }
         if (readback != null) { Destroy(readback); readback = null; }
     }
 
@@ -667,25 +835,45 @@ public class DesktopWindowController : MonoBehaviour
     {
         if (hwnd == IntPtr.Zero || !IsWindow(hwnd)) return;
 
-        var prevActive = RenderTexture.active;
-        RenderTexture.active = rt;
-        readback.ReadPixels(new Rect(0, 0, texW, texH), 0, 0);
-        readback.Apply(false, false);
-        RenderTexture.active = prevActive;
-
-        // RGBA → 预乘 alpha 的 BGRA
-        NativeArray<Color32> px = readback.GetRawTextureData<Color32>();
-        int n = texW * texH;
-        for (int i = 0; i < n; i++)
+        if (premulMat != null && rtPremul != null && rt != null)
         {
-            Color32 c = px[i];
-            uint a = c.a;
-            int o = i << 2;
-            bgra[o]     = (byte)(c.b * a >> 8);
-            bgra[o + 1] = (byte)(c.g * a >> 8);
-            bgra[o + 2] = (byte)(c.r * a >> 8);
-            bgra[o + 3] = (byte)a;
+            // ===== GPU 通道重排：一次全屏 Blit 代替 texW*texH 次 C# 循环 =====
+            // Graphics.Blit 会把 rt 采样后写进 rtPremul，Shader 里只做 BGR 重排
+            // （RT 里已经是预乘 alpha，不能再乘一次），输出的显存字节序已经是 DIB 需要的 BGRA，
+            // CPU 侧只剩纯内存拷贝。
+            var prevActive = RenderTexture.active;
+            Graphics.Blit(rt, rtPremul, premulMat);
+
+            RenderTexture.active = rtPremul;
+            readback.ReadPixels(new Rect(0, 0, texW, texH), 0, 0);
+            RenderTexture.active = prevActive;
+
+            // ReadPixels 之后数据已在 CPU 侧，直接整块搬进托管数组（一次 memcpy），
+            // 不再逐像素做乘法和通道交换。
+            readback.GetRawTextureData<byte>().CopyTo(bgra);
         }
+        else
+        {
+            // ===== 兜底：找不到 Shader 时完全保持原来的 CPU 路径 =====
+            var prevActive = RenderTexture.active;
+            RenderTexture.active = rt;
+            readback.ReadPixels(new Rect(0, 0, texW, texH), 0, 0);
+            RenderTexture.active = prevActive;
+
+            // RGBA → BGRA（RT 里已经是预乘 alpha，这里不再乘一次，否则半透明会变暗/发黑）
+            NativeArray<Color32> px = readback.GetRawTextureData<Color32>();
+            int n = texW * texH;
+            for (int i = 0; i < n; i++)
+            {
+                Color32 c = px[i];
+                int o = i << 2;
+                bgra[o]     = c.b;
+                bgra[o + 1] = c.g;
+                bgra[o + 2] = c.r;
+                bgra[o + 3] = c.a;
+            }
+        }
+
         Marshal.Copy(bgra, 0, dibBits, bgra.Length);
 
 #if UNITY_EDITOR
@@ -741,6 +929,13 @@ public class DesktopWindowController : MonoBehaviour
         int ex = GetWindowLong(hwnd, GWL_EXSTYLE);
         if ((ex & (int)WS_EX_LAYERED) == 0)
             SetWindowLong(hwnd, GWL_EXSTYLE, ex | (int)WS_EX_LAYERED);
+
+        // 置顶自愈：分辨率切换/窗口重建/Unity 自身的窗口设置都可能把 WS_EX_TOPMOST 清掉，
+        // 这里只在“位丢了”时补一次 SetWindowPos，不会每帧和别的窗口抢 z-order。
+        if (topMost && (ex & (int)WS_EX_TOPMOST) == 0)
+        {
+            SetWindowPos(hwnd, (IntPtr)(-1), 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
+        }
 
         // 保持窗口尺寸不弹回（Unity/Windows 可能周期性重置窗口大小）
 #if !UNITY_EDITOR
@@ -817,12 +1012,12 @@ public class DesktopWindowController : MonoBehaviour
         if (Mathf.Abs(scroll) < 0.001f) return;
 
 #if !UNITY_EDITOR
+        // 只累计滚动量，等停下 0.15s 后再一次性应用。
+        // 以前这里每格直接改 windowScale，但相机要等去抖结束才变，
+        // 中间 EnsureCanvasesOnTop 会拿新的 windowScale 重设 UI 缩放 ——
+        // UI 先跳、相机后跟，看起来就是缩放时 UI 一闪一闪。
         pendingZoomScroll += scroll;
         zoomDebounceDeadline = Time.time + 0.15f;
-        float newScale = Mathf.Clamp(windowScale + pendingZoomScroll * ZoomStep, minWindowScale, maxWindowScale);
-        if (Mathf.Abs(newScale - windowScale) < 0.0001f) return;
-        windowScale = newScale;
-        pendingZoomScroll = 0f;
 #endif
     }
 
@@ -831,37 +1026,46 @@ public class DesktopWindowController : MonoBehaviour
 #if !UNITY_EDITOR
         if (zoomDebounceDeadline <= 0f || Time.time < zoomDebounceDeadline) return;
         zoomDebounceDeadline = 0f;
-        if (baseOrthoSize <= 0f) return;
+        if (Mathf.Abs(pendingZoomScroll) < 0.0001f) return;
+
+        float newScale = Mathf.Clamp(windowScale + pendingZoomScroll * ZoomStep, minWindowScale, maxWindowScale);
+        pendingZoomScroll = 0f;
+        if (Mathf.Approximately(newScale, windowScale)) return;
+
+        bool ok = ApplyWindowScale(newScale);
+        if (!ok) return;
 
         Camera cam = zoomCamera != null ? zoomCamera : Camera.main;
-        if (cam == null) return;
+        Debug.Log($"[桌面窗口] 缩放: orthoSize={(cam != null ? cam.orthographicSize : 0f):F2}, baseOrtho={baseOrthoSize:F2}, windowScale={windowScale:F2}");
+#endif
+    }
 
-        float targetOrtho = baseOrthoSize / Mathf.Max(0.01f, windowScale);
-        if (!Mathf.Approximately(cam.orthographicSize, targetOrtho))
-        {
-            cam.orthographicSize = targetOrtho;
-        }
+    /// <summary>
+    /// 缩放的唯一写入口：相机正交尺寸和所有 CanvasScaler 在同一个函数、同一帧里一起改。
+    /// 之前 SetWindowScale / ApplyZoomDebounce / EnsureCanvasesOnTop 三处各写一遍，
+    /// 时序错开一帧就会出现「场景没变、UI 先变大」的闪动。
+    /// </summary>
+    bool ApplyWindowScale(float scale)
+    {
+        windowScale = Mathf.Clamp(scale, minWindowScale, maxWindowScale);
+#if !UNITY_EDITOR
+        Camera cam = zoomCamera != null ? zoomCamera : Camera.main;
+        if (cam == null || baseOrthoSize <= 0f) return false;
 
-        // 同步 CanvasScaler.scaleFactor：每个 Canvas 独立算 baseFactor × windowScale
+        cam.orthographicSize = baseOrthoSize / Mathf.Max(0.01f, windowScale);
+
         foreach (Canvas c in cachedCanvases)
         {
             if (c == null || !c.isRootCanvas) continue;
             var scaler = c.GetComponent<CanvasScaler>();
             if (scaler == null) continue;
-            Vector2 refRes = scaler.referenceResolution;
-            if (refRes.x < 100f) refRes = new Vector2(1920, 1080);
-            float scaleH = (texH > 0 ? texH : Screen.height) / refRes.y;
-            float scaleW = (texW > 0 ? texW : Screen.width) / refRes.x;
-            float rtAspect = (float)texW / Mathf.Max(1, texH);
-            float refAspect = refRes.x / Mathf.Max(1f, refRes.y);
-            float baseFactor = rtAspect > refAspect ? scaleH : scaleW;
-            float targetSF = baseFactor * Mathf.Max(0.01f, windowScale);
+            float targetSF = CanvasBaseScaleFactor(scaler.referenceResolution)
+                             * Mathf.Max(0.01f, windowScale);
             if (!Mathf.Approximately(scaler.scaleFactor, targetSF))
                 scaler.scaleFactor = targetSF;
         }
-
-        Debug.Log($"[桌面窗口] 缩放: orthoSize={cam.orthographicSize:F2}, baseOrtho={baseOrthoSize:F2}, windowScale={windowScale:F2}");
 #endif
+        return true;
     }
 
     void ClampToWorkArea(ref int w, ref int h)
@@ -940,26 +1144,8 @@ public class DesktopWindowController : MonoBehaviour
     public float GetWindowScale() { return windowScale; }
     public void SetWindowScale(float scale)
     {
-        windowScale = Mathf.Clamp(scale, minWindowScale, maxWindowScale);
-#if !UNITY_EDITOR
-        Camera cam = zoomCamera != null ? zoomCamera : Camera.main;
-        if (cam != null && baseOrthoSize > 0f) cam.orthographicSize = baseOrthoSize / Mathf.Max(0.01f, windowScale);
-        float targetScaleFactor = Mathf.Max(0.01f, windowScale);
-        foreach (Canvas c in cachedCanvases)
-        {
-            if (c == null || !c.isRootCanvas) continue;
-            var scaler = c.GetComponent<CanvasScaler>();
-            if (scaler == null) continue;
-            Vector2 refRes = scaler.referenceResolution;
-            if (refRes.x < 100f) refRes = new Vector2(1920, 1080);
-            float scaleH = (texH > 0 ? texH : Screen.height) / refRes.y;
-            float scaleW = (texW > 0 ? texW : Screen.width) / refRes.x;
-            float rtAspect = (float)texW / Mathf.Max(1, texH);
-            float refAspect = refRes.x / Mathf.Max(1f, refRes.y);
-            float baseFactor = rtAspect > refAspect ? scaleH : scaleW;
-            scaler.scaleFactor = baseFactor * targetScaleFactor;
-        }
-#endif
+        // 统一走 ApplyWindowScale：相机和 UI 同一帧一起变，避免出现一帧错位
+        ApplyWindowScale(scale);
     }
 
     public Vector2 GetWindowPosition()
@@ -978,7 +1164,18 @@ public class DesktopWindowController : MonoBehaviour
     {
 #if !UNITY_EDITOR
         if (hwnd != IntPtr.Zero)
+        {
+            // 窗口变大后，旧存档里的坐标可能把窗口推到屏幕外，统一夹回工作区
+            RECT wa = default;
+            if (SystemParametersInfo(SPI_GETWORKAREA, 0, ref wa, 0))
+            {
+                int w = fitW > 0 ? fitW : 200;
+                int h = fitH > 0 ? fitH : 200;
+                x = Mathf.Clamp(x, wa.Left, Mathf.Max(wa.Left, wa.Right - w));
+                y = Mathf.Clamp(y, wa.Top, Mathf.Max(wa.Top, wa.Bottom - h));
+            }
             SetWindowPos(hwnd, IntPtr.Zero, (int)x, (int)y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+        }
 #endif
     }
 }

@@ -14763,6 +14763,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 0.1
+  scaleVariation: 0.3
   obstacleTag: Obstacle
   extraObstacleTag: wall
   fishTag: fish
@@ -14778,7 +14779,7 @@ MonoBehaviour:
   playTime: 360
   treasureBuildTime: 60
   schoolSeparationDistance: 0.1
-  schoolSwimSpeed: 0.2
+  schoolSwimSpeed: 0.3
   schoolGatherSpeedMultiplier: 1.5
   schoolTurnSpeed: 540
   schoolMinDistance: 0.1

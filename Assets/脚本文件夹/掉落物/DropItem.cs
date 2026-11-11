@@ -180,6 +180,8 @@ public class DropItem : MonoBehaviour
     private int spawnSerial;
 
     private Collider2D col;
+    // 同一帧内 Update 的手动命中与 OnMouseDown 会各触发一次 ClickCollect，用它保证只结算一次
+    private bool clickCollected;
     // 实心碰撞核（非触发器）：预制体通常是“0.25 触发大圈（合并/点击用）+ 0.08 实心小核（物理碰撞用）”。
     // 手动防穿透投射必须用实心小核——用触发大圈会在离墙一个圈位时就误判撞上，导致掉落物悬空停住。
     private Collider2D solidCol;
@@ -316,25 +318,35 @@ public class DropItem : MonoBehaviour
         mergeCheckRadius = Mathf.Max(mergeCheckRadius * 2f + 0.05f, 0.3f);
 
         // 创建光晕层：优先用预制体已有的"发光"子物体，没有就动态创建
+        // 注意：必须先拿到发光材质再决定要不要创建动态光晕层。
+        // 打包版里 Shader.Find 可能因为 Shader 被剥离而返回 null，此时如果仍然创建光晕层，
+        // 它会退回默认 Sprite 材质，变成主图 2.2 倍的硬边复制品——这正是打包版掉落物“看着奇怪”的来源。
+        glowMat = InitGlowMaterial();
+
         Transform glowTf = transform.Find("发光");
         if (glowTf != null)
         {
             glowTransform = glowTf;
             glowRenderer = glowTf.GetComponent<SpriteRenderer>();
         }
-        else
+        else if (glowMat != null)
         {
             glowTransform = CreateDynamicGlowLayer();
             glowRenderer = glowTransform != null ? glowTransform.GetComponent<SpriteRenderer>() : null;
         }
 
         // 给光晕层赋 ItemGlow 材质实例 + 写 Shader 属性
-        if (glowRenderer != null)
+        if (glowRenderer != null && glowMat != null)
         {
-            glowMat = InitGlowMaterial();
-            if (glowMat != null) glowRenderer.sharedMaterial = glowMat;
+            glowRenderer.sharedMaterial = glowMat;
             InitGlowShaderProperties();
             UpdateGlowColor();
+        }
+        else if (glowRenderer != null)
+        {
+            // 有"发光"子物体但拿不到 ItemGlow 材质：隐藏它，宁可不发光也不要错误外观
+            glowRenderer.enabled = false;
+            glowRenderer = null;
         }
 
         EnsureCountText();
@@ -355,6 +367,9 @@ public class DropItem : MonoBehaviour
     private void OnDestroy()
     {
         _allDrops.Remove(this);
+
+        // glowMat 是运行时 new 出来的材质实例，GameObject 销毁不会连带回收，必须手动释放
+        if (glowMat != null && glowMat != glowMaterial) Destroy(glowMat);
     }
 
     private void Start()
@@ -660,14 +675,18 @@ public class DropItem : MonoBehaviour
     }
 
     /// <summary>
-    /// 给光晕层材质：优先用 Inspector 拖的 glowMaterial，没拖就按名字找 M_掉落物发光.mat，
-    /// 再不行就用 Shader 名 Custom/ItemGlow 创建。找不到返回 null。
-    /// 克隆一份——每个掉落物改颜色互不影响。
+    /// 给光晕层材质：优先用 Inspector 拖的 glowMaterial；否则从 Resources 取
+    /// M_掉落物发光.mat（打包一定会带）；再不行按 Shader 名 Custom/ItemGlow 创建。
+    /// 找不到返回 null。克隆一份——每个掉落物改颜色互不影响。
     /// </summary>
     Material InitGlowMaterial()
     {
         Material baseMat = glowMaterial;
 
+        // 1) Resources 预置材质：打包时一定会被打进包，不依赖 Shader.Find
+        if (baseMat == null) baseMat = Resources.Load<Material>("M_掉落物发光");
+
+        // 2) 场景/运行时已加载的同名材质
         if (baseMat == null)
         {
             foreach (var m in Resources.FindObjectsOfTypeAll<Material>())
@@ -681,12 +700,14 @@ public class DropItem : MonoBehaviour
             }
         }
 
+        // 3) Shader 兜底：先 Resources（打包可用），再 Shader.Find（编辑器/旧包兼容）
         if (baseMat == null)
         {
-            Shader sh = Shader.Find("Custom/ItemGlow");
+            Shader sh = Resources.Load<Shader>("ItemGlow");
+            if (sh == null) sh = Shader.Find("Custom/ItemGlow");
             if (sh == null)
             {
-                Debug.LogWarning("[DropItem] 找不到 Shader: Custom/ItemGlow，光晕层将用默认材质");
+                Debug.LogWarning("[DropItem] 找不到 Shader: Custom/ItemGlow（Resources 与 Shader.Find 均失败），光晕层跳过");
                 return null;
             }
             baseMat = new Material(sh);
@@ -744,6 +765,9 @@ public class DropItem : MonoBehaviour
 
     void OnClickCollect()
     {
+        if (clickCollected) return; // 已结算过：挡住同一帧另一条拾取路径的重复调用
+        clickCollected = true;
+
         AddCount(itemType, stackCount);
         Debug.Log($"[DropItem] 收集 {itemType} x{stackCount}, 总数={GetCount(itemType)}");
 

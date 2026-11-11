@@ -85,6 +85,10 @@ public class 鱼运动 : MonoBehaviour
     protected Vector3 spawnPosition;
     protected List<ParticleSystem> allParticles = new List<ParticleSystem>();
 
+    // 最近一次播放点击反馈的帧号：内置 OnMouseDown 和手动补偿判定可能在同一帧都命中，
+    // 用它保证一次点击只结算一次（否则会重复播音效、连发粒子）
+    private int lastClickFrame = -1;
+
     // 预制体原始缩放（对象池复用时不能被上一次的随机结果污染，所以只在首次捕获一次）
     private Vector3 baseScale;
     private bool baseScaleCaptured;
@@ -290,6 +294,9 @@ public class 鱼运动 : MonoBehaviour
     {
         HandleMovement();
 
+        // 打包版里补一条坐标补偿过的点击判定（内置 OnMouseDown 在 RT≠窗口尺寸时会偏移）
+        HandleClickInput();
+
         // 到期回池（用绝对时间戳，支持 ExtendLife 动态延长/缩短）
         if (lifeEndTime > 0f && Time.time >= lifeEndTime)
         {
@@ -317,6 +324,18 @@ public class 鱼运动 : MonoBehaviour
 
     private void OnMouseDown()
     {
+        TryPlayClickFeedback();
+    }
+
+    /// <summary>
+    /// 点击反馈（音效 + 粒子）。两条入口共用：Unity 内置 OnMouseDown，
+    /// 以及 HandleClickInput 里做了窗口→RT 坐标补偿的手动判定。
+    /// </summary>
+    private void TryPlayClickFeedback()
+    {
+        if (lastClickFrame == Time.frameCount) return; // 同一帧两条入口只结算一次
+        lastClickFrame = Time.frameCount;
+
         // 点击鱼音效（直接调 AudioManager，没挂也不报错）
         if (AudioManager.Instance != null)
             AudioManager.Instance.播放鱼被点击音效();
@@ -331,6 +350,45 @@ public class 鱼运动 : MonoBehaviour
                 ps.Emit(emitCount);
             }
         }
+    }
+
+    /// <summary>
+    /// 手动点击判定（只打包版需要）。
+    /// 桌面窗口把画面渲染进 RenderTexture，窗口像素尺寸和 RT 尺寸不一致时，
+    /// 内置 OnMouseDown 的射线会整体偏移，鱼就点不中（UI 悬停之前也是同一个原因）。
+    /// 这里先把窗口坐标换算到 RT 坐标再做 Physics2D 命中；两者一致时换算系数为 1，
+    /// 行为与原来完全等价。
+    /// </summary>
+    private void HandleClickInput()
+    {
+#if !UNITY_EDITOR
+        if (!Input.GetMouseButtonDown(0)) return;
+
+        Camera cam = Camera.main;
+        if (cam == null) return;
+
+        Vector3 sp = Input.mousePosition;
+        if (cam.targetTexture != null)
+        {
+            float tw = cam.targetTexture.width;
+            float th = cam.targetTexture.height;
+            if (tw > 0f && th > 0f && Screen.width > 0 && Screen.height > 0)
+            {
+                sp.x *= tw / Screen.width;
+                sp.y *= th / Screen.height;
+            }
+        }
+
+        // 2D 正交相机：z 传 0 会得到相机自身位置，取物体所在平面（z=0）的距离
+        sp.z = Mathf.Abs(cam.transform.position.z);
+        Vector2 world = cam.ScreenToWorldPoint(sp);
+
+        Collider2D hit = Physics2D.OverlapPoint(world);
+        if (hit == null) return;
+        if (hit.transform != transform && !hit.transform.IsChildOf(transform)) return;
+
+        TryPlayClickFeedback();
+#endif
     }
 
     // ==================== 碰撞处理 ====================
