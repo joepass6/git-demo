@@ -183,26 +183,20 @@ public class 鱼运动_区域内游动 : 鱼运动
         // 原因：RotateTowards 是渐进的（steerSpeed 360°/秒 → 本帧最多 5-6°），
         //   如果用 newFwd=GetForward2D() 前进，对齐前的中间朝向 ≠ tangent → 鱼侧着/背着游（"用鱼背移动"）
         // 修法：前进方向硬约束为 tangent，视觉朝向继续渐进对齐，两者解耦
+        //
+        // 朝向角由"腹部贴表面"唯一确定（素材朝左、腹部在贴图局部 -y）：
+        //   旧逻辑只按 tangent.x 决定镜像，竖直墙面上 tangent.x 恒为 0 → 向下走时腹部朝外（背贴墙）
+        float upAngle = Mathf.Atan2(-outward.y, -outward.x) * Mathf.Rad2Deg + 90f;
 
-        float fwdAngle = Mathf.Atan2(GetForward2D().y, GetForward2D().x) * Mathf.Rad2Deg;
-        float tanAngle = Mathf.Atan2(tangent.y, tangent.x) * Mathf.Rad2Deg;
-        float angleDiff = Mathf.Abs(Mathf.DeltaAngle(fwdAngle, tanAngle));
+        // 选镜像：未镜像时素材头朝局部 -x，镜像后朝 +x，取与前进切线同向的那个
+        float upRad = upAngle * Mathf.Deg2Rad;
+        Vector2 headUnmirrored = new Vector2(-Mathf.Cos(upRad), -Mathf.Sin(upRad));
+        bool needMirror = Vector2.Dot(headUnmirrored, tangent) < 0f;
+        if (needMirror == isFacingLeft) FlipDirection();   // isFacingLeft=true 表示不镜像
 
-        if (angleDiff > 1f)
+        Quaternion targetQuat = Quaternion.Euler(0f, 0f, upAngle);
+        if (Quaternion.Angle(transform.rotation, targetQuat) > 1f)
         {
-            // 对齐视觉朝向（仅在差得明显时，防止每帧抖动翻转）
-            float angle = tanAngle;
-            Quaternion targetQuat;
-            if (tangent.x >= 0f)
-            {
-                if (isFacingLeft) FlipDirection();
-                targetQuat = Quaternion.Euler(0, 0, angle);
-            }
-            else
-            {
-                if (!isFacingLeft) FlipDirection();
-                targetQuat = Quaternion.Euler(0, 0, angle + 180f);
-            }
             transform.rotation = Quaternion.RotateTowards(transform.rotation, targetQuat, steerSpeed * Time.deltaTime);
         }
 

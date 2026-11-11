@@ -58,6 +58,9 @@ public class DragAndPlaceSystem : MonoBehaviour
     [Tooltip("拖入物体的基础排序值（数值越大越靠前）")]
     public int baseSortingOrder = 100;
 
+    [Tooltip("落位吸附的额外 Y 偏移（世界单位）：正值往上抬，用于抵消 sprite 透明边距")]
+    public float baseSnapOffsetY = 0f;
+
     // 私有字段
     private Color originalImageColor;
     private Color originalTextColor;
@@ -84,7 +87,18 @@ public class DragAndPlaceSystem : MonoBehaviour
     // 图标可能没开 Raycast Target，EventSystem 射线扫不到，所以这里直接登记实例供窗口脚本查询
     static readonly System.Collections.Generic.List<DragAndPlaceSystem> all = new System.Collections.Generic.List<DragAndPlaceSystem>();
     void OnEnable() { if (!all.Contains(this)) all.Add(this); }
-    void OnDisable() { all.Remove(this); }
+    void OnDisable()
+    {
+        all.Remove(this);
+        // 拖动中被面板关闭/禁用时 Update 不再执行，预览体会永久残留，这里兜底销毁
+        if (currentDragObject != null)
+        {
+            Destroy(currentDragObject);
+            currentDragObject = null;
+        }
+        isDragging = false;
+        IsCarryingObject = false;
+    }
 
     /// <summary>鼠标是否按在任意珊瑚拖拽图标上（按图标矩形检测，不依赖射线）</summary>
     public static bool IsPointerOverAnyIcon(Vector2 screenPos)
@@ -223,6 +237,14 @@ public class DragAndPlaceSystem : MonoBehaviour
 
         // 统一选最靠下那块当主石头（和 EndDrag/RefreshAll 完全一致）
         GameObject newRock = FindPrimaryRock(allHit);
+
+        // 预览体吸附到石头顶面：所见即所得，松手后的落点就是现在看到的位置
+        if (newRock != null && currentDragObject != null)
+        {
+            Vector3 p = currentDragObject.transform.position;
+            p.y += SnapDeltaY(currentDragObject, newRock);
+            currentDragObject.transform.position = p;
+        }
 
         // 切换了石头
         if (newRock != currentHoverRock)
@@ -461,8 +483,12 @@ public class DragAndPlaceSystem : MonoBehaviour
         {
             Debug.Log($"[DragAndPlace] 放置成功! 主石头: {primaryRock?.name}");
 
+            // 底边吸附到主石头顶面：落点 = 预览看到的位置，而不是鼠标中心
+            float snapY = SnapDeltaY(currentDragObject, primaryRock);
+            Vector3 finalPos = placePos + new Vector3(0f, snapY, 0f);
+
             Destroy(currentDragObject);
-            currentDragObject = Instantiate(prefabToSpawn, placePos, Quaternion.identity);
+            currentDragObject = Instantiate(prefabToSpawn, finalPos, Quaternion.identity);
             Debug.Log($"[DragAndPlace] 生成真实物体: {currentDragObject.name}");
 
             // 🔑 登记到 SaveSystem：让它在任何时机（包括退出阶段）都能保存这个玩家珊瑚
@@ -481,7 +507,7 @@ public class DragAndPlaceSystem : MonoBehaviour
             SetToTopLayer(currentDragObject);
             PlayPlaceEffect(currentDragObject);
             TriggerCoralSkill(currentDragObject, primaryRock);
-            SpawnBubbleRing(placePos, currentDragObject);
+            SpawnBubbleRing(finalPos, currentDragObject);
 
             // 6. 扣除珊瑚数量并更新文本显示
             float newCount = GetCoralCount() - GetCost();
@@ -629,6 +655,7 @@ public class DragAndPlaceSystem : MonoBehaviour
             float rr = ringRadius + Random.Range(-0.08f, 0.08f);
             Vector3 pos = root.position + new Vector3(Mathf.Cos(angle) * rr, Mathf.Sin(angle) * rr * 0.5f, 0);
             var go = new GameObject("bub_" + i);
+            go.transform.SetParent(root, true);   // 跟随 FX 根一起销毁，避免 16 个气泡永久残留
             go.transform.position = pos;
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = bubbleSprite;
@@ -716,7 +743,7 @@ public class DragAndPlaceSystem : MonoBehaviour
     ///   2. 石头的顶面必须就在珊瑚底边附近——高出太多=悬空，低太多=珊瑚嵌在石头腰部，
     ///      也顺便排除塔身上那些细高的「窗口」碰撞体（珊瑚悬在窗口中段时底边远低于窗顶）。
     /// </summary>
-    static List<GameObject> FindSupportRocks(GameObject coral, string placementTag, float touchTolerance)
+    internal static List<GameObject> FindSupportRocks(GameObject coral, string placementTag, float touchTolerance)
     {
         var result = new List<GameObject>();
         if (coral == null || string.IsNullOrEmpty(placementTag)) return result;
@@ -747,6 +774,20 @@ public class DragAndPlaceSystem : MonoBehaviour
             result.Add(go);
         }
         return result;
+    }
+
+    /// <summary>珊瑚底边贴到石头顶面所需的 Y 位移（正值=往上抬）</summary>
+    float SnapDeltaY(GameObject coral, GameObject rock)
+    {
+        if (coral == null || rock == null) return 0f;
+        if (!TryGetCoralBaseProbe(coral, out _, out _, out Bounds coralBounds)) return 0f;
+
+        float topY = float.MinValue;
+        foreach (var c in rock.GetComponentsInChildren<Collider2D>())
+            if (c != null && c.enabled && c.bounds.max.y > topY) topY = c.bounds.max.y;
+        if (topY == float.MinValue) return 0f;
+
+        return (topY - coralBounds.min.y) + baseSnapOffsetY;
     }
 
     /// <summary>取珊瑚所有 SpriteRenderer 的世界包围盒，在底边生成一条横向探针</summary>

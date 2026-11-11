@@ -169,8 +169,8 @@ public class RockCapacity : MonoBehaviour
             if (!string.IsNullOrEmpty(coralTag) && !coralGo.CompareTag(coralTag)) continue;
             if (carryIgnore != null && (coralGo == carryIgnore || coralGo.transform.IsChildOf(carryIgnore.transform))) continue;
 
-            // 与读档/技能解析相同的紧贴容差，保证"显示的数量"和"技能/放置判定"是同一批珊瑚
-            List<GameObject> rocks = SkillSystem.SkillCaster.DetectRocksUnder(coralGo, placementTag,
+            // 与拖拽放置完全同源：同样的底座探针 FindSupportRocks，保证"显示的数量"和放置判定一致
+            List<GameObject> rocks = DragAndPlaceSystem.FindSupportRocks(coralGo, placementTag,
                 SkillSystem.SkillCaster.RockTouchTolerance);
 
             // ===== 关键：一个珊瑚语义上只占一个容量槽（底座那块石头）=====
