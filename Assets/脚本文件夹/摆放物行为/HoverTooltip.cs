@@ -66,23 +66,38 @@ public class HoverTooltip : MonoBehaviour
 
     private bool _isHovering;
     private float _exitTime;
+    private bool _hidePending;   // 本次离开后还有一次待执行的延迟隐藏
     private bool _enteredOnce;
 
     // ======= 悬停放大效果内部缓存 =======
-    // 每个目标的原始值：不同组件类型用不同放大方式
+    /// <summary>
+    /// 一个“要放大的节点”（按钮根 / 底图 / 图标 / 文字）。
+    /// 放大时会把它压小，但把它下面的【直接子级】钉在世界原处、原尺寸。
+    /// </summary>
     private class ScaleEntry
     {
         public Transform transform;
-        public RectTransform rt;
-        public Image image;                   // Image → 改 sizeDelta（不影响子物体）
-        public Text uiText;                   // 旧版 UI Text → 改 scale + fontSize（Text 没子物体，安全）
-        public TMP_Text tmpText;              // TextMeshPro → 同上
-        public Vector2 originalSizeDelta;     // Image / 纯 UI 容器用
-        public Vector3 originalScale;         // Text / 3D 用
-        public float originalFontSize;        // Text/TMP 用
+        public string typeLabel;              // 仅用于日志标注类型
+        public Vector3 originalScale;         // Awake 记下的 localScale
+        public bool inheritsFromAncestor;     // 父级也是缩放目标 → 自己不额外乘，避免 m×m 叠乘
+        public List<PinnedChild> children = new List<PinnedChild>();
     }
+
+    /// <summary>被“钉住”的直接子级：父级放大后世界位置、世界尺寸都不变</summary>
+    private class PinnedChild
+    {
+        public Transform transform;
+        public Vector3 authoredLocalScale;    // 场景里设计好的 localScale（首次 Awake 记录，永不被放大污染）
+        public Vector3 authoredLocalPosition; // 场景里设计好的 localPosition
+        public Vector3 restLocalPosition;     // 进入 hover 时的 localPosition（还原用）
+        public Vector3 restWorldPosition;     // 进入 hover 时的世界坐标（反算用）
+        public bool activeAtHover;            // 进入 hover 时是否可见；inactive 的不参与钉住
+        public bool compensatedWhileHover;    // 悬停中才被激活的子级已按设计值补偿过（只补一次）
+    }
+
     private List<ScaleEntry> _entries = new List<ScaleEntry>();
     private Coroutine _scaleCoroutine;
+
 
     // ============================================================
     private void Awake()
@@ -128,33 +143,84 @@ public class HoverTooltip : MonoBehaviour
             if (!found) source.Add(transform);
         }
 
+        // 按层级从浅到深处理：“父级跳过 → 子级一起跳过”才能稳定生效
+        source.Sort(delegate (Transform a, Transform b) { return DepthOf(a).CompareTo(DepthOf(b)); });
+
+        var rawEntries = new List<ScaleEntry>();
         foreach (var t in source)
         {
-            var rt = t as RectTransform;
-            var entry = new ScaleEntry { transform = t, rt = rt };
+            if (t == null) continue;
 
-            entry.image = t.GetComponent<Image>();
-            entry.uiText = t.GetComponent<Text>();
-            entry.tmpText = t.GetComponent<TMP_Text>();
+            // 同一个 Transform 被重复拖入时只保留一份
+            bool dup = false;
+            foreach (var r in rawEntries) if (r.transform == t) { dup = true; break; }
+            if (dup) continue;
 
-            entry.originalSizeDelta = rt != null ? rt.sizeDelta : Vector2.zero;
-            entry.originalScale = t.localScale;
-            if (entry.uiText != null) entry.originalFontSize = entry.uiText.fontSize;
-            else if (entry.tmpText != null) entry.originalFontSize = entry.tmpText.fontSize;
-
-            _entries.Add(entry);
+            rawEntries.Add(new ScaleEntry { transform = t, typeLabel = DescribeType(t), originalScale = t.localScale });
         }
 
-        foreach (var e in _entries)
+        // 目标之间可能有父子关系（例如根节点 + 它下面的图标/文字）。
+        // 父级已经放大 m 倍，子级再乘 m 就会叠成 m²，所以子级目标只继承、不额外乘。
+        foreach (var e in rawEntries)
         {
-            string type = "";
-            if (e.uiText != null) type += "[UI Text]";
-            if (e.tmpText != null) type += "[TMP]";
-            if (e.image != null) type += "[Image]";
-            if (e.rt != null && e.uiText == null && e.tmpText == null && e.image == null) type += "[RectTransform]";
-            if (e.rt == null) type += "[3D]";
-            Debug.Log($"[HoverTooltip] Awake 捕获: {e.transform.name} {type}");
+            bool inherited = false;
+            foreach (var other in rawEntries)
+            {
+                if (other == e || other.transform == null) continue;
+                if (e.transform.IsChildOf(other.transform)) { inherited = true; break; }
+            }
+            e.inheritsFromAncestor = inherited;
+
+            // 直接子级：不是缩放目标的（面板/容器/弹窗）一律钉住；
+            // 是缩放目标的（图标/文字/提示）跟着按钮一起变大，不钉。
+            for (int i = 0; i < e.transform.childCount; i++)
+            {
+                var c = e.transform.GetChild(i);
+                bool isScaleTarget = false;
+                foreach (var r in rawEntries) if (r.transform == c) { isScaleTarget = true; break; }
+                if (isScaleTarget) continue;
+
+                e.children.Add(new PinnedChild
+                {
+                    transform = c,
+                    authoredLocalScale = c.localScale,
+                    authoredLocalPosition = c.localPosition,
+                    restLocalPosition = c.localPosition,
+                    restWorldPosition = c.position,
+                    activeAtHover = c.gameObject.activeSelf
+                });
+            }
+
+            string childNames = "";
+            foreach (var c in e.children) childNames += c.transform.name + ", ";
+            Debug.Log($"[HoverTooltip] Awake 缩放目标: {e.transform.name} {e.typeLabel}" +
+                      (e.inheritsFromAncestor ? "（父级已放大，自己只继承）" : $"（localScale ×{hoverScale}）") +
+                      (e.children.Count > 0 ? $"；钉住 {e.children.Count} 个直接子级: {childNames}" : "；无子级需钉住"));
         }
+
+        _entries = rawEntries;
+
+        if (_entries.Count == 0)
+            Debug.Log($"[HoverTooltip] Awake '{gameObject.name}' 没有可缩放目标，跳过放大（enableScale={enableScale}）。");
+    }
+
+    /// <summary>层级深度：根 = 0，用于让父级先于子级被判定</summary>
+    static int DepthOf(Transform t)
+    {
+        int d = 0;
+        for (var p = t; p != null; p = p.parent) d++;
+        return d;
+    }
+
+    /// <summary>日志用：这个节点上挂了什么可见组件</summary>
+    static string DescribeType(Transform t)
+    {
+        string type = "";
+        if (t.GetComponent<Text>() != null) type += "[UI Text]";
+        if (t.GetComponent<TMP_Text>() != null) type += "[TMP]";
+        if (t.GetComponent<Image>() != null) type += "[Image]";
+        if (type.Length == 0) type = (t is RectTransform) ? "[RectTransform]" : "[3D]";
+        return type;
     }
 
     private void Start()
@@ -179,7 +245,12 @@ public class HoverTooltip : MonoBehaviour
             }
         }
 
-        foreach (var t in targets) if (t != null) t.SetActive(false);
+        foreach (var t in targets)
+            if (t != null && t.activeSelf)
+            {
+                Debug.Log($"[HoverTooltip] Start 隐藏目标: {t.name}");
+                t.SetActive(false);
+            }
 
         Debug.Log($"[HoverTooltip] '{gameObject.name}' 模式={_mode} targets={targets.Count} 就绪 canvas={(_parentCanvas != null ? _parentCanvas.name + "/" + _parentCanvas.renderMode : "无")} cam={(_canvasCam != null ? _canvasCam.name : "null")}");
     }
@@ -215,13 +286,21 @@ public class HoverTooltip : MonoBehaviour
     // ====== Update：UI 矩形检测 + 3D/2D 射线兜底 + 延迟隐藏 ======
     private void Update()
     {
-        // 延迟隐藏倒计时
-        if (enableShow && !_isHovering && hideDelay > 0f)
+        // 延迟隐藏倒计时：只在“这一次真的离开过”之后隐藏一次。
+        // ⚠️ 旧写法把 _exitTime 归 0，而 Time.time - 0 永远 ≥ hideDelay，
+        //    于是隐藏过一次之后每帧都重新隐藏 —— 任何被别处 SetActive(true) 的目标
+        //    都会在下一帧被这里再关掉（“刚点开就没了”）。
+        if (enableShow && _hidePending && !_isHovering && hideDelay > 0f)
         {
             if (Time.time - _exitTime >= hideDelay)
             {
-                foreach (var t in targets) if (t != null && t.activeSelf) t.SetActive(false);
-                _exitTime = 0f;
+                _hidePending = false;
+                foreach (var t in targets)
+                    if (t != null && t.activeSelf)
+                    {
+                        Debug.Log($"[HoverTooltip] 延迟隐藏目标: {t.name}（hideDelay={hideDelay}）");
+                        t.SetActive(false);
+                    }
             }
         }
 
@@ -240,6 +319,37 @@ public class HoverTooltip : MonoBehaviour
                 CheckByRaycast();
                 break;
         }
+
+        // 悬停期间才被其它脚本打开的子级（面板/容器/提示）：
+        // 它刚激活的这一刻会继承父级的 m 倍，这里同一帧按设计值 ÷ m 补偿一次。
+        if (_isHovering) CompensateNewlyActivated();
+    }
+
+    /// <summary>
+    /// 进入 hover 时还是隐藏的子级，若悬停期间被激活，按【场景设计值 ÷ m】换算一次：
+    ///   世界尺寸 = m × (设计 ÷ m) = 设计；世界位置 = 父级 + 设计偏移，和没悬停时一致。
+    /// 只补一次，避免每帧覆盖别处对该子级的正常移动。
+    /// </summary>
+    void CompensateNewlyActivated()
+    {
+        if (_entries == null || Mathf.Approximately(_currentMultiplier, 1f)) return;
+        float inv = 1f / Mathf.Max(0.01f, _currentMultiplier);
+        for (int i = 0; i < _entries.Count; i++)
+        {
+            var e = _entries[i];
+            if (e.transform == null) continue;
+            for (int j = 0; j < e.children.Count; j++)
+            {
+                var c = e.children[j];
+                if (c.transform == null || c.activeAtHover || c.compensatedWhileHover) continue;
+                if (!c.transform.gameObject.activeInHierarchy) continue;
+
+                c.transform.localScale = new Vector3(c.authoredLocalScale.x * inv, c.authoredLocalScale.y * inv, c.authoredLocalScale.z * inv);
+                c.transform.localPosition = new Vector3(c.authoredLocalPosition.x * inv, c.authoredLocalPosition.y * inv, c.authoredLocalPosition.z * inv);
+                c.compensatedWhileHover = true;
+                Debug.Log($"[HoverTooltip] 悬停中新激活子级，已按设计值÷{_currentMultiplier:F2} 补偿: {e.transform.name}/{c.transform.name}");
+            }
+        }
     }
 
     // ====== 核心 ======
@@ -248,12 +358,20 @@ public class HoverTooltip : MonoBehaviour
         Debug.Log($"[HoverTooltip] ✅ Enter() 触发! gameObject={gameObject.name}");
         _isHovering = true;
         _exitTime = 0f;
+        _hidePending = false;
 
         // 显隐功能（开关控制）
         if (enableShow)
-            foreach (var t in targets) if (t != null) t.SetActive(true);
+            foreach (var t in targets)
+                if (t != null)
+                {
+                    Debug.Log($"[HoverTooltip] Enter 显示目标: {t.name}（activeSelf {t.activeSelf}→true）");
+                    t.SetActive(true);
+                }
 
         // 悬停放大效果（开关控制）
+        // 先记录子级此刻的世界坐标/本地缩放，再放父级 —— 反算才是“钉在原处”
+        SnapshotPinnedChildren();
         PlayScaleAnim(hoverScale);
 
         OnHoverEnter?.Invoke(this);
@@ -264,6 +382,7 @@ public class HoverTooltip : MonoBehaviour
         Debug.Log($"[HoverTooltip] ❌ Exit() 触发! gameObject={gameObject.name}");
         _isHovering = false;
         _exitTime = Time.time;
+        _hidePending = hideDelay > 0f;
 
         // 缩回原始大小（无论 hideDelay 多少都立刻缩回，视觉反馈更清晰）
         PlayScaleAnim(1f);
@@ -271,20 +390,75 @@ public class HoverTooltip : MonoBehaviour
         // 显隐功能（开关控制）
         if (enableShow && hideDelay <= 0f)
         {
-            foreach (var t in targets) if (t != null) t.SetActive(false);
+            _hidePending = false;
+            foreach (var t in targets)
+                if (t != null)
+                {
+                    Debug.Log($"[HoverTooltip] Exit 隐藏目标: {t.name}（activeSelf {t.activeSelf}→false）");
+                    t.SetActive(false);
+                }
             _exitTime = 0f;
         }
     }
 
     /// <summary>
-    /// 同时放大/缩回所有目标。
-    /// 💡 Image 背景 → 改 sizeDelta（不影响子物体 Text！）
-    /// 💡 Text/TMP → 改 fontSize + localScale（Text 没子物体，安全放大）
-    /// 💡 3D → 改 localScale
+    /// 悬停到一半 UI 被关掉时，按钮不会卡在放大状态。
+    /// 缩放目标和被钉住的子级都用【记录值】写回，不做任何 ÷m 运算。
+    /// </summary>
+    private void OnDisable() { RestoreAll(); }
+    private void OnDestroy() { RestoreAll(); }
+
+    /// <summary>进入 hover 前：记录每个被钉住子级的本地值与世界坐标（只记录当时可见的）</summary>
+    void SnapshotPinnedChildren()
+    {
+        if (_entries == null) return;
+        for (int i = 0; i < _entries.Count; i++)
+        {
+            var e = _entries[i];
+            if (e.transform == null) continue;
+            for (int j = 0; j < e.children.Count; j++)
+            {
+                var c = e.children[j];
+                if (c.transform == null) continue;
+                // ⚠️ 隐藏中的子级不记录：inactive 物体的布局可能还没刷新，
+                //    记下来的世界坐标一旦被激活后反算回去，容器就会被甩到屏幕外/被压成 1/m。
+                c.activeAtHover = c.transform.gameObject.activeInHierarchy;
+                c.compensatedWhileHover = c.activeAtHover;
+                if (!c.activeAtHover) continue;
+
+                c.restLocalPosition = c.transform.localPosition;
+                c.restWorldPosition = c.transform.position;
+            }
+        }
+    }
+
+    /// <summary>还原：缩放目标与所有被钉住的子级都写回记录值（不做任何 ÷m）</summary>
+    void RestoreAll()
+    {
+        if (_entries == null) return;
+        for (int i = 0; i < _entries.Count; i++)
+        {
+            var e = _entries[i];
+            if (e.transform == null) continue;
+            e.transform.localScale = e.originalScale;
+            for (int j = 0; j < e.children.Count; j++)
+            {
+                var c = e.children[j];
+                if (c.transform == null) continue;
+                // 统一用【场景设计值】还原，杜绝上一次悬停残留的 1/m 或 m 被当成“原始值”。
+                c.transform.localScale = c.authoredLocalScale;
+                c.transform.localPosition = c.activeAtHover ? c.restLocalPosition : c.authoredLocalPosition;
+            }
+        }
+        _currentMultiplier = 1f;
+    }
+
+    /// <summary>
+    /// 同时放大/缩回所有目标（目标可以为按钮根节点，允许带着底图变大）。
+    /// 子级由 ApplyTarget 逐帧反向缩放 + 位置反算，世界尺寸/世界位置保持不变。
     /// </summary>
     void PlayScaleAnim(float targetMultiplier)
     {
-        Debug.Log($"[HoverTooltip] PlayScaleAnim({targetMultiplier}) enableScale={enableScale} hoverScale={hoverScale} entries={_entries?.Count}");
         if (!enableScale) return;
         if (hoverScale <= 1.0001f && targetMultiplier >= 0.999f) return;
         if (_entries == null || _entries.Count == 0) return;
@@ -293,6 +467,7 @@ public class HoverTooltip : MonoBehaviour
 
         if (scaleDuration <= 0.001f)
         {
+            _currentMultiplier = targetMultiplier;
             foreach (var e in _entries) ApplyTarget(e, targetMultiplier);
             return;
         }
@@ -300,61 +475,88 @@ public class HoverTooltip : MonoBehaviour
     }
 
     /// <summary>
-    /// 把单个条目设为目标倍数的大小。
-    /// 💡 Image 背景 → 改 sizeDelta（不影响子物体 Text！）
-    /// 💡 Text/TMP → 改 fontSize + localScale（Text 没子物体，安全放大）
-    /// 💡 3D → 改 localScale
+    /// 把单个目标设为目标倍数，并把它的直接子级钉回世界原位。
+    /// 💡 目标：localScale = 原始值 × m（父级也是目标时只继承，避免 m×m）。
+    /// 💡 子级：localScale = 记录的原始 localScale ÷ m；
+    ///          localPosition = 父级.InverseTransformPoint(记录的世界坐标)，
+    ///          于是世界尺寸 = m × (原始/m) = 原始，世界位置 = 记录值，逐像素不变。
+    /// 💡 每次都由记录值直接算出，不做递增乘除，中途反向也不留残值。
     /// </summary>
     void ApplyTarget(ScaleEntry e, float multiplier)
     {
         if (e.transform == null) return;
 
-        // 💡 注意：各个组件互不排斥！同一个 Transform 可能同时挂 Image + TMP，两个都要改
+        e.transform.localScale = e.inheritsFromAncestor ? e.originalScale : e.originalScale * multiplier;
 
-        // Text / TMP：改 fontSize（字体变清楚）
-        if (e.uiText != null)
+        float inv = 1f / Mathf.Max(0.01f, multiplier);
+        var parent = e.transform;
+        for (int i = 0; i < e.children.Count; i++)
         {
-            e.uiText.fontSize = Mathf.RoundToInt(e.originalFontSize * multiplier);
-            Debug.Log($"[HoverTooltip] ApplyTarget: {e.transform.name} → UI Text fontSize={e.uiText.fontSize}");
-        }
-        if (e.tmpText != null)
-        {
-            e.tmpText.fontSize = e.originalFontSize * multiplier;
-            Debug.Log($"[HoverTooltip] ApplyTarget: {e.transform.name} → TMP fontSize={e.tmpText.fontSize}");
-        }
-        // Image：改 sizeDelta（子物体完全不受影响）
-        if (e.image != null && e.rt != null)
-        {
-            e.rt.sizeDelta = e.originalSizeDelta * multiplier;
-            Debug.Log($"[HoverTooltip] ApplyTarget: {e.transform.name} → Image sizeDelta={e.rt.sizeDelta}");
-        }
+            var c = e.children[i];
+            if (c.transform == null) continue;
 
-        // Text/TMP 需要额外改 scale（让视觉放大更明显）；3D 物体也改 scale
-        if (e.uiText != null || e.tmpText != null || (e.rt == null && e.image == null))
-        {
-            e.transform.localScale = e.originalScale * multiplier;
-            Debug.Log($"[HoverTooltip] ApplyTarget: {e.transform.name} → localScale={e.transform.localScale}");
+            if (!c.activeAtHover)
+            {
+                // 进入 hover 时还是隐藏的子级（典型：点击「珊瑚调节」才打开的 珊瑚调整页面容器）：
+                // 绝不拿 inactive 时记下的世界坐标去反算，否则一激活就被甩到屏幕外 / 压成 1/m。
+                // 若它在悬停期间被打开，用【场景设计值】做同样的补偿：
+                //   localScale = 设计值 ÷ m、localPosition = 设计值 ÷ m
+                //   → 世界尺寸 = m × (1/m) = 1，世界位置 = 父级 + 设计偏移，和没悬停时逐像素一致。
+                if (!c.transform.gameObject.activeInHierarchy) continue;
+                c.transform.localScale = new Vector3(c.authoredLocalScale.x * inv, c.authoredLocalScale.y * inv, c.authoredLocalScale.z * inv);
+                c.transform.localPosition = new Vector3(c.authoredLocalPosition.x * inv, c.authoredLocalPosition.y * inv, c.authoredLocalPosition.z * inv);
+                continue;
+            }
+
+            c.transform.localScale = new Vector3(c.authoredLocalScale.x * inv, c.authoredLocalScale.y * inv, c.authoredLocalScale.z * inv);
+            c.transform.localPosition = parent.InverseTransformPoint(c.restWorldPosition);
         }
     }
 
+    /// <summary>当前缩放倍数（诊断用；1 = 未放大）</summary>
+    public float CurrentMultiplier { get { return _currentMultiplier; } }
+    /// <summary>当前是否处于悬停状态（诊断用）</summary>
+    public bool IsHoveringNow { get { return _isHovering; } }
+
+    /// <summary>
+    /// 立刻按当前倍数重新应用一次（用于悬停期间刚被 SetActive(true) 的子级：
+    /// 同一帧就把补偿算好，不会先以放大态闪一帧）。
+    /// </summary>
+    public void RepinNow()
+    {
+        if (_entries == null) return;
+        for (int i = 0; i < _entries.Count; i++) ApplyTarget(_entries[i], _currentMultiplier);
+    }
+
+    /// <summary>诊断用：把缩放目标与被钉住子级的当前值拼成一行</summary>
+    public string DumpScaleState()
+    {
+        if (_entries == null || _entries.Count == 0) return "无缩放目标";
+        var sb = new System.Text.StringBuilder();
+        for (int i = 0; i < _entries.Count; i++)
+        {
+            var e = _entries[i];
+            if (e.transform == null) continue;
+            sb.Append($"{e.transform.name}(scale={e.transform.localScale})");
+            if (e.inheritsFromAncestor) sb.Append("[继承父级]");
+            for (int j = 0; j < e.children.Count; j++)
+            {
+                var c = e.children[j];
+                if (c.transform == null) continue;
+                sb.Append($" 子:{c.transform.name}(act={c.transform.gameObject.activeInHierarchy} scale={c.transform.localScale} pin={c.activeAtHover})");
+            }
+            if (i < _entries.Count - 1) sb.Append(" | ");
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>上次动画停在的倍数：中途反向时从这里接着动，不会闪一下回到 1 倍</summary>
+    private float _currentMultiplier = 1f;
+
     System.Collections.IEnumerator ScaleAllLerp(float targetMultiplier, float duration)
     {
+        float from = _currentMultiplier;
         float elapsed = 0f;
-
-        // 记录每个目标的"起始当前值"（上一段动画可能停在半路）
-        var fromSizes = new Dictionary<ScaleEntry, Vector2>();  // Image / 容器 sizeDelta
-        var fromScales = new Dictionary<ScaleEntry, Vector3>();  // Text / 3D scale
-        var fromFonts = new Dictionary<ScaleEntry, float>();    // Text fontSize
-        foreach (var e in _entries)
-        {
-            if (e.transform == null) continue;
-            if (e.uiText != null) fromFonts[e] = e.uiText.fontSize;
-            else if (e.tmpText != null) fromFonts[e] = e.tmpText.fontSize;
-            if (e.uiText != null || e.tmpText != null || e.image == null)
-                fromScales[e] = e.transform.localScale;
-            if (e.rt != null && (e.image != null || (e.uiText == null && e.tmpText == null)))
-                fromSizes[e] = e.rt.sizeDelta;
-        }
 
         while (elapsed < duration)
         {
@@ -362,47 +564,12 @@ public class HoverTooltip : MonoBehaviour
             float k = Mathf.Clamp01(elapsed / duration);
             k = 1f - (1f - k) * (1f - k); // EaseOutQuad
 
-            foreach (var e in _entries)
-            {
-                if (e.transform == null) continue;
-
-                // Text / TMP → fontSize + localScale 同时 Lerp
-                if (e.uiText != null)
-                {
-                    float fromFont = fromFonts.ContainsKey(e) ? fromFonts[e] : e.uiText.fontSize;
-                    e.uiText.fontSize = Mathf.RoundToInt(Mathf.Lerp(fromFont, e.originalFontSize * targetMultiplier, k));
-                    Vector3 fromScale = fromScales.ContainsKey(e) ? fromScales[e] : e.transform.localScale;
-                    e.transform.localScale = Vector3.Lerp(fromScale, e.originalScale * targetMultiplier, k);
-                }
-                else if (e.tmpText != null)
-                {
-                    float fromFont = fromFonts.ContainsKey(e) ? fromFonts[e] : e.tmpText.fontSize;
-                    e.tmpText.fontSize = Mathf.Lerp(fromFont, e.originalFontSize * targetMultiplier, k);
-                    Vector3 fromScale = fromScales.ContainsKey(e) ? fromScales[e] : e.transform.localScale;
-                    e.transform.localScale = Vector3.Lerp(fromScale, e.originalScale * targetMultiplier, k);
-                }
-                // Image → sizeDelta Lerp（子物体不受影响）
-                else if (e.image != null && e.rt != null)
-                {
-                    Vector2 fromSize = fromSizes.ContainsKey(e) ? fromSizes[e] : e.rt.sizeDelta;
-                    e.rt.sizeDelta = Vector2.Lerp(fromSize, e.originalSizeDelta * targetMultiplier, k);
-                }
-                // 其他 RectTransform 容器
-                else if (e.rt != null)
-                {
-                    Vector2 fromSize = fromSizes.ContainsKey(e) ? fromSizes[e] : e.rt.sizeDelta;
-                    e.rt.sizeDelta = Vector2.Lerp(fromSize, e.originalSizeDelta * targetMultiplier, k);
-                }
-                // 3D
-                else
-                {
-                    Vector3 fromScale = fromScales.ContainsKey(e) ? fromScales[e] : e.transform.localScale;
-                    e.transform.localScale = Vector3.Lerp(fromScale, e.originalScale * targetMultiplier, k);
-                }
-            }
+            _currentMultiplier = Mathf.Lerp(from, targetMultiplier, k);
+            foreach (var e in _entries) ApplyTarget(e, _currentMultiplier);
             yield return null;
         }
 
+        _currentMultiplier = targetMultiplier;
         foreach (var e in _entries) ApplyTarget(e, targetMultiplier); // 精确到位
         _scaleCoroutine = null;
     }
@@ -457,7 +624,10 @@ public class HoverTooltip : MonoBehaviour
             // 之前这里 2D 判定永远打不中；取到物体所在的 z=0 平面。
             float depth = Mathf.Abs(cam.transform.position.z);
             var worldPt = cam.ScreenToWorldPoint(new Vector3(mouse.x, mouse.y, depth));
-            hitSelf = Physics2D.OverlapPoint(worldPt) == _col2D;
+            // 同一物体可能挂“大点击圈 + 小落位圈”两个碰撞体，OverlapPoint 只返回其中一个，
+            // 直接比引用会在两个圈之间随机判不中；改成判断“命中的是不是本物体/子物体”。
+            var hit2D = Physics2D.OverlapPoint(worldPt);
+            hitSelf = hit2D != null && (hit2D == _col2D || hit2D.transform == transform || hit2D.transform.IsChildOf(transform));
         }
 
         if (hitSelf && !_isHovering) Enter();

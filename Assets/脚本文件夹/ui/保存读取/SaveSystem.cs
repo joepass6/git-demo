@@ -286,6 +286,8 @@ public class SaveSystem : MonoBehaviour
     {
         public string prefabName;
         public float posX, posY, posZ;
+        /// <summary>贴面倾斜的 Z 轴角度。旧存档没有这个字段 → 反序列化为 0，朝向保持原样。</summary>
+        public float rotZ;
         public float bonusDestroyTime;
         public int bonusDropCount;
     }
@@ -366,6 +368,7 @@ public class SaveSystem : MonoBehaviour
                     posX = sp.transform.position.x,
                     posY = sp.transform.position.y,
                     posZ = sp.transform.position.z,
+                    rotZ = sp.transform.eulerAngles.z,
                     bonusDestroyTime = sp.bonusDestroyTime,
                     bonusDropCount = sp.bonusDropCount,
                 };
@@ -385,6 +388,7 @@ public class SaveSystem : MonoBehaviour
                     posX = sp.transform.position.x,
                     posY = sp.transform.position.y,
                     posZ = sp.transform.position.z,
+                    rotZ = sp.transform.eulerAngles.z,
                     bonusDestroyTime = sp.bonusDestroyTime,
                     bonusDropCount = sp.bonusDropCount,
                 };
@@ -629,10 +633,17 @@ public class SaveSystem : MonoBehaviour
 
                 // Instantiate → 只触发 Awake，Start 要等下一帧
                 Vector3 pos = new Vector3(entry.posX, entry.posY, entry.posZ);
-                var obj = Instantiate(prefab, pos, Quaternion.identity);
+                // 旧存档没有 rotZ 字段（默认 0）→ 恢复出来仍是水平朝向，不影响已有存档的珊瑚
+                Quaternion rot = Quaternion.Euler(0f, 0f, entry.rotZ);
+                var obj = Instantiate(prefab, pos, rot);
 
                 // Instantiate 出来的实例可能会自动带上 "(Clone)"，但不影响 ObjectSpawner 自身
                 obj.name = entry.prefabName; // 还原成预制体原名（方便 Hierarchy 查看）
+
+                // 🔑 读档恢复的珊瑚也要抬到石头前面：
+                //    预制体默认 sortingOrder=0，而场景「窗口_1/2/3」是 Obstacle 且在 coral 层 order=2，
+                //    之前只有"现场放置"会抬排序，读档后珊瑚就被窗口压住了。
+                DragAndPlaceSystem.BringToFront(obj);
 
                 // 关键：在 Start 执行之前把 bonus 写入 + 立即登记到玩家集合
                 var spawner = obj.GetComponent<ObjectSpawner>();

@@ -4847,6 +4847,7 @@ GameObject:
   - component: {fileID: 8079117640863523506}
   - component: {fileID: 587422250314943838}
   - component: {fileID: 4447555578876051923}
+  - component: {fileID: 7018518137948976753}
   m_Layer: 0
   m_Name: "\u767D\u73CA\u745A"
   m_TagString: coral
@@ -5009,3 +5010,38 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   skill: {fileID: 11400000, guid: 448f17038b284cb4d9af578f82c92267, type: 2}
   coralTag: coral
+--- !u!70 &7018518137948976753
+CapsuleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8341509457922235319}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0.0000000032737129, y: 0.027461896}
+  m_Size: {x: 0.42500007, y: 0.3700766}
+  m_Direction: 1

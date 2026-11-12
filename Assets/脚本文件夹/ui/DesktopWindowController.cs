@@ -30,6 +30,37 @@ public class DesktopWindowController : MonoBehaviour
     public float maxWindowScale = 1.2f;
     float windowScale = 1f;
 
+    // 旧场景序列化的是 0.5 / 1.5（1.5 时画面裁掉大半座塔，0.5 时缩得过小）。
+    // 改字段初始值不会影响已保存的场景，所以按项目既有做法做一次“旧默认值→新默认值”迁移；
+    // 用户手动改成别的值时仍然尊重用户值（不改 .unity，避免编辑器重载）。
+    const float LegacyMinWindowScale = 0.5f;
+    const float LegacyMaxWindowScale = 1.5f;
+    const float DefaultMinWindowScale = 0.7f;
+    const float DefaultMaxWindowScale = 1.25f;
+    float EffectiveMinWindowScale =>
+        Mathf.Abs(minWindowScale - LegacyMinWindowScale) < 0.001f ? DefaultMinWindowScale : minWindowScale;
+    float EffectiveMaxWindowScale =>
+        Mathf.Abs(maxWindowScale - LegacyMaxWindowScale) < 0.001f ? DefaultMaxWindowScale : maxWindowScale;
+
+    /// <summary>
+    /// UI 设计基准高度（像素）：取洞穴主体的实际像素高度（1:1 取景时约 996px）。
+    /// 用 1080 时 UI 偏小（scaleFactor≈0.92），改成 1000 后又偏大（≈0.996），
+    /// 现在取 1035：比 1000 小约 3.4%。
+    /// </summary>
+    const float UiDesignHeight = 1035f;
+
+    /// <summary>
+    /// UI 缩放锁（0~1.25 的窗口缩放档位）：UI 只跟窗口像素高度联动，**不再乘滚轮/存档里的 windowScale**。
+    /// 0.94 是当前构建版实测满意的比例。锁死后：
+    ///   画布逻辑尺寸 = texH / (texH/UiDesignHeight × 0.94) = UiDesignHeight/0.94 ≈ 1101 单位（恒定），
+    ///   所有锚点固定的 UI 在任何机器、任何缩放档位下像素位置与大小完全一致。
+    /// 世界（相机 orthographicSize）仍然按 windowScale 正常缩放，UI 不跟着动。
+    /// </summary>
+    const float UiLockedScaleFactor = 0.94f;
+
+    /// <summary>窗口缩放真正生效后触发（参数=新的 windowScale）。一次性定位的 UI 靠它重新贴回场景物体。</summary>
+    public static event Action<float> OnWindowScaleChanged;
+
     [Header("窗口按钮")]
     public Button minimizeButton;
 
@@ -237,10 +268,11 @@ public class DesktopWindowController : MonoBehaviour
         // 下次打开时会按 600 的设计高度算，UI 反而被放大。
         foreach (CanvasScaler s in FindObjectsOfType<CanvasScaler>(true))
         {
-            // 统一“设计高度”=1080：两个 1:1 的页面 Canvas 本来没有参考分辨率，
-            // 必须给一个共同基准，后面 CanvasBaseScaleFactor 才能按同一高度换算。
+            // 统一“设计高度”=UiDesignHeight（洞穴像素高度 1035，不是窗口高度 1080）：
+            // 两个 1:1 的页面 Canvas 本来没有参考分辨率，必须给一个共同基准，
+            // 后面 CanvasBaseScaleFactor 才能按同一高度换算。
             s.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            s.referenceResolution = new Vector2(1920, 1080);
+            s.referenceResolution = new Vector2(1920, UiDesignHeight);
             s.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
             s.matchWidthOrHeight = 1f; // 按高度匹配
         }
@@ -255,10 +287,9 @@ public class DesktopWindowController : MonoBehaviour
     /// </summary>
     float CanvasBaseScaleFactor(Vector2 referenceResolution)
     {
-        if (referenceResolution.x < 100f || referenceResolution.y < 100f)
-            referenceResolution = new Vector2(1920f, 1080f);
-
-        float designHeight = Mathf.Max(1f, referenceResolution.y);
+        // 统一按洞穴像素高度换算（不再看各 Canvas 自己序列化的参考分辨率，
+        // 否则未激活的旧 Canvas 会停留在 800x600，算出来偏小）
+        float designHeight = Mathf.Max(1f, UiDesignHeight);
         float pixelHeight = texH > 0 ? texH : Screen.height;
         return pixelHeight / designHeight;
     }
@@ -421,7 +452,7 @@ public class DesktopWindowController : MonoBehaviour
         int w = h;
         ClampToWorkArea(ref w, ref h); // 等比缩放，正方形不会变形
         fitW = w; fitH = h;
-        windowScale = Mathf.Clamp(windowScale, minWindowScale, maxWindowScale);
+        windowScale = Mathf.Clamp(windowScale, EffectiveMinWindowScale, EffectiveMaxWindowScale);
 
         // 窗口物理尺寸固定不变，用 orthographicSize 做缩放
         Debug.Log($"[桌面窗口] 窗口贴合(1:1): 基础orthoSize={baseOrthoSize:F2}, 窗口={fitW}x{fitH}, 当前缩放=x{windowScale:F2}");
@@ -493,8 +524,22 @@ public class DesktopWindowController : MonoBehaviour
     {
 #if !UNITY_EDITOR
         if (hwnd == IntPtr.Zero) hwnd = GetActiveWindow();
-        if (hwnd == IntPtr.Zero) return;
-        SetWindowPos(hwnd, (IntPtr)(topMost ? -1 : -2), 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+        if (hwnd == IntPtr.Zero)
+        {
+            Debug.LogWarning("[桌面窗口] 置顶失败：拿不到窗口句柄 hwnd");
+            return;
+        }
+        int before = GetWindowLong(hwnd, GWL_EXSTYLE);
+        bool ok = SetWindowPos(hwnd, (IntPtr)(topMost ? -1 : -2), 0, 0, 0, 0,
+                               SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
+        int after = GetWindowLong(hwnd, GWL_EXSTYLE);
+        Debug.Log($"[桌面窗口] 置顶={((after & (int)WS_EX_TOPMOST) != 0 ? 1 : 0)} 期望={topMost} " +
+                  $"hwnd=0x{hwnd.ToInt64():X} TOPMOST前={((before & (int)WS_EX_TOPMOST) != 0 ? 1 : 0)} " +
+                  $"SetWindowPos={ok}");
+#else
+        // 编辑器下不能真的调用 SetWindowPos：hwnd 会拿到 Unity 编辑器窗口，
+        // 把编辑器设成置顶。这里只留日志，置顶效果只能打包验证。
+        Debug.Log($"[桌面窗口] SetTopMost({topMost}) 在编辑器内是空操作（需打包验证）");
 #endif
     }
 
@@ -607,8 +652,8 @@ public class DesktopWindowController : MonoBehaviour
             cam.cullingMask = newMask;
         }
 
-        // scaleFactor 每个 Canvas 统一 = 按高度算的基准系数 × windowScale，
-        // 与相机“按高度装满窗口”保持同一基准，避免窄窗口下 UI 被按宽度额外压小
+        // scaleFactor 每个 Canvas 统一 = 按高度算的基准系数 × 固定档位（UiLockedScaleFactor）。
+        // 不再乘 windowScale：UI 布局对所有人、所有滚轮档位都锁死，只有世界会缩放。
 
         foreach (Canvas c in cachedCanvases)
         {
@@ -633,8 +678,7 @@ public class DesktopWindowController : MonoBehaviour
                 if (scaler.uiScaleMode != CanvasScaler.ScaleMode.ConstantPixelSize)
                     scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
 
-                float targetSF = CanvasBaseScaleFactor(scaler.referenceResolution)
-                                 * Mathf.Max(0.01f, windowScale);
+                float targetSF = CanvasBaseScaleFactor(scaler.referenceResolution) * UiLockedScaleFactor;
                 if (!Mathf.Approximately(scaler.scaleFactor, targetSF))
                     scaler.scaleFactor = targetSF;
             }
@@ -704,8 +748,9 @@ public class DesktopWindowController : MonoBehaviour
 
         // 初始缩放
         cam.orthographicSize = baseOrthoSize / Mathf.Max(0.01f, windowScale);
+        OnWindowScaleChanged?.Invoke(windowScale);
 
-        Debug.Log($"[桌面窗口] ULW 已启动 ({texW}x{texH}), orthoSize={cam.orthographicSize:F2} (base={baseOrthoSize:F2}/scale={windowScale:F2}), UI基准={CanvasBaseScaleFactor(new Vector2(1920f, 1080f)):F2}");
+        Debug.Log($"[桌面窗口] ULW 已启动 ({texW}x{texH}), orthoSize={cam.orthographicSize:F2} (base={baseOrthoSize:F2}/scale={windowScale:F2}), UI基准={CanvasBaseScaleFactor(new Vector2(1920f, UiDesignHeight)):F3}");
     }
 
     /// <summary>
@@ -930,11 +975,16 @@ public class DesktopWindowController : MonoBehaviour
         if ((ex & (int)WS_EX_LAYERED) == 0)
             SetWindowLong(hwnd, GWL_EXSTYLE, ex | (int)WS_EX_LAYERED);
 
-        // 置顶自愈：分辨率切换/窗口重建/Unity 自身的窗口设置都可能把 WS_EX_TOPMOST 清掉，
-        // 这里只在“位丢了”时补一次 SetWindowPos，不会每帧和别的窗口抢 z-order。
+        // 置顶自愈：分辨率切换/窗口重建/Unity 自身的窗口设置都可能改写 WS_EX_TOPMOST，
+        // 这里按“期望状态”双向校正：该置顶就补 -1，该取消就补 -2，
+        // 否则关掉置顶后只要有人把位置回 TOPMOST，就再也没人把它摘掉了。
         if (topMost && (ex & (int)WS_EX_TOPMOST) == 0)
         {
             SetWindowPos(hwnd, (IntPtr)(-1), 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
+        }
+        else if (!topMost && (ex & (int)WS_EX_TOPMOST) != 0)
+        {
+            SetWindowPos(hwnd, (IntPtr)(-2), 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
         }
 
         // 保持窗口尺寸不弹回（Unity/Windows 可能周期性重置窗口大小）
@@ -1028,7 +1078,7 @@ public class DesktopWindowController : MonoBehaviour
         zoomDebounceDeadline = 0f;
         if (Mathf.Abs(pendingZoomScroll) < 0.0001f) return;
 
-        float newScale = Mathf.Clamp(windowScale + pendingZoomScroll * ZoomStep, minWindowScale, maxWindowScale);
+        float newScale = Mathf.Clamp(windowScale + pendingZoomScroll * ZoomStep, EffectiveMinWindowScale, EffectiveMaxWindowScale);
         pendingZoomScroll = 0f;
         if (Mathf.Approximately(newScale, windowScale)) return;
 
@@ -1047,7 +1097,7 @@ public class DesktopWindowController : MonoBehaviour
     /// </summary>
     bool ApplyWindowScale(float scale)
     {
-        windowScale = Mathf.Clamp(scale, minWindowScale, maxWindowScale);
+        windowScale = Mathf.Clamp(scale, EffectiveMinWindowScale, EffectiveMaxWindowScale);
 #if !UNITY_EDITOR
         Camera cam = zoomCamera != null ? zoomCamera : Camera.main;
         if (cam == null || baseOrthoSize <= 0f) return false;
@@ -1059,12 +1109,14 @@ public class DesktopWindowController : MonoBehaviour
             if (c == null || !c.isRootCanvas) continue;
             var scaler = c.GetComponent<CanvasScaler>();
             if (scaler == null) continue;
-            float targetSF = CanvasBaseScaleFactor(scaler.referenceResolution)
-                             * Mathf.Max(0.01f, windowScale);
+            float targetSF = CanvasBaseScaleFactor(scaler.referenceResolution) * UiLockedScaleFactor;
             if (!Mathf.Approximately(scaler.scaleFactor, targetSF))
                 scaler.scaleFactor = targetSF;
         }
 #endif
+        // 一次性定位的 UI（珊瑚详情面板等）在 scaleFactor 变化后不会自己回到场景物体上方，
+        // 这里通知它们重新贴一次。放在最后：此时相机/scaleFactor 都已是新值。
+        OnWindowScaleChanged?.Invoke(windowScale);
         return true;
     }
 
@@ -1088,6 +1140,7 @@ public class DesktopWindowController : MonoBehaviour
         Camera cam = zoomCamera != null ? zoomCamera : Camera.main;
         if (cam != null && baseOrthoSize > 0f) cam.orthographicSize = baseOrthoSize;
 #endif
+        OnWindowScaleChanged?.Invoke(windowScale);
     }
 
     // ==================== Shift+Space 贴底缩小 ====================
@@ -1101,7 +1154,7 @@ public class DesktopWindowController : MonoBehaviour
             savedWindowPos = GetWindowPosition();
 
             // 缩到最小
-            SetWindowScale(minWindowScale);
+            SetWindowScale(EffectiveMinWindowScale);
 
             // 移动到屏幕底部居中
             MoveWindowToBottomCenter();

@@ -46,6 +46,50 @@ public class 鱼运动 : MonoBehaviour
     [Tooltip("下落速度")]
     public float fallSpeed = 2f;
 
+    [Header("定点掉落（可选）")]
+    [Tooltip("勾选后：到时间把掉落物掉到场景里指定的目标点/区域，而不是从鱼当前位置掉")]
+    public bool useTargetDrop = false;
+    [Tooltip("目标点 Transform：只有当这条鱼本身是场景物体时才能直接拖（预制体的引用不能指向场景物体）")]
+    public Transform dropTarget;
+    [Tooltip("目标点 Tag：鱼是运行时从预制体实例化的，用 Tag 找场景里的目标空物体；多个时随机取一个。目标上挂了 Collider2D 就按区域随机取点")]
+    public string dropTargetTag = "";
+    [Tooltip("定点掉落时从目标点上方多高处生成，落下过程就是下落动画（世界单位）")]
+    public float targetDropHeight = 0.8f;
+
+    // 按 Tag 找目标点的缓存（避免每条鱼每帧 GameObject.FindGameObjectsWithTag）
+    static readonly List<Transform> s_dropTargets = new List<Transform>();
+    static float s_dropTargetStamp = -999f;
+    const float DropTargetRefreshInterval = 3f;
+
+    /// <summary>解析定点掉落目标：优先手动拖的 Transform，其次按 Tag 找场景里的目标点。</summary>
+    Transform ResolveDropTarget()
+    {
+        if (dropTarget != null) return dropTarget;
+        if (string.IsNullOrEmpty(dropTargetTag)) return null;
+
+        if (Time.time - s_dropTargetStamp > DropTargetRefreshInterval)
+        {
+            s_dropTargetStamp = Time.time;
+            s_dropTargets.Clear();
+            try
+            {
+                foreach (GameObject go in GameObject.FindGameObjectsWithTag(dropTargetTag))
+                    if (go != null) s_dropTargets.Add(go.transform);
+            }
+            catch (UnityException)
+            {
+                Debug.LogWarning($"[{name}] dropTargetTag \"{dropTargetTag}\" 没有在 Tag 管理器里定义，定点掉落退回鱼当前位置");
+                dropTargetTag = "";
+                return null;
+            }
+        }
+
+        for (int i = s_dropTargets.Count - 1; i >= 0; i--)
+            if (s_dropTargets[i] == null) s_dropTargets.RemoveAt(i);
+        if (s_dropTargets.Count == 0) return null;
+        return s_dropTargets[UnityEngine.Random.Range(0, s_dropTargets.Count)];
+    }
+
     [Header("消失设置")]
     [Tooltip("存在时间（秒），到时自动销毁（0=永不销毁）")]
     public float destroyTime = 30f;
@@ -580,7 +624,27 @@ public class 鱼运动 : MonoBehaviour
         {
             if (itemPrefab != null)
             {
-                Vector3 safePos = FindSafeDropSpawn(transform.position);
+                // 定点掉落：把“生成原点”换成场景目标点（+上方高度，靠刚体下落播动画）；
+                // 没配目标/没找到目标时自动退回原来的“鱼当前位置掉落”。
+                Vector3 origin = transform.position;
+                Transform target = useTargetDrop ? ResolveDropTarget() : null;
+                if (target != null)
+                {
+                    origin = target.position;
+                    // 目标上挂了碰撞体 => 当成区域，在里面随机取点
+                    Collider2D area = target.GetComponent<Collider2D>();
+                    if (area != null)
+                    {
+                        Bounds b = area.bounds;
+                        origin = new Vector3(
+                            UnityEngine.Random.Range(b.min.x, b.max.x),
+                            UnityEngine.Random.Range(b.min.y, b.max.y),
+                            origin.z);
+                    }
+                    origin += Vector3.up * Mathf.Max(0f, targetDropHeight);
+                }
+
+                Vector3 safePos = FindSafeDropSpawn(origin);
                 GameObject obj = Instantiate(itemPrefab, safePos, Quaternion.identity);
                 Rigidbody2D itemRb = obj.GetComponent<Rigidbody2D>();
                 if (itemRb != null) itemRb.velocity = Vector2.down * fallSpeed;

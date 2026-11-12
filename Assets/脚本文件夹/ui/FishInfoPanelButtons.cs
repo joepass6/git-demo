@@ -121,7 +121,10 @@ public class FishInfoPanelButtons : MonoBehaviour
 
         if (ok)
         {
-            rootPanelRect.anchoredPosition = localPos;
+            // localPos 是相对画布轴心(中心)的坐标；面板锚点常被改成左上角，
+            // 直接赋值会整体偏半个画布，且偏移随窗口缩放变化 —— 必须换算成 anchoredPosition。
+            rootPanelRect.anchoredPosition = UIFollower.LocalPointToAnchoredPosition(
+                parentCanvas.transform as RectTransform, rootPanelRect, localPos);
 
             if (floatEnabled)
             {

@@ -11,6 +11,23 @@ public class UIFollower : MonoBehaviour
     private RectTransform rectTransform;
     private Canvas canvas;
 
+    /// <summary>
+    /// 把“相对父矩形轴心(pivot)”的局部坐标换算成子节点的 anchoredPosition。
+    /// RectTransformUtility.ScreenPointToLocalPointInRectangle 返回的是相对父矩形 pivot（通常是中心）的坐标，
+    /// 若直接写进锚点在左上角的 rect.anchoredPosition，会整体偏掉半个父矩形，
+    /// 而且这个偏差按 1/scaleFactor 变化 —— 表现就是放大/缩小后 UI 位置会跑。
+    /// </summary>
+    public static Vector2 LocalPointToAnchoredPosition(RectTransform parentRect, RectTransform child, Vector2 localPoint)
+    {
+        if (parentRect == null || child == null) return localPoint;
+        Rect pr = parentRect.rect;
+        Vector2 aMin = child.anchorMin, aMax = child.anchorMax;
+        Vector2 anchorRef = new Vector2(
+            Mathf.Lerp(pr.xMin, pr.xMax, (aMin.x + aMax.x) * 0.5f),
+            Mathf.Lerp(pr.yMin, pr.yMax, (aMin.y + aMax.y) * 0.5f));
+        return localPoint - anchorRef;
+    }
+
     void Start()
     {
         rectTransform = GetComponent<RectTransform>();

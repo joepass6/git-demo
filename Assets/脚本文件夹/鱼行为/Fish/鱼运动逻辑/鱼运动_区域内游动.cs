@@ -41,6 +41,20 @@ public class 鱼运动_区域内游动 : 鱼运动
     [Tooltip("【Surface 模式】表面粘连半径（世界单位）。离开当前物体超过此距离才切到下一个物体；设大一点可跨物体接缝不断连")]
     public float surfaceStickRange = 0.1f;
 
+    [Header("【Inside 模式】之字形斜向直线")]
+    [Tooltip("斜向直线的角度（度，0=水平直游，20~30 最自然）：竖直分量的正负决定这一段是斜上还是斜下")]
+    public float zigzagAngle = 24f;
+
+    [Header("【Inside 模式】碰边折向")]
+    [Tooltip("碰边折向时额外叠加的随机偏角下限（度）：在折向基础上再加一点，让每一段的斜率都不同")]
+    public float edgeTurnAngleMin = 0f;
+
+    [Tooltip("碰边折向时额外叠加的随机偏角上限（度）")]
+    public float edgeTurnAngleMax = 8f;
+
+    [Tooltip("碰边折向冷却（秒）：刚折过向的一小段时间内不再折，避免贴着边界连续触发把方向折乱")]
+    public float edgeCooldown = 0.25f;
+
     private Collider2D[] zones = new Collider2D[0];  // 所有同 Tag 物体的碰撞器
     private float zoneTimer;
 
@@ -48,6 +62,11 @@ public class 鱼运动_区域内游动 : 鱼运动
     private Collider2D currentSurface = null!;  // 当前贴的物体（= null! 抑制 CS8618 未初始化警告）
     private Vector2 lastSurfaceTangent;  // 上一帧沿这个物体的切线方向（跨物体时带过来保持连续）
     private bool hasLastTangent;
+
+    // Inside 模式：之字形（斜向直线段 + 碰边折向）的运行时状态
+    private Vector2 insideDir = Vector2.right;  // 当前这一段的斜向方向（单位向量）
+    private bool insideDirInited;               // 是否已按朝向/随机上下初始化过
+    private float edgeCooldownTimer;            // 碰边折向冷却计时
 
     protected override void Start()
     {
@@ -67,6 +86,9 @@ public class 鱼运动_区域内游动 : 鱼运动
         currentSurface = null;
         hasLastTangent = false;
         lastSurfaceTangent = Vector2.zero;
+        // Inside 模式之字形状态的复用重置：下一条鱼按自己的朝向/随机上下重新起一段斜线
+        insideDirInited = false;
+        edgeCooldownTimer = 0f;
     }
 
     protected override void HandleMovement()
@@ -82,19 +104,107 @@ public class 鱼运动_区域内游动 : 鱼运动
 
         if (areaMode == AreaMode.Surface) { HandleSurface(); return; }
 
-        // ===== 模式一（Inside）：完全继承自由游动方式，沿当前朝向前进 =====
-        Vector2 forward = GetForward2D();
-        if (forward.sqrMagnitude > 0.0001f)
+        // ===== 模式一（Inside）：斜向直线段 + 碰边折向，轨迹是一段段直线组成的“之”字 =====
+        // 这里不再有任何正弦/上下抖动：位置只叠加“当前段方向 × 速度 × dt”，走线是直的。
+        float dt = Time.deltaTime;
+
+        if (!insideDirInited) InitInsideDirection();
+        if (edgeCooldownTimer > 0f) edgeCooldownTimer -= dt;
+
+        bool insideZone = IsInsideAnyZone(transform.position);
+        if (!insideZone)
         {
-            transform.position += (Vector3)(forward * moveSpeed * Time.deltaTime);
+            // 已经游出所有区域：保留原来的平滑回归（朝最近区域内部转），
+            // 这一段直接跟随“转向后的朝向”走，避免方向与朝向互相追着转成绕圈
+            SteerBackToNearestZone();
+            Vector2 back = GetForward2D();
+            if (back.sqrMagnitude > 0.0001f) insideDir = back.normalized;
+        }
+        else
+        {
+            // 在区域内：沿当前斜向方向向前探一小段，探到边界就折向。
+            // 用“预判”而不是“已经出界”：折向发生在贴边之前，不会先冲出去再折回来。
+            float probe = Mathf.Max(0.08f, moveSpeed * 0.12f);
+            if (edgeCooldownTimer <= 0f &&
+                !IsInsideAnyZone((Vector2)transform.position + insideDir * probe))
+            {
+                ReflectAtEdge(probe);
+                edgeCooldownTimer = Mathf.Max(0.02f, edgeCooldown);
+            }
         }
 
-        // 在任意同 Tag 物体范围内 → 自由游动，不干预（跨物体交界自然丝滑通过）
-        // 游出所有范围 → 平滑转向最近的区域内部
-        if (!IsInsideAnyZone(transform.position))
+        // 直线前进
+        transform.position += (Vector3)(insideDir * moveSpeed * dt);
+
+        // 视觉朝向对齐当前这一段的方向（平滑转，不改变前进方向）
+        if (dt > 0f) SteerToward((Vector2)transform.position + insideDir * 0.5f);
+    }
+
+    /// <summary>
+    /// Inside 模式起始方向：固定斜角 zigzagAngle，竖直分量随机正负（这次斜上还是斜下），
+    /// 水平分量跟随鱼当前朝向，保证一开始就是一条干净的斜直线。
+    /// </summary>
+    void InitInsideDirection()
+    {
+        float a = Mathf.Clamp(zigzagAngle, 0f, 80f) * Mathf.Deg2Rad;
+        float signX = isFacingLeft ? -1f : 1f;
+        float signY = Random.value < 0.5f ? -1f : 1f;
+        insideDir = new Vector2(signX * Mathf.Cos(a), signY * Mathf.Sin(a)).normalized;
+        insideDirInited = true;
+    }
+
+    /// <summary>
+    /// 碰边折向：竖直分量反向（水平分量保持）= 斜上变斜下；横向碰边则反向水平分量。
+    /// 再叠加一个 ±(edgeTurnAngleMin~edgeTurnAngleMax) 的随机偏角，让每一段的斜率和折返点都不同。
+    /// 判断撞的是哪条边：分别拿“只有水平分量”“只有竖直分量”的探测点去测区域。
+    /// </summary>
+    void ReflectAtEdge(float probe)
+    {
+        Vector2 pos = transform.position;
+        Vector2 step = insideDir * probe;
+        bool canX = IsInsideAnyZone(pos + new Vector2(step.x, 0f));
+        bool canY = IsInsideAnyZone(pos + new Vector2(0f, step.y));
+
+        if (!canY && canX)
         {
-            SteerBackToNearestZone();
+            insideDir.y = -insideDir.y;              // 上下边：竖直分量反向
         }
+        else if (!canX && canY)
+        {
+            insideDir.x = -insideDir.x;              // 左右边：水平分量反向
+        }
+        else if (!canX && !canY)
+        {
+            insideDir.x = -insideDir.x;              // 角上：两个都反向
+            insideDir.y = -insideDir.y;
+        }
+        else
+        {
+            insideDir.y = -insideDir.y;              // 接缝/凹处：按上下边处理
+        }
+
+        // 随机偏角（正负随机）
+        float lo = Mathf.Min(edgeTurnAngleMin, edgeTurnAngleMax);
+        float hi = Mathf.Max(edgeTurnAngleMin, edgeTurnAngleMax);
+        if (hi > 0.01f)
+        {
+            float jitter = Random.Range(lo, hi) * (Random.value < 0.5f ? -1f : 1f);
+            Vector2 c1 = RotateDir(insideDir, jitter);
+            if (IsInsideAnyZone(pos + c1 * probe)) insideDir = c1;
+            else
+            {
+                Vector2 c2 = RotateDir(insideDir, -jitter);
+                if (IsInsideAnyZone(pos + c2 * probe)) insideDir = c2;
+            }
+        }
+        insideDir.Normalize();
+    }
+
+    static Vector2 RotateDir(Vector2 dir, float degrees)
+    {
+        float r = degrees * Mathf.Deg2Rad;
+        float cs = Mathf.Cos(r), sn = Mathf.Sin(r);
+        return new Vector2(dir.x * cs - dir.y * sn, dir.x * sn + dir.y * cs);
     }
 
     /// <summary>

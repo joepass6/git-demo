@@ -180,6 +180,23 @@ public class ObjectSpawner : MonoBehaviour
     private void OnEnable()
     {
         Debug.Log("[ObjectSpawner] 已启用: " + gameObject.name + ", Collider=" + (GetComponent<Collider2D>() != null || GetComponentInChildren<Collider2D>() != null));
+        DesktopWindowController.OnWindowScaleChanged += HandleWindowScaleChanged;
+    }
+
+    private void OnDisable()
+    {
+        DesktopWindowController.OnWindowScaleChanged -= HandleWindowScaleChanged;
+    }
+
+    /// <summary>
+    /// 窗口缩放（scaleFactor 变化）后，一次性定位的面板不会自己回到珊瑚上方，
+    /// 这里把当前打开的面板重新贴回它的挂载物。
+    /// </summary>
+    private void HandleWindowScaleChanged(float _)
+    {
+        if (CurrentSpawner != this) return;
+        if (cachedPanel == null || !cachedPanel.activeInHierarchy || !isActiveAndEnabled) return;
+        SetPanelPositionToSpawner();
     }
 
     // ==================== 点击检测 ====================
@@ -191,6 +208,10 @@ public class ObjectSpawner : MonoBehaviour
     void CheckClick()
     {
         if (!Input.GetMouseButtonDown(0)) return;
+
+        // 拖拽放置 / 搬家期间鼠标正压在被搬的珊瑚本体上：
+        // 此时左键的语义是“落位”，不能再顺带触发点击弹面板/变暗闪烁
+        if (MoveSystem.isInMoveMode || DragAndPlaceSystem.IsCarryingObject) return;
 
         if (UnityEngine.EventSystems.EventSystem.current != null
             && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
@@ -204,8 +225,10 @@ public class ObjectSpawner : MonoBehaviour
             AutoFindMissingReferences();
         }
 
-        // 查找 Collider2D（支持子物体）
-        Collider2D col = GetComponent<Collider2D>();
+        // 点击判定只认“大碰撞体”（面积最大的那个）：小碰撞体是落位检测专用的，
+        // 用 GetComponent 在两者之间拿到哪个是随机的，会出现点不中/两个圈抢射线。
+        Collider2D col = DragAndPlaceSystem.GetClickCollider(gameObject);
+        if (col == null) col = GetComponent<Collider2D>();
         if (col == null) col = GetComponentInChildren<Collider2D>();
         if (col == null)
         {
@@ -349,17 +372,26 @@ public class ObjectSpawner : MonoBehaviour
         if (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
             cam = canvas.worldCamera != null ? canvas.worldCamera : Camera.main;
 
+        // 坐标换算的基准矩形必须是 rootRect 的父矩形（anchoredPosition 就是相对它的），
+        // 之前用整个 Canvas 矩形换算，rootRect 不在 Canvas 第一层时也会整体偏。
+        RectTransform parentRect = rootRect != null ? rootRect.parent as RectTransform : null;
+        if (parentRect == null)
+            parentRect = canvas != null ? canvas.transform as RectTransform : rootRect;
+        if (parentRect == null) return;
+
         Vector2 localPos;
         bool ok = RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            canvas != null ? canvas.transform as RectTransform : rootRect,
+            parentRect,
             targetScreenPos,
             cam,
             out localPos);
 
         if (ok && rootRect != null)
         {
-            rootRect.anchoredPosition = localPos;
-            Debug.Log($"[ObjectSpawner] 面板定位成功: anchoredPosition={localPos}");
+            // localPos 相对父矩形轴心，必须换算成 anchoredPosition（锚点可能在左上角）
+            Vector2 anchored = UIFollower.LocalPointToAnchoredPosition(parentRect, rootRect, localPos);
+            rootRect.anchoredPosition = anchored;
+            Debug.Log($"[ObjectSpawner] 面板定位成功: anchoredPosition={anchored}");
         }
         else
         {

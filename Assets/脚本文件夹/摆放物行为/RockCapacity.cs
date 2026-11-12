@@ -149,7 +149,8 @@ public class RockCapacity : MonoBehaviour
 
     /// <summary>
     /// 按场景实际情况重算所有石头的"已放数量"并刷新数字。
-    /// 口径与放置/技能完全一致：对每个珊瑚用 SkillCaster.DetectRocksUnder 求它接触的石头集合。
+    /// 口径与放置/技能完全一致：对每个珊瑚用 DragAndPlaceSystem.FindSupportRocks（底座探针）求它接触的石头集合，
+    /// 再用 FindPrimaryRock 取"主石头"，一个珊瑚只占一个容量槽。
     /// coralTag 为珊瑚的标签（默认 coral）；拖拽预览的 ObjectSpawner 已被禁用，自动不计入。
     /// </summary>
     public static void RefreshAll(string placementTag, string coralTag = "coral")
@@ -176,14 +177,8 @@ public class RockCapacity : MonoBehaviour
             // ===== 关键：一个珊瑚语义上只占一个容量槽（底座那块石头）=====
             // 哪怕它的体积同时蹭到了旁边另一块石头，也只给底座那块扣减容量
             if (rocks.Count == 0) continue;
-            // 挑 Y 最靠下的那块（= 底座）
-            GameObject baseRock = rocks[0];
-            float baseY = baseRock.transform.position.y;
-            for (int i = 1; i < rocks.Count; i++)
-            {
-                float y = rocks[i].transform.position.y;
-                if (y < baseY) { baseY = y; baseRock = rocks[i]; }
-            }
+            // 主石头 = Y 最靠下的那块（和放置/搬家同一套 FindPrimaryRock）
+            GameObject baseRock = DragAndPlaceSystem.FindPrimaryRock(rocks);
 
             RockCapacity cap = CapOf(baseRock);
             if (cap == null) continue;

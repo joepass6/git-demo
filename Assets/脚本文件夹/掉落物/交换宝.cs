@@ -154,6 +154,22 @@ public class 交换宝 : MonoBehaviour
     /// <summary>切换面板显隐（按钮点一下）</summary>
     public void Toggle() { gameObject.SetActive(!gameObject.activeSelf); }
 
+    // ========== 技能系统接口：全局修正（同时作用于场景里所有交换宝实例） ==========
+
+    /// <summary>技能修正：每次转换消耗的数量（负=少消耗）。下限 1，防止被减成 0/负数导致无限转换</summary>
+    public static void 技能修正消耗(int delta)
+    {
+        foreach (var x in FindObjectsOfType<交换宝>(true))
+            if (x != null) x.消耗数量 = Mathf.Max(1, x.消耗数量 + delta);
+    }
+
+    /// <summary>技能修正：每次转换换得的数量（负=少给）。下限 1</summary>
+    public static void 技能修正得到(int delta)
+    {
+        foreach (var x in FindObjectsOfType<交换宝>(true))
+            if (x != null) x.换得数量 = Mathf.Max(1, x.换得数量 + delta);
+    }
+
     // ========== 内部字段 ==========
 
     // 运行时生成的柔和径向光晕贴图（所有交换宝共用一份）

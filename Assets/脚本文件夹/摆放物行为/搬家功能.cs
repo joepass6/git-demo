@@ -166,6 +166,9 @@ public class MoveSystem : MonoBehaviour
 
         // ===== 恢复 sortingOrder =====
         RestoreSortingOrder();
+        // 恢复后必须再抬一次：原始值就是预制体的 order=0，
+        // 而场景里的「窗口_1/2/3」是 Obstacle 且在 coral 层 order=2，不抬就会搬完被窗口压住。
+        DragAndPlaceSystem.BringToFront(gameObject);
 
         // ===== RockCapacity 联动：隐藏 UI + 描边 + 取消 carryIgnore + 重算 =====
         if (currentHoverRock != null)
@@ -393,18 +396,26 @@ public class MoveSystem : MonoBehaviour
     }
 
     /// <summary>
-    /// 每帧收集所有接触的石头 → 选 Y 最靠下的"主石头"显示 UI + 描边。
-    /// 🔑 和 DragAndPlaceSystem/RefreshAll 用完全相同的 SkillCaster.DetectRocksUnder：
-    ///    同样加 RockTouchTolerance=0.05f、同样的 attachedRigidbody+Tag 检测，
-    ///    保证搬家中"亮的那块"就是"放下时扣容量的那块"。
+    /// 每帧收集底座探针命中的石头 → 选主石头（Y 最靠下 + 迟滞）→ 吸附到石头顶面。
+    /// 🔑 与 DragAndPlaceSystem / RockCapacity.RefreshAll 共用同一套
+    ///    FindSupportRocks + FindPrimaryRock + SnapDeltaY，保证搬家看到的位置就是松手后的结果。
     /// </summary>
     void UpdateHoverRock()
     {
-        List<GameObject> allHit = SkillSystem.SkillCaster.DetectRocksUnder(
+        List<GameObject> allHit = DragAndPlaceSystem.FindSupportRocks(
             gameObject, placementTag, SkillSystem.SkillCaster.RockTouchTolerance);
 
-        // 和 DragAndPlaceSystem/RefreshAll 用完全相同的 FindPrimaryRock
-        GameObject newRock = DragAndPlaceSystem.FindPrimaryRock(allHit);
+        // 和 DragAndPlaceSystem/RefreshAll 用完全相同的 FindPrimaryRock（带迟滞）
+        GameObject newRock = DragAndPlaceSystem.FindPrimaryRock(
+            allHit, currentHoverRock, DragAndPlaceSystem.PrimarySwitchMargin);
+
+        // 与拖拽放置一致：吸附到石头顶面，松手就是现在看到的位置
+        if (newRock != null)
+        {
+            Vector3 p = transform.position;
+            p.y += DragAndPlaceSystem.SnapDeltaY(gameObject, newRock);
+            transform.position = p;
+        }
 
         if (newRock != currentHoverRock)
         {
@@ -425,16 +436,22 @@ public class MoveSystem : MonoBehaviour
     // ==================== 放置检测 ====================
     void TryPlace()
     {
-        // 🔑 和 EndDrag/RefreshAll 完全相同的 DetectRocksUnder + RockTouchTolerance
-        List<GameObject> allHit = SkillSystem.SkillCaster.DetectRocksUnder(
+        // 🔑 与 EndDrag/RefreshAll 完全相同的底座探针 FindSupportRocks
+        List<GameObject> allHit = DragAndPlaceSystem.FindSupportRocks(
             gameObject, placementTag, SkillSystem.SkillCaster.RockTouchTolerance);
 
-        // 和 DragAndPlaceSystem.EndDrag 完全一致：选 Y 最靠下的主石头 → 检查主石头容量
-        GameObject primaryRock = DragAndPlaceSystem.FindPrimaryRock(allHit);
+        // 和 DragAndPlaceSystem.EndDrag 完全一致：选主石头（Y 最靠下 + 迟滞）→ 检查主石头容量
+        GameObject primaryRock = DragAndPlaceSystem.FindPrimaryRock(
+            allHit, currentHoverRock, DragAndPlaceSystem.PrimarySwitchMargin);
 
         // ====== 关键修复：搬家放置也必须检查主石头容量 ======
         if (primaryRock != null && RockCapacity.IsAvailable(primaryRock))
         {
+            // 落位吸附：底座贴到石头顶面（UpdateHoverRock 已吸过一次，这里再对齐一次保证落点精确）
+            Vector3 p = transform.position;
+            p.y += DragAndPlaceSystem.SnapDeltaY(gameObject, primaryRock);
+            transform.position = p;
+
             Debug.Log("[MoveSystem] 放置成功: 主石头 " + primaryRock.name + " (共命中 " + allHit.Count + " 块)");
 
             // 复用珊瑚放置事件：AudioManager 订阅播音效，教程系统也用

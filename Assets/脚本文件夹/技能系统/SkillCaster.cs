@@ -17,30 +17,9 @@ namespace SkillSystem
         /// <summary>珊瑚踩石头时的紧贴容差（世界单位）</summary>
         public const float RockTouchTolerance = 0.05f;
 
-        /// <summary>检测珊瑚压着的所有 placementTag 物体（OverlapBox 命中所有 placementTag Collider2D）</summary>
-        public static List<GameObject> DetectRocksUnder(GameObject coral, string placementTag, float tolerance)
-        {
-            var result = new List<GameObject>();
-            if (coral == null || string.IsNullOrEmpty(placementTag)) return result;
-            var seen = new HashSet<Collider2D>();
-            foreach (var c in coral.GetComponentsInChildren<Collider2D>())
-            {
-                if (c == null) continue;
-                Vector2 center = c.bounds.center;
-                Vector2 size = (Vector2)c.bounds.size + Vector2.one * tolerance * 2f;
-                foreach (var other in Physics2D.OverlapBoxAll(center, size, 0f))
-                {
-                    if (other == null || seen.Contains(other)) continue;
-                    seen.Add(other);
-                    if (other.transform.IsChildOf(coral.transform) || other.gameObject == coral) continue;
-
-                    // 先取 attachedRigidbody 的 GameObject（Collider2D 可能在子物体上，Tag/Rigidbody 在父物体上）
-                    var go = other.attachedRigidbody != null ? other.attachedRigidbody.gameObject : other.gameObject;
-                    if (go.CompareTag(placementTag) && !result.Contains(go)) result.Add(go);
-                }
-            }
-            return result;
-        }
+        // 注意：这里不再提供“按整块碰撞体 AABB 判接触”的 DetectRocksUnder。
+        // 珊瑚有两层碰撞体（大轮廓圈 + 小底座圈），所有落位/悬停判定统一走
+        // DragAndPlaceSystem.FindSupportRocks（底座探针 + 顶面吸附）。
 
         [Tooltip("要施放的技能定义资产（右键创建：珊瑚牧歌/技能定义）")]
         public SkillDefinition skill;
@@ -65,6 +44,21 @@ namespace SkillSystem
 
             foreach (var entry in skill.Effects)
             {
+                if (entry == null || !entry.IsValid) continue;
+
+                // 这三类效果的目标不是“某棵珊瑚”，整次施放只执行一次：
+                // 否则会按同石头上的珊瑚数量重复叠加（转化 ×N、容量 +N）。
+                if (entry.variable == SkillVariable.转化得到数量 || entry.variable == SkillVariable.转化消耗数量)
+                {
+                    SkillExecutor.ApplyGlobal(entry, skill.skillName);
+                    continue;
+                }
+                if (entry.variable == SkillVariable.石头上可放置数量)
+                {
+                    SkillExecutor.ApplyToRock(entry, rock, skill.skillName);
+                    continue;
+                }
+
                 foreach (var target in candidates)
                 {
                     if (!MatchTarget(entry, target, self)) continue;

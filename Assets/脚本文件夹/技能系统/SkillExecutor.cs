@@ -66,7 +66,48 @@ namespace SkillSystem
                     Log(skillName, entry, target, $"掉落数修正累计 {target.bonusDropCount}，影响 {aliveFish.Count} 条存活鱼");
                     break;
                 }
+
+                // 下面三项的目标不是某棵珊瑚，由 ApplyGlobal / ApplyToRock 统一执行一次：
+                case SkillVariable.转化得到数量:
+                case SkillVariable.转化消耗数量:
+                case SkillVariable.石头上可放置数量:
+                    break;
             }
+        }
+
+        /// <summary>
+        /// 全局效果（只执行一次，与“同石头所有珊瑚/自己/指定名字”无关）：
+        /// 转化得到数量 → 交换宝每次换得的个数；转化消耗数量 → 交换宝每次消耗的个数。
+        /// </summary>
+        public static void ApplyGlobal(SkillEffectEntry entry, string skillName)
+        {
+            if (entry == null || !entry.IsValid) return;
+
+            int v = Mathf.RoundToInt(entry.amount);
+            if (entry.variable == SkillVariable.转化得到数量)
+            {
+                交换宝.技能修正得到(v);
+                Debug.Log($"[技能:{skillName}] 转化得到数量 {entry.amount:+0;-0;0} → 交换宝每次换得个数");
+            }
+            else if (entry.variable == SkillVariable.转化消耗数量)
+            {
+                交换宝.技能修正消耗(v);
+                Debug.Log($"[技能:{skillName}] 转化消耗数量 {entry.amount:+0;-0;0} → 交换宝每次消耗个数");
+            }
+        }
+
+        /// <summary>
+        /// 石头容量效果：直接改“珊瑚脚下这块石头”的可放置上限（不作用于任何珊瑚）。
+        /// 石头没挂 RockCapacity 时返回 null，静默跳过。
+        /// </summary>
+        public static void ApplyToRock(SkillEffectEntry entry, GameObject rock, string skillName)
+        {
+            if (entry == null || !entry.IsValid || rock == null) return;
+            if (entry.variable != SkillVariable.石头上可放置数量) return;
+
+            int v = Mathf.RoundToInt(entry.amount);
+            int? now = RockCapacity.AddMax(rock, v);
+            Debug.Log($"[技能:{skillName}] 石头上可放置数量 {entry.amount:+0;-0;0} → {rock.name}：上限 {(now.HasValue ? now.Value.ToString() : "无容量组件(跳过)")}");
         }
 
         /// <summary>目标匹配用名：用 GameObject 名字（预制体名去掉 Clone 后缀后包含匹配）</summary>

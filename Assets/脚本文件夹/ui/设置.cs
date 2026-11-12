@@ -90,8 +90,19 @@
 
  void OnTopMostChanged(bool isOn)
  {
-     if (windowController != null)
-         windowController.SetTopMost(isOn);
+     // 兜底：Start 里没找到控制器（执行顺序/物体未激活）时，点开关再找一次，
+     // 否则点了只会翻转按钮、SetTopMost 根本没被调用，看起来就是“没反应”。
+     if (windowController == null)
+     {
+         windowController = FindObjectOfType<DesktopWindowController>();
+         if (windowController == null)
+         {
+             Debug.LogError("[设置] 没找到 DesktopWindowController，置顶/神明开关无法生效");
+             return;
+         }
+     }
+     Debug.Log($"[设置] 置顶开关 -> {isOn}（编辑器内 ApplyTopMost 是空实现，只能用打包版验证）");
+     windowController.SetTopMost(isOn);
  }
 
  void OnAutoStartChanged(bool isOn)

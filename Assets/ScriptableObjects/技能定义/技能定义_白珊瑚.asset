@@ -12,14 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1a58deb4621f5ac4fb91c964851fef1f, type: 3}
   m_Name: "\u6280\u80FD\u5B9A\u4E49_\u767D\u73CA\u745A"
   m_EditorClassIdentifier: 
-  skillName: "\u6280\u80FD_\u767D\u73CA\u745A"
+  skillName: "\u6280\u80FD_\u6A21\u677F"
   effect1:
-    variable: 5
+    variable: 0
     target: 0
     targetName: 
-    amount: -1
+    amount: 0
   effect2:
-    variable: 4
+    variable: 0
     target: 0
     targetName: 
-    amount: 1
+    amount: 0
