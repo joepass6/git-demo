@@ -14747,8 +14747,8 @@ CapsuleCollider2D:
   m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0.0029858868, y: -0.0017873949}
-  m_Size: {x: 0.18922882, y: 0.087327816}
+  m_Offset: {x: 0.0044875853, y: 0.013478957}
+  m_Size: {x: 0.18122065, y: 0.07581587}
   m_Direction: 1
 --- !u!114 &-8223390293229575740
 MonoBehaviour:
@@ -14771,6 +14771,10 @@ MonoBehaviour:
   dropInterval: 600
   itemPrefab: {fileID: 647409291031311344, guid: c10690f754adcf74faf9733da36fb355, type: 3}
   fallSpeed: 2
+  useTargetDrop: 1
+  dropTarget: {fileID: 0}
+  dropTargetTag: diao
+  targetDropHeight: 0
   destroyTime: 2400
   enableParticle: 1
   emitCount: 1
@@ -14783,8 +14787,13 @@ MonoBehaviour:
   steerSpeed: 360
   zoneRefreshInterval: 2
   obstacleTurnAngle: 45
-  surfaceDistance: 0.02
+  halfBodyWidth: 0.12
+  surfaceGap: 0.01
   surfaceStickRange: 0.1
+  zigzagAngle: 24
+  edgeTurnAngleMin: 0
+  edgeTurnAngleMax: 8
+  edgeCooldown: 0.25
 --- !u!1 &6938092234998911703
 GameObject:
   m_ObjectHideFlags: 0

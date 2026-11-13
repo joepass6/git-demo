@@ -132,18 +132,34 @@ public class ClearSaveSystem : MonoBehaviour
         foreach (var page in allPages) page.Refresh();
         Debug.Log($"[清除存档] 已刷新 {allPages.Length} 个图鉴页面");
 
-        // -------- Step 9: 重置珊瑚数量文本 --------
+        // -------- Step 9: 重置珊瑚数量文本（多框需求时每个框的值都要清） --------
         var placers = FindObjectsOfType<DragAndPlaceSystem>();
         int resetCount = 0;
         foreach (var placer in placers)
         {
-            if (placer != null && placer.coralCountText != null)
+            if (placer == null) continue;
+            bool any = false;
+
+            if (placer.需求列表 != null && placer.需求列表.Count > 0)
             {
-                placer.coralCountText.text = "0";
-                resetCount++;
+                for (int i = 0; i < placer.需求列表.Count; i++)
+                {
+                    var req = placer.需求列表[i];
+                    if (req == null || req.countText == null) continue;
+                    req.countText.text = "0";
+                    any = true;
+                }
             }
+            else if (placer.coralCountText != null)
+            {
+                // 老配置（只有单个 coralCountText）保持原行为
+                placer.coralCountText.text = "0";
+                any = true;
+            }
+
+            if (any) resetCount++;
         }
-        Debug.Log($"[清除存档] 已重置 {resetCount} 个 coralCountText");
+        Debug.Log($"[清除存档] 已重置 {resetCount} 个珊瑚气泡的数量文本");
 
         // -------- Step 10: 🔥 清除场景中所有玩家放置的珊瑚（ObjectSpawner）--------
         // ⚠️ 这是之前漏掉的关键一步！

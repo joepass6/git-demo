@@ -14747,8 +14747,8 @@ CapsuleCollider2D:
   m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0.00058835786, y: 0.0029600116}
-  m_Size: {x: 0.29704502, y: 0.17738804}
+  m_Offset: {x: 0.00058835343, y: 0.0008894538}
+  m_Size: {x: 0.29704508, y: 0.16220385}
   m_Direction: 1
 --- !u!114 &-5177326556490126028
 MonoBehaviour:
@@ -14771,6 +14771,10 @@ MonoBehaviour:
   dropInterval: 120
   itemPrefab: {fileID: 647409291031311344, guid: 11285f17c668f1443b50a81f8ce89a29, type: 3}
   fallSpeed: 2
+  useTargetDrop: 0
+  dropTarget: {fileID: 0}
+  dropTargetTag: 
+  targetDropHeight: 0.8
   destroyTime: 1200
   enableParticle: 1
   emitCount: 1

@@ -366,7 +366,9 @@ public class ObjectSpawner : MonoBehaviour
         Camera projCam = (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay && canvas.worldCamera != null)
             ? canvas.worldCamera : Camera.main;
         Vector2 screenPos = projCam.WorldToScreenPoint(transform.position);
-        Vector2 targetScreenPos = screenPos + popupOffset;
+        // popupOffset 是“1 倍档位下的屏幕像素”：场景在屏幕上的尺寸 ∝ windowScale，
+        // 固定像素偏移会在缩小时把面板推得离珊瑚越来越远，所以必须乘当前档位。
+        Vector2 targetScreenPos = screenPos + popupOffset * DesktopWindowController.CurrentWindowScale;
 
         Camera cam = null;
         if (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay)

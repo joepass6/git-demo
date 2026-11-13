@@ -46,7 +46,7 @@ ParticleSystem:
   m_GameObject: {fileID: 2730264123745384573}
   serializedVersion: 8
   lengthInSec: 0.5
-  simulationSpeed: 1.0
+  simulationSpeed: 1
   stopAction: 0
   cullingMode: 0
   ringBufferMode: 0
@@ -4941,16 +4941,16 @@ MonoBehaviour:
   spawnEntries:
   - kindId: 1
     prefab: {fileID: 4842934446307366073, guid: f24924d32b1471f468b76dbec256b783, type: 3}
-    weight: 0
+    weight: 60
   - kindId: 2
     prefab: {fileID: 4842934446307366073, guid: f220cafb5499e6e44bd52aaa7f6320ee, type: 3}
-    weight: 0
+    weight: 30
   - kindId: 3
     prefab: {fileID: 4842934446307366073, guid: eb069811f3ebf774db693a55a2d873e0, type: 3}
-    weight: 100
+    weight: 8
   - kindId: 4
     prefab: {fileID: 4842934446307366073, guid: a20b11dcf83fe684bb2eba2f509014a5, type: 3}
-    weight: 0
+    weight: 2
   spawnCount: 1
   bonusDestroyTime: 0
   bonusDropCount: 0
@@ -5042,6 +5042,6 @@ CapsuleCollider2D:
   m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0.0, y: 0.0}
+  m_Offset: {x: 0, y: 0}
   m_Size: {x: 0.289, y: 0.425}
   m_Direction: 1

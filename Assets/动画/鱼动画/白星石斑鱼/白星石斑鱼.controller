@@ -34,7 +34,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 2
-    m_ConditionEvent: "\u79FB\u52A8"
+    m_ConditionEvent: "\u79FB\u52A8\u4E2D"
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: -3603354623978307337}
@@ -59,7 +59,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 1
-    m_ConditionEvent: "\u79FB\u52A8"
+    m_ConditionEvent: "\u79FB\u52A8\u4E2D"
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 4213745518019521292}
@@ -111,7 +111,7 @@ AnimatorController:
   m_Name: "\u767D\u661F\u77F3\u6591\u9C7C"
   serializedVersion: 5
   m_AnimatorParameters:
-  - m_Name: "\u79FB\u52A8"
+  - m_Name: "\u79FB\u52A8\u4E2D"
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
@@ -137,7 +137,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: "\u79FB\u52A8"
+  m_Name: "\u79FB\u52A8\u4E2D"
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:

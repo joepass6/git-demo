@@ -14763,6 +14763,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 0.1
+  scaleVariation: 0.3
   obstacleTag: Obstacle
   extraObstacleTag: wall
   fishTag: fish
@@ -14770,6 +14771,10 @@ MonoBehaviour:
   dropInterval: 600
   itemPrefab: {fileID: 647409291031311344, guid: 5003a110d23edc141b7210a4ba8d9379, type: 3}
   fallSpeed: 2
+  useTargetDrop: 1
+  dropTarget: {fileID: 0}
+  dropTargetTag: diao
+  targetDropHeight: 0.62
   destroyTime: 1800
   enableParticle: 1
   emitCount: 1

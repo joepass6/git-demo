@@ -24,10 +24,11 @@ public class DropItemCounterUI : MonoBehaviour
         if (_text == null) _text = GetComponentInChildren<TextMeshProUGUI>(true);
         if (_text == null) { Debug.LogWarning($"[CounterUI] {gameObject.name} 上找不到 TextMeshProUGUI"); return; }
 
-        if (resetEveryTime || DropItem.GetCount(itemType) == 0)
-        {
-            DropItem.SetCount(itemType, initialCount);
-        }
+        // 只在“本类型本次游戏还没播种过”时给初始值。
+        // 不能用 GetCount==0 判断：玩家把某种宝用光（存档值就是 0）后，
+        // 读档后再打开该面板会重新 Awake，0==0 会把数量又回满成初始值。
+        if (resetEveryTime) DropItem.SetCount(itemType, initialCount);
+        else DropItem.SeedInitial(itemType, initialCount);
 
         DropItem.RegisterCounter(itemType, _text);
         Debug.Log($"[CounterUI] 已注册: {itemType} 初始={DropItem.GetCount(itemType)} -> {gameObject.name}");

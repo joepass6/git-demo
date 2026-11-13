@@ -14771,6 +14771,10 @@ MonoBehaviour:
   dropInterval: 10
   itemPrefab: {fileID: 0}
   fallSpeed: 2
+  useTargetDrop: 1
+  dropTarget: {fileID: 0}
+  dropTargetTag: diao
+  targetDropHeight: 0
   destroyTime: 30
   enableParticle: 1
   emitCount: 1

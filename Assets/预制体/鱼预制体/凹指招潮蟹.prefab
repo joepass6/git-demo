@@ -14771,6 +14771,10 @@ MonoBehaviour:
   dropInterval: 60
   itemPrefab: {fileID: 647409291031311344, guid: bccc1a6e83130d842bd40c269d520f9f, type: 3}
   fallSpeed: 2
+  useTargetDrop: 1
+  dropTarget: {fileID: 0}
+  dropTargetTag: diao
+  targetDropHeight: 0
   destroyTime: 300
   enableParticle: 1
   emitCount: 1
@@ -14783,8 +14787,13 @@ MonoBehaviour:
   steerSpeed: 360
   zoneRefreshInterval: 2
   obstacleTurnAngle: 45
-  surfaceDistance: 0.02
+  halfBodyWidth: 0.12
+  surfaceGap: 0.01
   surfaceStickRange: 0.1
+  zigzagAngle: 24
+  edgeTurnAngleMin: 0
+  edgeTurnAngleMax: 8
+  edgeCooldown: 0.25
 --- !u!1 &6938092234998911703
 GameObject:
   m_ObjectHideFlags: 0

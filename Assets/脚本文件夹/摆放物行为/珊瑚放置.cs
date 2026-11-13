@@ -41,6 +41,12 @@ public class DragAndPlaceSystem : MonoBehaviour
     [Tooltip("消耗数量文本（珊瑚数量必须 >= 此数值才能放置）")]
     public TextMeshProUGUI costText;
 
+    [Header("多框需求（可选）")]
+    [Tooltip("一个珊瑚气泡里有几个『框』就填几条：全部满足才能放置，放置时每框各扣一次（同类型重复出现会累加）。\n" +
+             "留空时退回上面的『文本设置』单条配置，老场景不用改。\n" +
+             "可用菜单 Tools/珊瑚/扫描气泡需求文本 按 现有宝物+宝物条件 自动填充。")]
+    public List<宝物需求> 需求列表 = new List<宝物需求>();
+
     [Header("提示")]
     [Tooltip("数量不足时变色的Image组件")]
     public Image targetImage;
@@ -117,6 +123,14 @@ public class DragAndPlaceSystem : MonoBehaviour
     private Camera mainCam;
     private bool canPlace = true;
     private bool isDragging = false;
+
+    // 珊瑚数量文本所对应的库存类型（该文本上挂的 DropItemCounterUI）。
+    // 有类型时数量真源是 DropItem 的库存字典，文本只是它的显示；
+    // 没有类型（旧配置）才退回解析文本，保持原行为。
+    // 多框需求下每个条目自己解析，缓存按文本组件区分。
+    private readonly Dictionary<TextMeshProUGUI, DropItemCounterUI> counterCache = new Dictionary<TextMeshProUGUI, DropItemCounterUI>();
+    private List<宝物需求> effectiveRequirements;
+    private readonly Dictionary<TextMeshProUGUI, Color> requirementTextColors = new Dictionary<TextMeshProUGUI, Color>();
     /// <summary>是否有珊瑚正在被拖拽/携带（携带期间点击优先用于放置，不拾取掉落物）</summary>
     public static bool IsCarryingObject { get; private set; }
     private GameObject currentHoverRock; // 当前预览体正悬停的石头（用于切换 SetVisible/SetOutline）
@@ -152,7 +166,14 @@ public class DragAndPlaceSystem : MonoBehaviour
         if (!all.Contains(this)) all.Add(this);
         AllowRockOverlap = allowRockOverlap;
     }
-    void OnValidate() { AllowRockOverlap = allowRockOverlap; }
+    void OnValidate()
+    {
+        AllowRockOverlap = allowRockOverlap;
+        // Inspector 里改了引用/列表后，运行时缓存需要重建（含 Editor 工具自动填充后的场景）
+        effectiveRequirements = null;
+        counterCache.Clear();
+        requirementTextColors.Clear();
+    }
     void OnDisable()
     {
         all.Remove(this);
@@ -196,6 +217,9 @@ public class DragAndPlaceSystem : MonoBehaviour
 
         // 初始化目标Text和原始颜色
         if (targetText != null) originalTextColor = targetText.color;
+
+        // 预热多框需求（记录各条目的原始文字颜色，之后再按需变暗）
+        ApplyRequirementColors();
 
         // 缓存摇晃前的原始本地坐标
         shakeOriginalLocalPos = transform.localPosition;
@@ -268,6 +292,7 @@ public class DragAndPlaceSystem : MonoBehaviour
             targetText.color = canPlace ? originalTextColor
                 : Color.Lerp(originalTextColor, Color.black, darkenAmount);
         }
+        ApplyRequirementColors();
     }
 
     /// <summary>
@@ -354,26 +379,86 @@ public class DragAndPlaceSystem : MonoBehaviour
 
     void CheckCanPlace()
     {
-        // 未配置文本字段时默认允许放置
-        if (coralCountText == null || costText == null)
+        // 一条需求都没有（老场景没配文本）时默认允许放置
+        var reqs = EffectiveRequirements();
+        bool newCanPlace = true;
+        for (int i = 0; i < reqs.Count; i++)
         {
-            canPlace = true;
-            return;
+            var r = reqs[i];
+            if (r == null) continue;
+            if (ResolveCount(r) < ResolveCost(r))
+            {
+                newCanPlace = false;
+                break;
+            }
         }
-
-        float coral = GetCoralCount();
-        float cost = GetCost();
-        bool newCanPlace = coral >= cost;
 
         if (newCanPlace != canPlace)
         {
-            Debug.Log($"[DragAndPlace] 珊瑚={coral}, 消耗={cost}, 可放置={newCanPlace}");
             canPlace = newCanPlace;
+            Debug.Log($"[DragAndPlace] {gameObject.name}: 需求 {reqs.Count} 条, 可放置={canPlace}");
         }
     }
 
-    float GetCoralCount() { return ParseNumber(coralCountText); }
-    float GetCost() { return ParseNumber(costText); }
+    /// <summary>实际生效的需求条目：需求列表为空时退回旧的单条文本字段（老场景兼容）。</summary>
+    List<宝物需求> EffectiveRequirements()
+    {
+        if (effectiveRequirements != null) return effectiveRequirements;
+
+        if (需求列表 != null && 需求列表.Count > 0)
+        {
+            effectiveRequirements = 需求列表;
+        }
+        else
+        {
+            effectiveRequirements = new List<宝物需求>(1);
+            if (coralCountText != null || costText != null)
+            {
+                effectiveRequirements.Add(new 宝物需求
+                {
+                    countText = coralCountText,
+                    costText = costText,
+                    cost = -1
+                });
+            }
+        }
+        return effectiveRequirements;
+    }
+
+    /// <summary>数量：有库存类型时必须读 DropItem 库存（存档的唯一真源），只读文本会在被别的路径重刷后拿到旧数字。</summary>
+    float ResolveCount(宝物需求 req)
+    {
+        if (req == null) return 0f;
+        string type = ResolveItemType(req);
+        if (!string.IsNullOrEmpty(type)) return DropItem.GetCount(type);
+        return ParseNumber(req.countText);
+    }
+
+    /// <summary>消耗：条目里写死了（>=0）就用它，否则解析『宝物条件』文本（保持场景里手填数字的老习惯）。</summary>
+    float ResolveCost(宝物需求 req)
+    {
+        if (req == null) return 0f;
+        if (req.cost >= 0) return req.cost;
+        return ParseNumber(req.costText);
+    }
+
+    /// <summary>取该条目的库存类型；字段留空时自动找『现有宝物』文本上挂的 DropItemCounterUI。</summary>
+    string ResolveItemType(宝物需求 req)
+    {
+        if (req == null) return null;
+        if (!string.IsNullOrEmpty(req.itemType)) return req.itemType;
+        if (req.countText == null) return null;
+
+        DropItemCounterUI counter;
+        if (!counterCache.TryGetValue(req.countText, out counter))
+        {
+            counter = req.countText.GetComponent<DropItemCounterUI>();
+            if (counter == null) counter = req.countText.GetComponentInParent<DropItemCounterUI>();
+            if (counter == null) counter = req.countText.GetComponentInChildren<DropItemCounterUI>(true);
+            counterCache[req.countText] = counter;
+        }
+        return counter != null ? counter.itemType : null;
+    }
 
     float ParseNumber(TextMeshProUGUI text)
     {
@@ -384,18 +469,31 @@ public class DragAndPlaceSystem : MonoBehaviour
     }
 
     /// <summary>
-    /// 设置颜色（拖动中数量不足时变成指定颜色）
+    /// 逐条目上色：满足的条目恢复原色，不满足的那个框变暗（不影响其他框）。
     /// </summary>
-    void UpdateColor()
+    void ApplyRequirementColors()
     {
-        if (targetImage != null)
+        var reqs = EffectiveRequirements();
+        for (int i = 0; i < reqs.Count; i++)
         {
-            targetImage.color = canPlace ? originalImageColor : insufficientColor;
+            var r = reqs[i];
+            if (r == null) continue;
+            bool ok = ResolveCount(r) >= ResolveCost(r);
+            ApplyOneColor(r.countText, ok);
+            ApplyOneColor(r.costText, ok);
         }
-        if (targetText != null)
+    }
+
+    void ApplyOneColor(TextMeshProUGUI text, bool ok)
+    {
+        if (text == null) return;
+        Color original;
+        if (!requirementTextColors.TryGetValue(text, out original))
         {
-            targetText.color = canPlace ? originalTextColor : insufficientTextColor;
+            original = text.color;
+            requirementTextColors[text] = original;
         }
+        text.color = ok ? original : Color.Lerp(original, Color.black, darkenAmount);
     }
 
     /// <summary>
@@ -410,6 +508,10 @@ public class DragAndPlaceSystem : MonoBehaviour
         if (targetText != null)
         {
             targetText.color = originalTextColor;
+        }
+        foreach (var kv in requirementTextColors)
+        {
+            if (kv.Key != null) kv.Key.color = kv.Value;
         }
     }
 
@@ -613,12 +715,32 @@ public class DragAndPlaceSystem : MonoBehaviour
             TriggerCoralSkill(currentDragObject, primaryRock);
             SpawnBubbleBurst(currentDragObject);
 
-            // 6. 扣除珊瑚数量并更新文本显示
-            float newCount = GetCoralCount() - GetCost();
-            if (coralCountText != null)
+            // 6. 逐条目扣减：必须写回 DropItem 库存（存档的唯一真源），不能只改文本。
+            //    只改文本时 _counts 仍是旧值 → 存档保存的是未扣数量 → 读档后数量回满/少扣。
+            //    AddCount/SetCount 内部会刷新所有同类型的计数文本（多个图标/面板显示同一个数字）。
+            //    同一类型出现在多个框时，每个框各调一次 AddCount，等价于累加扣减。
+            var reqs = EffectiveRequirements();
+            int deducted = 0;
+            for (int i = 0; i < reqs.Count; i++)
             {
-                coralCountText.text = newCount.ToString();
+                var r = reqs[i];
+                if (r == null) continue;
+                int need = Mathf.Max(0, Mathf.RoundToInt(ResolveCost(r)));
+                if (need <= 0) continue;
+
+                string type = ResolveItemType(r);
+                if (!string.IsNullOrEmpty(type))
+                {
+                    DropItem.AddCount(type, -need);
+                }
+                else if (r.countText != null)
+                {
+                    // 没有库存类型的旧配置：退回文本扣减（保持原行为）
+                    r.countText.text = (ParseNumber(r.countText) - need).ToString();
+                }
+                deducted++;
             }
+            Debug.Log($"[DragAndPlace] {gameObject.name}: 已扣 {deducted} 条需求");
 
             // 7. 刷新所有石头的容量统计（第一次放置也必须扣减）
             RockCapacity.RefreshAll(placementTag);
@@ -1239,5 +1361,25 @@ public class DragAndPlaceSystem : MonoBehaviour
             return preferred;
 
         return best;
+    }
+
+    /// <summary>
+    /// 一条“框”的放置需求：现有宝物文本 + 宝物条件文本 + 消耗数量。
+    /// 多条之间是“全部满足”，放置时每条各扣一次（同类型重复会累加）。
+    /// </summary>
+    [System.Serializable]
+    public class 宝物需求
+    {
+        [Tooltip("宝物类型（与 DropItem 的 itemType 一致）。留空 = 自动取『现有宝物』文本上挂的 DropItemCounterUI.itemType")]
+        public string itemType;
+
+        [Tooltip("『现有宝物』的数值文本（挂 DropItemCounterUI 的最内层节点）")]
+        public TextMeshProUGUI countText;
+
+        [Tooltip("『宝物条件』的数字文本")]
+        public TextMeshProUGUI costText;
+
+        [Tooltip("固定消耗数量。保持 -1 表示从『宝物条件』文本解析（场景里手填数字）")]
+        public int cost = -1;
     }
 }

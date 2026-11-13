@@ -98,7 +98,9 @@ public class FishInfoPanelButtons : MonoBehaviour
         if (rootPanelRect == null) FindRoot();
         if (rootPanelRect == null || parentCanvas == null) return;
 
-        Vector2 offset = ObjectSpawner.CurrentSpawner.popupOffset * offsetMultiplier;
+        // 像素偏移必须随滚轮档位缩放：场景在屏幕上 ∝ windowScale，固定像素会让缩小时面板离珊瑚很远
+        float uiScale = Mathf.Max(0.01f, DesktopWindowController.CurrentWindowScale);
+        Vector2 offset = ObjectSpawner.CurrentSpawner.popupOffset * offsetMultiplier * uiScale;
         Vector3 worldPos = ObjectSpawner.CurrentSpawner.transform.position;
 
         // 用渲染画布的相机做世界→屏幕投影，和画布保持一致，缩放时位置才不会偏
@@ -128,7 +130,7 @@ public class FishInfoPanelButtons : MonoBehaviour
 
             if (floatEnabled)
             {
-                float y = Mathf.Sin(Time.time * floatFrequency * Mathf.PI * 2f) * floatAmplitude;
+                float y = Mathf.Sin(Time.time * floatFrequency * Mathf.PI * 2f) * floatAmplitude * uiScale;
                 rootPanelRect.anchoredPosition += new Vector2(0, y);
             }
         }

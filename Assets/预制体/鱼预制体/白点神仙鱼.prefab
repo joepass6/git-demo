@@ -14771,6 +14771,10 @@ MonoBehaviour:
   dropInterval: 10
   itemPrefab: {fileID: 647409291031311344, guid: f56d3d20d01a15446a051f2bf4417614, type: 3}
   fallSpeed: 2
+  useTargetDrop: 0
+  dropTarget: {fileID: 0}
+  dropTargetTag: 
+  targetDropHeight: 0.8
   destroyTime: 30
   enableParticle: 1
   emitCount: 1

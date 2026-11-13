@@ -45,21 +45,31 @@ public class DesktopWindowController : MonoBehaviour
     /// <summary>
     /// UI 设计基准高度（像素）：取洞穴主体的实际像素高度（1:1 取景时约 996px）。
     /// 用 1080 时 UI 偏小（scaleFactor≈0.92），改成 1000 后又偏大（≈0.996），
-    /// 现在取 1035：比 1000 小约 3.4%。
+    /// 1035 时构建版实测“有一点点小”，现在取 1005：
+    /// UI 与 UiDesignHeight 成反比，1035 → 1005 即整体放大约 3.0%（不要一次调太多）。
     /// </summary>
-    const float UiDesignHeight = 1035f;
+    const float UiDesignHeight = 1005f;
 
     /// <summary>
-    /// UI 缩放锁（0~1.25 的窗口缩放档位）：UI 只跟窗口像素高度联动，**不再乘滚轮/存档里的 windowScale**。
-    /// 0.94 是当前构建版实测满意的比例。锁死后：
-    ///   画布逻辑尺寸 = texH / (texH/UiDesignHeight × 0.94) = UiDesignHeight/0.94 ≈ 1101 单位（恒定），
-    ///   所有锚点固定的 UI 在任何机器、任何缩放档位下像素位置与大小完全一致。
-    /// 世界（相机 orthographicSize）仍然按 windowScale 正常缩放，UI 不跟着动。
+    /// UI 基准比例（0.94 是构建版实测满意的大小）。
+    ///
+    /// 【必须乘 windowScale】否则滚轮缩放时相机 orthoSize 变了、UI 却纹丝不动：
+    ///   世界像素/单位 = (texH/2) / orthoSize = (texH/2) / (baseOrtho/windowScale) ∝ windowScale
+    ///   UI 像素/设计单位 = scaleFactor = texH/UiDesignHeight × 0.94 × windowScale ∝ windowScale
+    /// 两者同比例变化，滚轮时 UI 与场景才会同步放大/缩小。
+    /// 注意 texH 是窗口 RT 高度（窗口尺寸固定，不随滚轮变），所以 windowScale 是唯一的联动因子。
     /// </summary>
-    const float UiLockedScaleFactor = 0.94f;
+    const float UiBaseScaleRatio = 0.94f;
 
     /// <summary>窗口缩放真正生效后触发（参数=新的 windowScale）。一次性定位的 UI 靠它重新贴回场景物体。</summary>
     public static event Action<float> OnWindowScaleChanged;
+
+    /// <summary>
+    /// 当前滚轮档位（编辑器里恒为 1）。
+    /// 世界→屏幕的“像素偏移”必须乘上它：场景在屏幕上的尺寸 ∝ windowScale，
+    /// 固定像素偏移会让 UI 在缩小时离珊瑚越来越远、放大时贴得太近。
+    /// </summary>
+    public static float CurrentWindowScale { get; private set; } = 1f;
 
     [Header("窗口按钮")]
     public Button minimizeButton;
@@ -268,13 +278,20 @@ public class DesktopWindowController : MonoBehaviour
         // 下次打开时会按 600 的设计高度算，UI 反而被放大。
         foreach (CanvasScaler s in FindObjectsOfType<CanvasScaler>(true))
         {
-            // 统一“设计高度”=UiDesignHeight（洞穴像素高度 1035，不是窗口高度 1080）：
-            // 两个 1:1 的页面 Canvas 本来没有参考分辨率，必须给一个共同基准，
-            // 后面 CanvasBaseScaleFactor 才能按同一高度换算。
-            s.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            s.referenceResolution = new Vector2(1920, UiDesignHeight);
-            s.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            s.matchWidthOrHeight = 1f; // 按高度匹配
+            // 只处理根 Canvas：嵌套 Canvas（设置页面、显示面板等）本身不参与 CanvasScaler 计算
+            // （UGUI 的 CanvasScaler 对非根 Canvas 直接跳过），它们靠父 Canvas 的缩放继承，
+            // 这里若强行改配置只会让 Inspector 看起来“被驱动了”而运行时毫无作用。
+            var ownCanvas = s.GetComponent<Canvas>();
+            if (ownCanvas != null && !ownCanvas.isRootCanvas) continue;
+
+            // 必须和运行时驱动（EnsureCanvasesOnTop）用同一种模式：
+            // ScaleWithScreenSize 会由 UGUI 自己在 Handle() 里算 scaleFactor，
+            // 我们手写的值会被覆盖 → 滚轮缩放时 UI 看起来“被锁死”。
+            // 这里先切成 ConstantPixelSize 并写入同一公式的初值，
+            // 之后 EnsureCanvasesOnTop / ApplyWindowScale 只管更新这个值即可。
+            s.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+            float initSF = TargetScaleFactor();
+            if (!Mathf.Approximately(s.scaleFactor, initSF)) s.scaleFactor = initSF;
         }
     }
 
@@ -292,6 +309,16 @@ public class DesktopWindowController : MonoBehaviour
         float designHeight = Mathf.Max(1f, UiDesignHeight);
         float pixelHeight = texH > 0 ? texH : Screen.height;
         return pixelHeight / designHeight;
+    }
+
+    /// <summary>
+    /// 所有根 Canvas 唯一使用的 scaleFactor：按高度基准 × 0.94 × 当前滚轮档位。
+    /// 缩放写入口分散在 EnsureCanvasesOnTop / ApplyWindowScale 两处，公式必须收在这里，
+    /// 否则改一处漏一处就会再次出现“UI 不跟着滚”或“场景/UI 不同步”。
+    /// </summary>
+    float TargetScaleFactor()
+    {
+        return CanvasBaseScaleFactor(new Vector2(1920f, UiDesignHeight)) * UiBaseScaleRatio * windowScale;
     }
 
     void CenterCameraOnTarget()
@@ -453,6 +480,7 @@ public class DesktopWindowController : MonoBehaviour
         ClampToWorkArea(ref w, ref h); // 等比缩放，正方形不会变形
         fitW = w; fitH = h;
         windowScale = Mathf.Clamp(windowScale, EffectiveMinWindowScale, EffectiveMaxWindowScale);
+        CurrentWindowScale = windowScale;
 
         // 窗口物理尺寸固定不变，用 orthographicSize 做缩放
         Debug.Log($"[桌面窗口] 窗口贴合(1:1): 基础orthoSize={baseOrthoSize:F2}, 窗口={fitW}x{fitH}, 当前缩放=x{windowScale:F2}");
@@ -652,8 +680,8 @@ public class DesktopWindowController : MonoBehaviour
             cam.cullingMask = newMask;
         }
 
-        // scaleFactor 每个 Canvas 统一 = 按高度算的基准系数 × 固定档位（UiLockedScaleFactor）。
-        // 不再乘 windowScale：UI 布局对所有人、所有滚轮档位都锁死，只有世界会缩放。
+        // scaleFactor 每个根 Canvas 统一 = 按高度算的基准 × 0.94 × 当前滚轮档位，
+        // 相机 orthoSize 同时按 1/windowScale 变化，两者同比例，UI 与场景同步缩放。
 
         foreach (Canvas c in cachedCanvases)
         {
@@ -678,7 +706,7 @@ public class DesktopWindowController : MonoBehaviour
                 if (scaler.uiScaleMode != CanvasScaler.ScaleMode.ConstantPixelSize)
                     scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
 
-                float targetSF = CanvasBaseScaleFactor(scaler.referenceResolution) * UiLockedScaleFactor;
+                float targetSF = TargetScaleFactor();
                 if (!Mathf.Approximately(scaler.scaleFactor, targetSF))
                     scaler.scaleFactor = targetSF;
             }
@@ -750,7 +778,7 @@ public class DesktopWindowController : MonoBehaviour
         cam.orthographicSize = baseOrthoSize / Mathf.Max(0.01f, windowScale);
         OnWindowScaleChanged?.Invoke(windowScale);
 
-        Debug.Log($"[桌面窗口] ULW 已启动 ({texW}x{texH}), orthoSize={cam.orthographicSize:F2} (base={baseOrthoSize:F2}/scale={windowScale:F2}), UI基准={CanvasBaseScaleFactor(new Vector2(1920f, UiDesignHeight)):F3}");
+        Debug.Log($"[桌面窗口] ULW 已启动 ({texW}x{texH}), orthoSize={cam.orthographicSize:F2} (base={baseOrthoSize:F2}/scale={windowScale:F2}), UI系数={TargetScaleFactor():F3}（基准 {CanvasBaseScaleFactor(new Vector2(1920f, UiDesignHeight)):F3}×0.94×{windowScale:F2}）");
     }
 
     /// <summary>
@@ -1098,6 +1126,7 @@ public class DesktopWindowController : MonoBehaviour
     bool ApplyWindowScale(float scale)
     {
         windowScale = Mathf.Clamp(scale, EffectiveMinWindowScale, EffectiveMaxWindowScale);
+        CurrentWindowScale = windowScale; // 供世界→屏幕的像素偏移换算（UI 贴合场景物体）
 #if !UNITY_EDITOR
         Camera cam = zoomCamera != null ? zoomCamera : Camera.main;
         if (cam == null || baseOrthoSize <= 0f) return false;
@@ -1109,7 +1138,7 @@ public class DesktopWindowController : MonoBehaviour
             if (c == null || !c.isRootCanvas) continue;
             var scaler = c.GetComponent<CanvasScaler>();
             if (scaler == null) continue;
-            float targetSF = CanvasBaseScaleFactor(scaler.referenceResolution) * UiLockedScaleFactor;
+            float targetSF = TargetScaleFactor();
             if (!Mathf.Approximately(scaler.scaleFactor, targetSF))
                 scaler.scaleFactor = targetSF;
         }
@@ -1135,12 +1164,8 @@ public class DesktopWindowController : MonoBehaviour
 
     public void ResetZoom()
     {
-#if !UNITY_EDITOR
-        windowScale = 1f;
-        Camera cam = zoomCamera != null ? zoomCamera : Camera.main;
-        if (cam != null && baseOrthoSize > 0f) cam.orthographicSize = baseOrthoSize;
-#endif
-        OnWindowScaleChanged?.Invoke(windowScale);
+        // 走统一入口：相机 orthoSize 与所有根 Canvas 的 scaleFactor 必须同帧一起回到 1 倍
+        ApplyWindowScale(1f);
     }
 
     // ==================== Shift+Space 贴底缩小 ====================

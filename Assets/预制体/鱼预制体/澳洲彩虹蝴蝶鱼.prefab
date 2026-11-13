@@ -14747,8 +14747,8 @@ CapsuleCollider2D:
   m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0.00061360496, y: -0.0011184193}
-  m_Size: {x: 0.112032056, y: 0.07644656}
+  m_Offset: {x: 0.0006136051, y: 0.0001055726}
+  m_Size: {x: 0.1120321, y: 0.06910384}
   m_Direction: 1
 --- !u!114 &-256822581327772101
 MonoBehaviour:
@@ -14763,6 +14763,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 0.1
+  scaleVariation: 0.3
   obstacleTag: Obstacle
   extraObstacleTag: wall
   fishTag: fish
@@ -14770,6 +14771,10 @@ MonoBehaviour:
   dropInterval: 300
   itemPrefab: {fileID: 647409291031311344, guid: 5a3a40feeb3b9544f98d29e3186b355b, type: 3}
   fallSpeed: 2
+  useTargetDrop: 1
+  dropTarget: {fileID: 0}
+  dropTargetTag: diao
+  targetDropHeight: 0.62
   destroyTime: 300
   enableParticle: 1
   emitCount: 1
