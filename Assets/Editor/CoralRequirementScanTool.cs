@@ -35,7 +35,7 @@ public static class CoralRequirementScanTool
 
             var parts = new List<string>();
             foreach (var r in list)
-                parts.Add($"{r.itemType} {ParseCost(r.costText)}");
+                parts.Add($"{TypeOf(r.coralCountText)} {ParseCost(r.costText)}");
             Debug.Log($"[珊瑚需求扫描] {p.gameObject.name}: {list.Count} 条 → {string.Join(" / ", parts)}");
         }
 
@@ -87,10 +87,8 @@ public static class CoralRequirementScanTool
 
             result.Add(new DragAndPlaceSystem.宝物需求
             {
-                itemType = counter.itemType,
-                countText = countText,
-                costText = costText,
-                cost = -1
+                coralCountText = countText,
+                costText = costText
             });
         }
         return result;
@@ -116,5 +114,15 @@ public static class CoralRequirementScanTool
         if (text == null) return "?";
         float v;
         return float.TryParse(text.text, out v) ? v.ToString("0.##") : text.text;
+    }
+
+    /// <summary>日志用：从『现有宝物』文本反查它挂的 DropItemCounterUI.itemType。</summary>
+    static string TypeOf(TextMeshProUGUI countText)
+    {
+        if (countText == null) return "?";
+        var c = countText.GetComponent<DropItemCounterUI>();
+        if (c == null) c = countText.GetComponentInParent<DropItemCounterUI>();
+        if (c == null) c = countText.GetComponentInChildren<DropItemCounterUI>(true);
+        return c != null ? c.itemType : "-";
     }
 }

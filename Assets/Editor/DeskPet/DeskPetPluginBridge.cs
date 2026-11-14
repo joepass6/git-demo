@@ -77,7 +77,7 @@ namespace DeskPet
         {
             if (EditorApplication.ExecuteMenuItem(menuPath)) return;
 
-            DeskPetWindow.Notify("菜单项当前不可用：" + menuPath + "（通常需要先在 Project 中选中对应资源）", true);
+            DeskPetNative.Notify("菜单项当前不可用：" + menuPath + "（通常需要先在 Project 中选中对应资源）", true);
         }
 
         static void AddEffectComponent(string typeName)
@@ -85,14 +85,14 @@ namespace DeskPet
             GameObject target = Selection.activeGameObject;
             if (target == null)
             {
-                DeskPetWindow.Notify("请先在 Hierarchy 中选中一个 GameObject", true);
+                DeskPetNative.Notify("请先在 Hierarchy 中选中一个 GameObject", true);
                 return;
             }
 
             Type type = FindType("UIEffectPlugin." + typeName);
             if (type == null)
             {
-                DeskPetWindow.Notify("未找到类型 UIEffectPlugin." + typeName + "，请确认 UIEffectPlugin 已导入", true);
+                DeskPetNative.Notify("未找到类型 UIEffectPlugin." + typeName + "，请确认 UIEffectPlugin 已导入", true);
                 return;
             }
 
@@ -115,7 +115,7 @@ namespace DeskPet
             string path = UIEffectFolder + "/README.md";
             if (!File.Exists(path))
             {
-                DeskPetWindow.Notify("找不到 " + path, true);
+                DeskPetNative.Notify("找不到 " + path, true);
                 return;
             }
             EditorUtility.RevealInFinder(path);
@@ -126,7 +126,7 @@ namespace DeskPet
             UnityEngine.Object asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(folder);
             if (asset == null)
             {
-                DeskPetWindow.Notify("找不到目录 " + folder, true);
+                DeskPetNative.Notify("找不到目录 " + folder, true);
                 return;
             }
 

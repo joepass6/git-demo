@@ -41,7 +41,9 @@ public class LocalizedText : MonoBehaviour
     void Awake()
     {
         tmp = Tmp;
-        if (tmp != null) fallbackText = tmp.text;
+        // 只缓存一次：隐藏面板里的组件可能在 Awake 之前就被 Refresh 翻译过，
+        // 这时 tmp.text 已经是译文，不能再当成"摆好的原文"覆盖掉
+        if (tmp != null && string.IsNullOrEmpty(fallbackText)) fallbackText = tmp.text;
     }
 
     void OnEnable()
@@ -90,6 +92,12 @@ public class LocalizedText : MonoBehaviour
     {
         if (tmp == null) tmp = Tmp;
         if (tmp == null) return;
+
+        // ★ 抢在第一次翻译前把"摆好的原文"缓存下来。
+        // 语言面板默认隐藏：Awake/OnEnable 要等面板打开才执行，而按钮绑定逻辑会先调一次 Refresh
+        // 把文字翻成当前语言；若不在这一步缓存，Awake 会把译文当原文，之后切回中文时
+        // "恢复原文"恢复的就是旧语言（表现：按下"简中"后语言面板按钮文字不变）。
+        if (string.IsNullOrEmpty(fallbackText)) fallbackText = tmp.text;
 
         var mgr = LocalizationManager.Instance;
         if (mgr == null) return;

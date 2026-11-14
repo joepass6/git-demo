@@ -145,8 +145,8 @@ public class ClearSaveSystem : MonoBehaviour
                 for (int i = 0; i < placer.需求列表.Count; i++)
                 {
                     var req = placer.需求列表[i];
-                    if (req == null || req.countText == null) continue;
-                    req.countText.text = "0";
+                    if (req == null || req.coralCountText == null) continue;
+                    req.coralCountText.text = "0";
                     any = true;
                 }
             }

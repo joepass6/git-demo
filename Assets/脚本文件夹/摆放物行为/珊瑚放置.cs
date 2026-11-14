@@ -35,17 +35,14 @@ public class DragAndPlaceSystem : MonoBehaviour
     public string placementTag = "Obstacle";
 
     [Header("文本设置")]
-    [Tooltip("珊瑚数量文本（放置后数量会减少）")]
-    public TextMeshProUGUI coralCountText;
-
-    [Tooltip("消耗数量文本（珊瑚数量必须 >= 此数值才能放置）")]
-    public TextMeshProUGUI costText;
-
-    [Header("多框需求（可选）")]
-    [Tooltip("一个珊瑚气泡里有几个『框』就填几条：全部满足才能放置，放置时每框各扣一次（同类型重复出现会累加）。\n" +
-             "留空时退回上面的『文本设置』单条配置，老场景不用改。\n" +
-             "可用菜单 Tools/珊瑚/扫描气泡需求文本 按 现有宝物+宝物条件 自动填充。")]
+    [Tooltip("一个珊瑚气泡里有几个『框』就填几条：全部满足才能放置，放置时每条各扣一次（同类型重复出现会累加）。\n" +
+             "每条只填两个引用：『现有宝物』数值文本 + 『宝物条件』数字文本。\n" +
+             "可用菜单 Tools/珊瑚/扫描气泡需求文本 自动填充。")]
     public List<宝物需求> 需求列表 = new List<宝物需求>();
+
+    // 旧版单条配置：已并入 需求列表，只用于老场景/旧预制体反序列化后的自动迁移，不再显示在 Inspector。
+    [HideInInspector] public TextMeshProUGUI coralCountText;
+    [HideInInspector] public TextMeshProUGUI costText;
 
     [Header("提示")]
     [Tooltip("数量不足时变色的Image组件")]
@@ -169,6 +166,17 @@ public class DragAndPlaceSystem : MonoBehaviour
     void OnValidate()
     {
         AllowRockOverlap = allowRockOverlap;
+
+        // 旧版单条字段 → 需求列表第 0 条：只迁移一次，之后 Inspector 里只剩一种格式。
+        if (coralCountText != null || costText != null)
+        {
+            if (需求列表 == null) 需求列表 = new List<宝物需求>();
+            if (需求列表.Count == 0)
+                需求列表.Add(new 宝物需求 { coralCountText = coralCountText, costText = costText });
+            coralCountText = null;
+            costText = null;
+        }
+
         // Inspector 里改了引用/列表后，运行时缓存需要重建（含 Editor 工具自动填充后的场景）
         effectiveRequirements = null;
         counterCache.Clear();
@@ -400,7 +408,11 @@ public class DragAndPlaceSystem : MonoBehaviour
         }
     }
 
-    /// <summary>实际生效的需求条目：需求列表为空时退回旧的单条文本字段（老场景兼容）。</summary>
+    /// <summary>
+    /// 实际生效的需求条目。只有这一套口径：
+    /// 判定/扣减/变色全部按条目逐条走。
+    /// 老场景把两条文本填在旧的单条字段里时，这里等价成“第 0 条”，不会再走另一条代码路径。
+    /// </summary>
     List<宝物需求> EffectiveRequirements()
     {
         if (effectiveRequirements != null) return effectiveRequirements;
@@ -409,18 +421,16 @@ public class DragAndPlaceSystem : MonoBehaviour
         {
             effectiveRequirements = 需求列表;
         }
+        else if (coralCountText != null || costText != null)
+        {
+            effectiveRequirements = new List<宝物需求>(1)
+            {
+                new 宝物需求 { coralCountText = coralCountText, costText = costText }
+            };
+        }
         else
         {
-            effectiveRequirements = new List<宝物需求>(1);
-            if (coralCountText != null || costText != null)
-            {
-                effectiveRequirements.Add(new 宝物需求
-                {
-                    countText = coralCountText,
-                    costText = costText,
-                    cost = -1
-                });
-            }
+            effectiveRequirements = new List<宝物需求>(0);
         }
         return effectiveRequirements;
     }
@@ -431,31 +441,29 @@ public class DragAndPlaceSystem : MonoBehaviour
         if (req == null) return 0f;
         string type = ResolveItemType(req);
         if (!string.IsNullOrEmpty(type)) return DropItem.GetCount(type);
-        return ParseNumber(req.countText);
+        return ParseNumber(req.coralCountText);
     }
 
-    /// <summary>消耗：条目里写死了（>=0）就用它，否则解析『宝物条件』文本（保持场景里手填数字的老习惯）。</summary>
+    /// <summary>消耗：统一解析『宝物条件』文本（场景里手填数字）。</summary>
     float ResolveCost(宝物需求 req)
     {
         if (req == null) return 0f;
-        if (req.cost >= 0) return req.cost;
         return ParseNumber(req.costText);
     }
 
-    /// <summary>取该条目的库存类型；字段留空时自动找『现有宝物』文本上挂的 DropItemCounterUI。</summary>
+    /// <summary>取该条目的库存类型：自动找『现有宝物』文本上挂的 DropItemCounterUI.itemType。</summary>
     string ResolveItemType(宝物需求 req)
     {
         if (req == null) return null;
-        if (!string.IsNullOrEmpty(req.itemType)) return req.itemType;
-        if (req.countText == null) return null;
+        if (req.coralCountText == null) return null;
 
         DropItemCounterUI counter;
-        if (!counterCache.TryGetValue(req.countText, out counter))
+        if (!counterCache.TryGetValue(req.coralCountText, out counter))
         {
-            counter = req.countText.GetComponent<DropItemCounterUI>();
-            if (counter == null) counter = req.countText.GetComponentInParent<DropItemCounterUI>();
-            if (counter == null) counter = req.countText.GetComponentInChildren<DropItemCounterUI>(true);
-            counterCache[req.countText] = counter;
+            counter = req.coralCountText.GetComponent<DropItemCounterUI>();
+            if (counter == null) counter = req.coralCountText.GetComponentInParent<DropItemCounterUI>();
+            if (counter == null) counter = req.coralCountText.GetComponentInChildren<DropItemCounterUI>(true);
+            counterCache[req.coralCountText] = counter;
         }
         return counter != null ? counter.itemType : null;
     }
@@ -479,7 +487,7 @@ public class DragAndPlaceSystem : MonoBehaviour
             var r = reqs[i];
             if (r == null) continue;
             bool ok = ResolveCount(r) >= ResolveCost(r);
-            ApplyOneColor(r.countText, ok);
+            ApplyOneColor(r.coralCountText, ok);
             ApplyOneColor(r.costText, ok);
         }
     }
@@ -733,10 +741,10 @@ public class DragAndPlaceSystem : MonoBehaviour
                 {
                     DropItem.AddCount(type, -need);
                 }
-                else if (r.countText != null)
+                else if (r.coralCountText != null)
                 {
                     // 没有库存类型的旧配置：退回文本扣减（保持原行为）
-                    r.countText.text = (ParseNumber(r.countText) - need).ToString();
+                    r.coralCountText.text = (ParseNumber(r.coralCountText) - need).ToString();
                 }
                 deducted++;
             }
@@ -1364,22 +1372,19 @@ public class DragAndPlaceSystem : MonoBehaviour
     }
 
     /// <summary>
-    /// 一条“框”的放置需求：现有宝物文本 + 宝物条件文本 + 消耗数量。
+    /// 一条“框”的放置需求：现有宝物文本 + 宝物条件文本。
     /// 多条之间是“全部满足”，放置时每条各扣一次（同类型重复会累加）。
+    /// 宝物类型取自『现有宝物』文本上挂的 DropItemCounterUI，消耗数量取自『宝物条件』文本，
+    /// 和旧的单条配置完全同一套口径，不再有第二份字段。
     /// </summary>
     [System.Serializable]
     public class 宝物需求
     {
-        [Tooltip("宝物类型（与 DropItem 的 itemType 一致）。留空 = 自动取『现有宝物』文本上挂的 DropItemCounterUI.itemType")]
-        public string itemType;
-
         [Tooltip("『现有宝物』的数值文本（挂 DropItemCounterUI 的最内层节点）")]
-        public TextMeshProUGUI countText;
+        [UnityEngine.Serialization.FormerlySerializedAs("countText")]
+        public TextMeshProUGUI coralCountText;
 
         [Tooltip("『宝物条件』的数字文本")]
         public TextMeshProUGUI costText;
-
-        [Tooltip("固定消耗数量。保持 -1 表示从『宝物条件』文本解析（场景里手填数字）")]
-        public int cost = -1;
     }
 }

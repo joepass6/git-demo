@@ -1,3 +1,4 @@
+using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -5,8 +6,9 @@ namespace DeskPet
 {
     /// <summary>
     /// 桌宠外观资源。
-    /// 默认形象是代码生成的占位图（不依赖任何下载素材）；
-    /// 用户在桌宠窗口里指定一个 Sprite / PNG 后，就改用用户的贴图。
+    /// 默认形象是内置的猫猫逐帧动画（由用户提供的 cat spring2.gif 转成逐帧像素后打包）；
+    /// 用户在桌宠窗口里指定一个 Sprite / PNG 后，就改用用户的单帧贴图；
+    /// 都不可用时退回代码绘制的占位形象。
     /// </summary>
     internal static class DeskPetArt
     {
@@ -28,7 +30,7 @@ namespace DeskPet
         }
 
         /// <summary>贴图槽当前显示的对象（Sprite 或 Texture2D），供 ObjectField 使用。</summary>
-        public static Object GetCustomObject(string guid)
+        public static UnityEngine.Object GetCustomObject(string guid)
         {
             EnsureLoaded(guid);
             return _cachedObject;
@@ -41,6 +43,242 @@ namespace DeskPet
             texture = _cachedTexture;
             coords = _cachedCoords;
             return texture != null;
+        }
+
+        // ---------------- 给原生分层窗口用的逐帧像素 ----------------
+
+        internal class PetFrame
+        {
+            public Color32[] Pixels;   // 行序自下而上，与 Texture2D.GetPixels32 一致
+            public int Width;
+            public int Height;
+            public float Delay;        // 秒；<= 0 视为静态帧
+        }
+
+        // 内置动画资源：cat spring2.gif 的 51 帧按比例缩到 344x192 后用 PNG 打包
+        const string BuiltinAssetPath = "Assets/Editor/DeskPet/Art/DeskPetCat.bytes";
+        const byte BuiltinVersion = 1;
+
+        static PetFrame[] _frames;
+        static string _framesKey;
+        static bool _framesIsCustom;
+        static bool _framesIsPlaceholder;
+
+        /// <summary>
+        /// 取宠物动画帧：贴图槽为空时用内置猫猫动画，指定了 Sprite/PNG 时用单帧静态图。
+        /// isPlaceholder = true 表示连内置动画都读不到，正在用代码绘制的占位形象。
+        /// </summary>
+        public static PetFrame[] GetFrames(string guid, out bool isCustom, out bool isPlaceholder)
+        {
+            string key = guid ?? string.Empty;
+            if (_frames == null || key != _framesKey)
+            {
+                _framesKey = key;
+                BuildFrames(guid);
+            }
+
+            isCustom = _framesIsCustom;
+            isPlaceholder = _framesIsPlaceholder;
+            return _frames;
+        }
+
+        static void BuildFrames(string guid)
+        {
+            _frames = null;
+            _framesIsCustom = false;
+            _framesIsPlaceholder = false;
+
+            if (!string.IsNullOrEmpty(guid))
+            {
+                PetFrame single = LoadSingle(guid);
+                if (single != null)
+                {
+                    _frames = new[] { single };
+                    _framesIsCustom = true;
+                    return;
+                }
+            }
+            else
+            {
+                PetFrame[] builtin = LoadBuiltinFrames();
+                if (builtin != null && builtin.Length > 0)
+                {
+                    _frames = builtin;
+                    return;
+                }
+            }
+
+            Texture2D placeholder = Placeholder;
+            _frames = new[]
+            {
+                new PetFrame
+                {
+                    Pixels = placeholder.GetPixels32(),
+                    Width = placeholder.width,
+                    Height = placeholder.height,
+                    Delay = 0f
+                }
+            };
+            _framesIsPlaceholder = true;
+        }
+
+        /// <summary>用户指定的一张 Sprite / PNG，作为单帧静态形象。</summary>
+        static PetFrame LoadSingle(string guid)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            if (string.IsNullOrEmpty(path)) return null;
+
+            // 优先 Sprite：按 sprite.rect 从图集里裁出属于它的那块
+            Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            if (sprite != null && sprite.texture != null)
+            {
+                Color32[] all = ReadPixels(sprite.texture);
+                if (all != null)
+                {
+                    Color32[] crop;
+                    int w, h;
+                    CropBottomUp(all, sprite.texture.width, sprite.texture.height, sprite.rect, out crop, out w, out h);
+                    if (crop != null) return new PetFrame { Pixels = crop, Width = w, Height = h, Delay = 0f };
+                }
+            }
+
+            Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            if (tex != null)
+            {
+                Color32[] all = ReadPixels(tex);
+                if (all != null) return new PetFrame { Pixels = all, Width = tex.width, Height = tex.height, Delay = 0f };
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// 读内置动画包（.bytes）：帧里存的是 PNG，运行时用 Texture2D.LoadImage 解出像素，
+        /// 这样完全绕开贴图导入设置（压缩/Mipmap 都不会把像素搞糊）。
+        /// 格式：magic(4) ver(1) flags(1) count(2) w(2) h(2) | count*delayMs(2) | count*(len(4)+png)
+        /// </summary>
+        static PetFrame[] LoadBuiltinFrames()
+        {
+            TextAsset asset = AssetDatabase.LoadAssetAtPath<TextAsset>(BuiltinAssetPath);
+            if (asset == null) return null;
+
+            byte[] data = asset.bytes;
+            if (data == null || data.Length < 12) return null;
+            if (data[0] != (byte)'D' || data[1] != (byte)'G' || data[2] != (byte)'P' || data[3] != (byte)'F') return null;
+            if (data[4] != BuiltinVersion) return null;
+
+            int count = data[6] | (data[7] << 8);
+            int width = data[8] | (data[9] << 8);
+            int height = data[10] | (data[11] << 8);
+            if (count <= 0 || width <= 0 || height <= 0) return null;
+
+            int offset = 12;
+            if (data.Length < offset + count * 2) return null;
+
+            var delays = new float[count];
+            for (int i = 0; i < count; i++)
+            {
+                int ms = data[offset + i * 2] | (data[offset + i * 2 + 1] << 8);
+                delays[i] = Mathf.Max(0.02f, ms / 1000f);
+            }
+            offset += count * 2;
+
+            var frames = new PetFrame[count];
+            for (int i = 0; i < count; i++)
+            {
+                if (offset + 4 > data.Length) return null;
+                int len = data[offset] | (data[offset + 1] << 8) | (data[offset + 2] << 16) | (data[offset + 3] << 24);
+                offset += 4;
+                if (len <= 0 || offset + len > data.Length) return null;
+
+                var png = new byte[len];
+                Buffer.BlockCopy(data, offset, png, 0, len);
+                offset += len;
+
+                var tex = new Texture2D(4, 4, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave };
+                try
+                {
+                    if (!tex.LoadImage(png)) return null;
+                    frames[i] = new PetFrame
+                    {
+                        Pixels = tex.GetPixels32(),
+                        Width = tex.width,
+                        Height = tex.height,
+                        Delay = delays[i]
+                    };
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(tex);
+                }
+            }
+
+            return frames;
+        }
+
+        /// <summary>读整张贴图像素；贴图不可读时用 Graphics.Blit 拷一份可读的。</summary>
+        static Color32[] ReadPixels(Texture2D source)
+        {
+            if (source == null) return null;
+            if (source.isReadable) return source.GetPixels32();
+
+            RenderTexture rt = RenderTexture.GetTemporary(
+                source.width, source.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default);
+            RenderTexture previous = RenderTexture.active;
+            Texture2D copy = null;
+            try
+            {
+                Graphics.Blit(source, rt);
+                RenderTexture.active = rt;
+
+                copy = new Texture2D(source.width, source.height, TextureFormat.RGBA32, false)
+                {
+                    hideFlags = HideFlags.HideAndDontSave
+                };
+                copy.ReadPixels(new Rect(0f, 0f, source.width, source.height), 0, 0);
+                copy.Apply();
+                return copy.GetPixels32();
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                RenderTexture.ReleaseTemporary(rt);
+                if (copy != null) UnityEngine.Object.DestroyImmediate(copy);
+            }
+        }
+
+        /// <summary>按 Sprite 的像素矩形裁剪（坐标原点在左下，行序自下而上）。</summary>
+        static void CropBottomUp(Color32[] all, int texW, int texH, Rect r,
+            out Color32[] result, out int w, out int h)
+        {
+            result = null;
+            w = 0;
+            h = 0;
+            if (all == null || texW <= 0 || texH <= 0) return;
+
+            int x0 = Mathf.Clamp(Mathf.RoundToInt(r.x), 0, texW - 1);
+            int y0 = Mathf.Clamp(Mathf.RoundToInt(r.y), 0, texH - 1);
+            int cw = Mathf.Clamp(Mathf.RoundToInt(r.width), 1, texW - x0);
+            int ch = Mathf.Clamp(Mathf.RoundToInt(r.height), 1, texH - y0);
+
+            var crop = new Color32[cw * ch];
+            for (int y = 0; y < ch; y++)
+            {
+                int srcRow = (y0 + y) * texW;
+                int dstRow = y * cw;
+                for (int x = 0; x < cw; x++)
+                {
+                    crop[dstRow + x] = all[srcRow + x0 + x];
+                }
+            }
+
+            result = crop;
+            w = cw;
+            h = ch;
         }
 
         static void EnsureLoaded(string guid)

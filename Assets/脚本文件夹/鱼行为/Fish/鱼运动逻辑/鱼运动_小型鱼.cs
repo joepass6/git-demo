@@ -27,6 +27,11 @@ public class 鱼运动_小型鱼 : 鱼运动
     private Transform smallCoralTf;    // 生成它的珊瑚/挂载物
     private bool smallReachedCoral;    // 是否已游回珊瑚旁
 
+    // 贴边绕行方向：+1 / -1，0 = 未锁定。
+    // 出界时只随机选一次，回到范围内才解锁；原来每帧 Random 一次会让目标点在切线两侧来回跳，
+    // 表现为"贴到边缘被卡住、抽搐一下"
+    private float edgeTangentSign;
+
     /// <summary>
     /// 由生成器（ObjectSpawner）在 Instantiate 后直接调用，把挂载物传进来
     /// 避免鱼生成在spawnArea随机位置时，距离珊瑚太远找不到
@@ -43,6 +48,7 @@ public class 鱼运动_小型鱼 : 鱼运动
     protected override void OnFishReset()
     {
         smallReachedCoral = false;
+        edgeTangentSign = 0f;
         if (smallCoralTf == null) smallCoralTf = FindNearestCoral();
         transform.rotation = Quaternion.identity;
     }
@@ -82,6 +88,7 @@ public class 鱼运动_小型鱼 : 鱼运动
             if (distToAnchor <= smallRange * 0.5f)
             {
                 smallReachedCoral = true;
+                edgeTangentSign = 0f;
                 // 到达珊瑚后给一个随机旋转，避免只横着游
                 transform.rotation = Quaternion.Euler(0, 0, Random.Range(-60f, 60f));
             }
@@ -112,9 +119,13 @@ public class 鱼运动_小型鱼 : 鱼运动
                 Vector2 outward = offset / distToAnchor;
                 transform.position = (Vector2)anchor + outward * (smallRange * 0.9f);
 
+                // 绕行方向只随机选一次并保持：每帧重选会让鱼在边缘来回翻转（卡住抽搐）
+                if (edgeTangentSign == 0f)
+                    edgeTangentSign = Random.value > 0.5f ? 1f : -1f;
+
                 // 转向切线方向（沿边界滑行，避免来回穿越中心弹跳）
-                // 切线 = 法线旋转90度，随机选顺时针或逆时针
-                Vector2 tangent = Random.value > 0.5f
+                // 切线 = 法线旋转90度，方向由锁定的 edgeTangentSign 决定
+                Vector2 tangent = edgeTangentSign > 0f
                     ? new Vector2(-outward.y, outward.x)
                     : new Vector2(outward.y, -outward.x);
 
@@ -122,6 +133,12 @@ public class 鱼运动_小型鱼 : 鱼运动
                 Vector2 targetDir = (tangent - outward * 0.3f).normalized;
                 Vector3 targetPos = transform.position + (Vector3)targetDir;
                 TurnTowardPositionSmooth(targetPos, 0f);
+            }
+            else if (distToAnchor < smallRange * 0.75f)
+            {
+                // 明确回到范围内了才解锁，下次出界可以重新随机绕行方向
+                // （用 0.75 而不是 0.9：钳位后正好在 0.9 上，阈值太贴近会导致刚锁定就解锁）
+                edgeTangentSign = 0f;
             }
         }
     }
@@ -166,17 +183,28 @@ public class 鱼运动_小型鱼 : 鱼运动
         float targetAngle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg + extraAngle;
         Quaternion targetQuat;
 
-        if (dir.x >= 0f)
+        // 用归一化后的水平分量判断朝向，并留一段死区：
+        // 目标几乎在正上/正下时 dir.x 会在 0 附近来回过零，原来会每帧 FlipDirection（左右翻面+旋转目标跳180°），
+        // 贴边时尤其明显（切线接近竖直）。死区内保持当前朝向不动，避免抽搐。
+        float normX = dir.x / Mathf.Sqrt(dir.sqrMagnitude);
+        const float FaceDeadband = 0.2f;
+
+        if (normX > FaceDeadband)
         {
             // 朝右：isFacingLeft=false，旋转=目标角
             if (isFacingLeft) FlipDirection();
             targetQuat = Quaternion.Euler(0, 0, targetAngle);
         }
-        else
+        else if (normX < -FaceDeadband)
         {
             // 朝左：isFacingLeft=true，旋转=目标角+180
             if (!isFacingLeft) FlipDirection();
             targetQuat = Quaternion.Euler(0, 0, targetAngle + 180f);
+        }
+        else
+        {
+            // 接近正上/正下：保持当前朝向，只做平滑旋转
+            targetQuat = Quaternion.Euler(0, 0, isFacingLeft ? targetAngle + 180f : targetAngle);
         }
 
         transform.rotation = Quaternion.RotateTowards(transform.rotation, targetQuat, gatherSteerSpeed * Time.deltaTime);
