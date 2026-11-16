@@ -2065,6 +2065,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1789744908}
+    costText: {fileID: 465667856}
+  - coralCountText: {fileID: 834197890}
+    costText: {fileID: 949052022}
+  - coralCountText: {fileID: 2015916725}
+    costText: {fileID: 1645422353}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 11763819}
@@ -2089,13 +2096,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1789744908}
-    costText: {fileID: 465667856}
-  - coralCountText: {fileID: 834197890}
-    costText: {fileID: 949052022}
-  - coralCountText: {fileID: 2015916725}
-    costText: {fileID: 1645422353}
 --- !u!114 &11763819
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2370,7 +2370,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -9701,7 +9701,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -18763,6 +18763,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1819741846}
+    costText: {fileID: 1263466260}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 105258126}
@@ -18787,9 +18790,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1819741846}
-    costText: {fileID: 1263466260}
 --- !u!114 &105258126
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19357,6 +19357,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 17768611}
+    costText: {fileID: 1241533103}
+  - coralCountText: {fileID: 1827364965}
+    costText: {fileID: 466404073}
+  - coralCountText: {fileID: 1782650413}
+    costText: {fileID: 55430262}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 107896270}
@@ -19381,13 +19388,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 17768611}
-    costText: {fileID: 1241533103}
-  - coralCountText: {fileID: 1827364965}
-    costText: {fileID: 466404073}
-  - coralCountText: {fileID: 1782650413}
-    costText: {fileID: 55430262}
 --- !u!114 &107896270
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -22174,7 +22174,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -26215,6 +26215,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1524116736}
+    costText: {fileID: 1489983173}
+  - coralCountText: {fileID: 702403654}
+    costText: {fileID: 530426384}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 157318867}
@@ -26239,11 +26244,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1524116736}
-    costText: {fileID: 1489983173}
-  - coralCountText: {fileID: 702403654}
-    costText: {fileID: 530426384}
 --- !u!114 &157318867
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -28447,6 +28447,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 676220948}
+    costText: {fileID: 938006599}
+  - coralCountText: {fileID: 399581693}
+    costText: {fileID: 296959593}
+  - coralCountText: {fileID: 700505439}
+    costText: {fileID: 1565958013}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 175886874}
@@ -28471,13 +28478,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 676220948}
-    costText: {fileID: 938006599}
-  - coralCountText: {fileID: 399581693}
-    costText: {fileID: 296959593}
-  - coralCountText: {fileID: 700505439}
-    costText: {fileID: 1565958013}
 --- !u!114 &175886874
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -30658,7 +30658,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -40478,6 +40478,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 676610301}
+    costText: {fileID: 895966526}
+  - coralCountText: {fileID: 1880475253}
+    costText: {fileID: 63503160}
+  - coralCountText: {fileID: 610408393}
+    costText: {fileID: 841372666}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 243548851}
@@ -40502,13 +40509,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 676610301}
-    costText: {fileID: 895966526}
-  - coralCountText: {fileID: 1880475253}
-    costText: {fileID: 63503160}
-  - coralCountText: {fileID: 610408393}
-    costText: {fileID: 841372666}
 --- !u!114 &243548851
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -41149,7 +41149,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -45755,6 +45755,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 550701389}
+    costText: {fileID: 754088000}
+  - coralCountText: {fileID: 1019044916}
+    costText: {fileID: 702937373}
+  - coralCountText: {fileID: 1981204367}
+    costText: {fileID: 594563534}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 280911071}
@@ -45779,13 +45786,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 550701389}
-    costText: {fileID: 754088000}
-  - coralCountText: {fileID: 1019044916}
-    costText: {fileID: 702937373}
-  - coralCountText: {fileID: 1981204367}
-    costText: {fileID: 594563534}
 --- !u!114 &280911071
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -49017,6 +49017,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 825021337}
+    costText: {fileID: 401920529}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 302855082}
@@ -49041,9 +49044,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 825021337}
-    costText: {fileID: 401920529}
 --- !u!114 &302855082
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -51597,6 +51597,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 353642958}
+    costText: {fileID: 1903038577}
+  - coralCountText: {fileID: 468692787}
+    costText: {fileID: 43412154}
+  - coralCountText: {fileID: 288879609}
+    costText: {fileID: 2098716063}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 329930554}
@@ -51621,13 +51628,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 353642958}
-    costText: {fileID: 1903038577}
-  - coralCountText: {fileID: 468692787}
-    costText: {fileID: 43412154}
-  - coralCountText: {fileID: 288879609}
-    costText: {fileID: 2098716063}
 --- !u!114 &329930554
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -52272,6 +52272,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1153253120}
+    costText: {fileID: 1974902497}
+  - coralCountText: {fileID: 589983841}
+    costText: {fileID: 890316263}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 333662145}
@@ -52296,11 +52301,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1153253120}
-    costText: {fileID: 1974902497}
-  - coralCountText: {fileID: 589983841}
-    costText: {fileID: 890316263}
 --- !u!114 &333662145
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -53023,6 +53023,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1300746896}
+    costText: {fileID: 1965196663}
+  - coralCountText: {fileID: 1933611301}
+    costText: {fileID: 394233091}
+  - coralCountText: {fileID: 1270339605}
+    costText: {fileID: 1240219077}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 341354626}
@@ -53047,13 +53054,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1300746896}
-    costText: {fileID: 1965196663}
-  - coralCountText: {fileID: 1933611301}
-    costText: {fileID: 394233091}
-  - coralCountText: {fileID: 1270339605}
-    costText: {fileID: 1240219077}
 --- !u!114 &341354626
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -53248,6 +53248,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 584031454}
+    costText: {fileID: 783636190}
+  - coralCountText: {fileID: 1387563947}
+    costText: {fileID: 350483362}
+  - coralCountText: {fileID: 344580159}
+    costText: {fileID: 1280474541}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 341793026}
@@ -53272,13 +53279,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 584031454}
-    costText: {fileID: 783636190}
-  - coralCountText: {fileID: 1387563947}
-    costText: {fileID: 350483362}
-  - coralCountText: {fileID: 344580159}
-    costText: {fileID: 1280474541}
 --- !u!114 &341793026
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -54658,6 +54658,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 424060758}
+    costText: {fileID: 1937044945}
+  - coralCountText: {fileID: 967499932}
+    costText: {fileID: 252642794}
+  - coralCountText: {fileID: 2107559510}
+    costText: {fileID: 626181838}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 349909006}
@@ -54682,13 +54689,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 424060758}
-    costText: {fileID: 1937044945}
-  - coralCountText: {fileID: 967499932}
-    costText: {fileID: 252642794}
-  - coralCountText: {fileID: 2107559510}
-    costText: {fileID: 626181838}
 --- !u!114 &349909006
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -57744,7 +57744,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -66356,6 +66356,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1492653605}
+    costText: {fileID: 2132476517}
+  - coralCountText: {fileID: 1321334668}
+    costText: {fileID: 534449374}
+  - coralCountText: {fileID: 1568475802}
+    costText: {fileID: 1817719258}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 400968891}
@@ -66380,13 +66387,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1492653605}
-    costText: {fileID: 2132476517}
-  - coralCountText: {fileID: 1321334668}
-    costText: {fileID: 534449374}
-  - coralCountText: {fileID: 1568475802}
-    costText: {fileID: 1817719258}
 --- !u!114 &400968891
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -72920,6 +72920,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1682614005}
+    costText: {fileID: 1777408897}
+  - coralCountText: {fileID: 704843478}
+    costText: {fileID: 130224551}
+  - coralCountText: {fileID: 1983850628}
+    costText: {fileID: 1355169569}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 411399870}
@@ -72944,13 +72951,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1682614005}
-    costText: {fileID: 1777408897}
-  - coralCountText: {fileID: 704843478}
-    costText: {fileID: 130224551}
-  - coralCountText: {fileID: 1983850628}
-    costText: {fileID: 1355169569}
 --- !u!114 &411399870
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -77368,7 +77368,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -78290,7 +78290,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -80417,6 +80417,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 764747577}
+    costText: {fileID: 1767543476}
+  - coralCountText: {fileID: 1136581303}
+    costText: {fileID: 1169885996}
+  - coralCountText: {fileID: 185983674}
+    costText: {fileID: 250757135}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 474261175}
@@ -80441,13 +80448,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 764747577}
-    costText: {fileID: 1767543476}
-  - coralCountText: {fileID: 1136581303}
-    costText: {fileID: 1169885996}
-  - coralCountText: {fileID: 185983674}
-    costText: {fileID: 250757135}
 --- !u!114 &474261175
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -83412,6 +83412,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 523296085}
+    costText: {fileID: 2030655351}
+  - coralCountText: {fileID: 450168753}
+    costText: {fileID: 1607412681}
+  - coralCountText: {fileID: 1592688082}
+    costText: {fileID: 145560955}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 492769806}
@@ -83436,13 +83443,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 523296085}
-    costText: {fileID: 2030655351}
-  - coralCountText: {fileID: 450168753}
-    costText: {fileID: 1607412681}
-  - coralCountText: {fileID: 1592688082}
-    costText: {fileID: 145560955}
 --- !u!114 &492769806
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -83759,7 +83759,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -89643,6 +89643,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1308988589}
+    costText: {fileID: 2103825471}
+  - coralCountText: {fileID: 1064788672}
+    costText: {fileID: 2070580319}
+  - coralCountText: {fileID: 529917823}
+    costText: {fileID: 594065277}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 504449230}
@@ -89667,13 +89674,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1308988589}
-    costText: {fileID: 2103825471}
-  - coralCountText: {fileID: 1064788672}
-    costText: {fileID: 2070580319}
-  - coralCountText: {fileID: 529917823}
-    costText: {fileID: 594065277}
 --- !u!114 &504449230
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -102556,7 +102556,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -110027,6 +110027,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 863764213}
+    costText: {fileID: 753822230}
+  - coralCountText: {fileID: 1099193625}
+    costText: {fileID: 1425513851}
+  - coralCountText: {fileID: 1481443641}
+    costText: {fileID: 1217450263}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 609886779}
@@ -110051,13 +110058,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 863764213}
-    costText: {fileID: 753822230}
-  - coralCountText: {fileID: 1099193625}
-    costText: {fileID: 1425513851}
-  - coralCountText: {fileID: 1481443641}
-    costText: {fileID: 1217450263}
 --- !u!114 &609886779
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -112298,6 +112298,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 345236944}
+    costText: {fileID: 388606161}
+  - coralCountText: {fileID: 1015840631}
+    costText: {fileID: 1197763470}
+  - coralCountText: {fileID: 1726801989}
+    costText: {fileID: 926935171}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 620294424}
@@ -112311,7 +112318,7 @@ MonoBehaviour:
   allowRockOverlap: 1
   bubbleSprite: {fileID: 0}
   bubbleCount: 48
-  bubbleSizeRange: {x: 0.08, y: 0.22}
+  bubbleSizeRange: {x: 0.3, y: 0.3}
   bubbleRiseSpeedRange: {x: 1, y: 2}
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
@@ -112322,13 +112329,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 345236944}
-    costText: {fileID: 388606161}
-  - coralCountText: {fileID: 1015840631}
-    costText: {fileID: 1197763470}
-  - coralCountText: {fileID: 1726801989}
-    costText: {fileID: 926935171}
 --- !u!114 &620294424
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -113820,6 +113820,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 2891735000964275501}
+    costText: {fileID: 2346892567055583670}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 632923235}
@@ -113844,9 +113847,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 2891735000964275501}
-    costText: {fileID: 2346892567055583670}
 --- !u!114 &632923235
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -116349,7 +116349,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -118693,6 +118693,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 794197527}
+    costText: {fileID: 567710607}
+  - coralCountText: {fileID: 1347381276}
+    costText: {fileID: 873378177}
+  - coralCountText: {fileID: 342463710}
+    costText: {fileID: 864980500}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 680908378}
@@ -118717,13 +118724,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 794197527}
-    costText: {fileID: 567710607}
-  - coralCountText: {fileID: 1347381276}
-    costText: {fileID: 873378177}
-  - coralCountText: {fileID: 342463710}
-    costText: {fileID: 864980500}
 --- !u!114 &680908378
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -119037,7 +119037,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -124003,6 +124003,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 403215911}
+    costText: {fileID: 317730336}
+  - coralCountText: {fileID: 1709190450}
+    costText: {fileID: 1448635831}
+  - coralCountText: {fileID: 1293570062}
+    costText: {fileID: 793675755}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 717182133}
@@ -124027,13 +124034,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 403215911}
-    costText: {fileID: 317730336}
-  - coralCountText: {fileID: 1709190450}
-    costText: {fileID: 1448635831}
-  - coralCountText: {fileID: 1293570062}
-    costText: {fileID: 793675755}
 --- !u!114 &717182133
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -125635,6 +125635,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 741762310}
+    costText: {fileID: 1941316122}
+  - coralCountText: {fileID: 1731268366}
+    costText: {fileID: 102818796}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 728667925}
@@ -125659,11 +125664,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 741762310}
-    costText: {fileID: 1941316122}
-  - coralCountText: {fileID: 1731268366}
-    costText: {fileID: 102818796}
 --- !u!114 &728667925
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -131201,6 +131201,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1368035542}
+    costText: {fileID: 1137249350}
+  - coralCountText: {fileID: 379269620}
+    costText: {fileID: 1846204502}
+  - coralCountText: {fileID: 826582444}
+    costText: {fileID: 640068857}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 776473074}
@@ -131225,13 +131232,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1368035542}
-    costText: {fileID: 1137249350}
-  - coralCountText: {fileID: 379269620}
-    costText: {fileID: 1846204502}
-  - coralCountText: {fileID: 826582444}
-    costText: {fileID: 640068857}
 --- !u!114 &776473074
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -140805,6 +140805,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 795476952}
+    costText: {fileID: 492247997}
+  - coralCountText: {fileID: 924930982}
+    costText: {fileID: 1677617621}
+  - coralCountText: {fileID: 977153748}
+    costText: {fileID: 74154404}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 854727279}
@@ -140829,13 +140836,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 795476952}
-    costText: {fileID: 492247997}
-  - coralCountText: {fileID: 924930982}
-    costText: {fileID: 1677617621}
-  - coralCountText: {fileID: 977153748}
-    costText: {fileID: 74154404}
 --- !u!114 &854727279
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -142177,7 +142177,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -143664,6 +143664,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 2016624180}
+    costText: {fileID: 1637023333}
+  - coralCountText: {fileID: 2061672017}
+    costText: {fileID: 1727607633}
+  - coralCountText: {fileID: 1536701027}
+    costText: {fileID: 2136582228}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 880245007}
@@ -143688,13 +143695,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 2016624180}
-    costText: {fileID: 1637023333}
-  - coralCountText: {fileID: 2061672017}
-    costText: {fileID: 1727607633}
-  - coralCountText: {fileID: 1536701027}
-    costText: {fileID: 2136582228}
 --- !u!114 &880245007
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -145483,6 +145483,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 436135275}
+    costText: {fileID: 1877971036}
+  - coralCountText: {fileID: 1039188566}
+    costText: {fileID: 1233510746}
+  - coralCountText: {fileID: 1087705565}
+    costText: {fileID: 832886552}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 894238766}
@@ -145507,13 +145514,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 436135275}
-    costText: {fileID: 1877971036}
-  - coralCountText: {fileID: 1039188566}
-    costText: {fileID: 1233510746}
-  - coralCountText: {fileID: 1087705565}
-    costText: {fileID: 832886552}
 --- !u!114 &894238766
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -146623,6 +146623,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1902122700}
+    costText: {fileID: 867400978}
+  - coralCountText: {fileID: 437447891}
+    costText: {fileID: 448890409}
+  - coralCountText: {fileID: 278284828}
+    costText: {fileID: 1992538961}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 899807005}
@@ -146647,13 +146654,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1902122700}
-    costText: {fileID: 867400978}
-  - coralCountText: {fileID: 437447891}
-    costText: {fileID: 448890409}
-  - coralCountText: {fileID: 278284828}
-    costText: {fileID: 1992538961}
 --- !u!114 &899807005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -152584,7 +152584,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -157082,7 +157082,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -159544,7 +159544,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -161632,7 +161632,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -175625,7 +175625,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -175730,6 +175730,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 671135813}
+    costText: {fileID: 802085422}
+  - coralCountText: {fileID: 1148657312}
+    costText: {fileID: 817490978}
+  - coralCountText: {fileID: 2025664537}
+    costText: {fileID: 2077703664}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1124768308}
@@ -175754,13 +175761,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 671135813}
-    costText: {fileID: 802085422}
-  - coralCountText: {fileID: 1148657312}
-    costText: {fileID: 817490978}
-  - coralCountText: {fileID: 2025664537}
-    costText: {fileID: 2077703664}
 --- !u!114 &1124768308
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -176029,6 +176029,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1409232277}
+    costText: {fileID: 1365739051}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1126089109}
@@ -176053,9 +176056,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1409232277}
-    costText: {fileID: 1365739051}
 --- !u!114 &1126089109
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -176374,7 +176374,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -181233,6 +181233,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1848348664}
+    costText: {fileID: 840757525}
+  - coralCountText: {fileID: 2027283055}
+    costText: {fileID: 983685177}
+  - coralCountText: {fileID: 1074316497}
+    costText: {fileID: 318551911}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1183563570}
@@ -181257,13 +181264,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1848348664}
-    costText: {fileID: 840757525}
-  - coralCountText: {fileID: 2027283055}
-    costText: {fileID: 983685177}
-  - coralCountText: {fileID: 1074316497}
-    costText: {fileID: 318551911}
 --- !u!114 &1183563570
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -187770,6 +187770,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1660450451}
+    costText: {fileID: 1004830049}
+  - coralCountText: {fileID: 1386946911}
+    costText: {fileID: 1304897997}
+  - coralCountText: {fileID: 1290293895}
+    costText: {fileID: 542729824}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1240494561}
@@ -187794,13 +187801,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1660450451}
-    costText: {fileID: 1004830049}
-  - coralCountText: {fileID: 1386946911}
-    costText: {fileID: 1304897997}
-  - coralCountText: {fileID: 1290293895}
-    costText: {fileID: 542729824}
 --- !u!114 &1240494561
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -189422,6 +189422,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1767551245}
+    costText: {fileID: 1006604904}
+  - coralCountText: {fileID: 1932780295}
+    costText: {fileID: 2067584689}
+  - coralCountText: {fileID: 609099304}
+    costText: {fileID: 1372065269}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1247028536}
@@ -189446,13 +189453,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1767551245}
-    costText: {fileID: 1006604904}
-  - coralCountText: {fileID: 1932780295}
-    costText: {fileID: 2067584689}
-  - coralCountText: {fileID: 609099304}
-    costText: {fileID: 1372065269}
 --- !u!114 &1247028536
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -190110,6 +190110,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 549191324}
+    costText: {fileID: 153835938}
+  - coralCountText: {fileID: 1607831474}
+    costText: {fileID: 96522343}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1252037042}
@@ -190134,11 +190139,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 549191324}
-    costText: {fileID: 153835938}
-  - coralCountText: {fileID: 1607831474}
-    costText: {fileID: 96522343}
 --- !u!114 &1252037042
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -190483,6 +190483,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1929399755}
+    costText: {fileID: 503707910}
+  - coralCountText: {fileID: 1764007854}
+    costText: {fileID: 1099615539}
+  - coralCountText: {fileID: 1196039500}
+    costText: {fileID: 1091262338}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1253225186}
@@ -190507,13 +190514,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1929399755}
-    costText: {fileID: 503707910}
-  - coralCountText: {fileID: 1764007854}
-    costText: {fileID: 1099615539}
-  - coralCountText: {fileID: 1196039500}
-    costText: {fileID: 1091262338}
 --- !u!114 &1253225186
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -197219,7 +197219,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -213139,7 +213139,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -214403,7 +214403,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -217794,6 +217794,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 720673355}
+    costText: {fileID: 482551550}
+  - coralCountText: {fileID: 38621647}
+    costText: {fileID: 88611067}
+  - coralCountText: {fileID: 1926600730}
+    costText: {fileID: 535828959}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1444438647}
@@ -217818,13 +217825,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 720673355}
-    costText: {fileID: 482551550}
-  - coralCountText: {fileID: 38621647}
-    costText: {fileID: 88611067}
-  - coralCountText: {fileID: 1926600730}
-    costText: {fileID: 535828959}
 --- !u!114 &1444438647
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -217943,6 +217943,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 217084663}
+    costText: {fileID: 1820342438}
+  - coralCountText: {fileID: 2101899698}
+    costText: {fileID: 6111081}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1445213512}
@@ -217967,11 +217972,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 217084663}
-    costText: {fileID: 1820342438}
-  - coralCountText: {fileID: 2101899698}
-    costText: {fileID: 6111081}
 --- !u!114 &1445213512
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -219586,6 +219586,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 99267146}
+    costText: {fileID: 19399868}
+  - coralCountText: {fileID: 1711921812}
+    costText: {fileID: 316217866}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1461984805}
@@ -219610,11 +219615,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 99267146}
-    costText: {fileID: 19399868}
-  - coralCountText: {fileID: 1711921812}
-    costText: {fileID: 316217866}
 --- !u!114 &1461984805
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -219878,7 +219878,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -220888,7 +220888,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -226804,6 +226804,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1669995357}
+    costText: {fileID: 75486460}
+  - coralCountText: {fileID: 1380561714}
+    costText: {fileID: 631555450}
+  - coralCountText: {fileID: 406924193}
+    costText: {fileID: 1585006102}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1515358192}
@@ -226828,13 +226835,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1669995357}
-    costText: {fileID: 75486460}
-  - coralCountText: {fileID: 1380561714}
-    costText: {fileID: 631555450}
-  - coralCountText: {fileID: 406924193}
-    costText: {fileID: 1585006102}
 --- !u!114 &1515358192
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -227845,6 +227845,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 558233077}
+    costText: {fileID: 384826422}
+  - coralCountText: {fileID: 1114027826}
+    costText: {fileID: 1753357209}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1523195915}
@@ -227869,11 +227874,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 558233077}
-    costText: {fileID: 384826422}
-  - coralCountText: {fileID: 1114027826}
-    costText: {fileID: 1753357209}
 --- !u!114 &1523195915
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -235642,6 +235642,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 241549479}
+    costText: {fileID: 376140458}
+  - coralCountText: {fileID: 1636355357}
+    costText: {fileID: 879687300}
+  - coralCountText: {fileID: 255929261}
+    costText: {fileID: 168015226}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1550602511}
@@ -235666,13 +235673,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 241549479}
-    costText: {fileID: 376140458}
-  - coralCountText: {fileID: 1636355357}
-    costText: {fileID: 879687300}
-  - coralCountText: {fileID: 255929261}
-    costText: {fileID: 168015226}
 --- !u!114 &1550602511
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -236807,6 +236807,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 550553594}
+    costText: {fileID: 1064323656}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1561950753}
@@ -236831,9 +236834,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 550553594}
-    costText: {fileID: 1064323656}
 --- !u!114 &1561950753
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -237144,6 +237144,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 16298196}
+    costText: {fileID: 2017589868}
+  - coralCountText: {fileID: 1509617999}
+    costText: {fileID: 1420072591}
+  - coralCountText: {fileID: 114969791}
+    costText: {fileID: 259324292}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1565069960}
@@ -237168,13 +237175,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 16298196}
-    costText: {fileID: 2017589868}
-  - coralCountText: {fileID: 1509617999}
-    costText: {fileID: 1420072591}
-  - coralCountText: {fileID: 114969791}
-    costText: {fileID: 259324292}
 --- !u!114 &1565069960
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -238208,6 +238208,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 46731801}
+    costText: {fileID: 606017147}
+  - coralCountText: {fileID: 315309497}
+    costText: {fileID: 701296676}
+  - coralCountText: {fileID: 583826502}
+    costText: {fileID: 848825101}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1572041457}
@@ -238232,13 +238239,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 46731801}
-    costText: {fileID: 606017147}
-  - coralCountText: {fileID: 315309497}
-    costText: {fileID: 701296676}
-  - coralCountText: {fileID: 583826502}
-    costText: {fileID: 848825101}
 --- !u!114 &1572041457
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -238654,7 +238654,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -239330,6 +239330,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1368885695}
+    costText: {fileID: 730279761}
+  - coralCountText: {fileID: 685967713}
+    costText: {fileID: 548685112}
+  - coralCountText: {fileID: 44940743}
+    costText: {fileID: 1436412057}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1582052867}
@@ -239354,13 +239361,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1368885695}
-    costText: {fileID: 730279761}
-  - coralCountText: {fileID: 685967713}
-    costText: {fileID: 548685112}
-  - coralCountText: {fileID: 44940743}
-    costText: {fileID: 1436412057}
 --- !u!114 &1582052867
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -240546,6 +240546,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 187814097}
+    costText: {fileID: 1514739019}
+  - coralCountText: {fileID: 1114921564}
+    costText: {fileID: 413683121}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1588636167}
@@ -240570,11 +240575,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 187814097}
-    costText: {fileID: 1514739019}
-  - coralCountText: {fileID: 1114921564}
-    costText: {fileID: 413683121}
 --- !u!114 &1588636167
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -245534,6 +245534,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1316292552}
+    costText: {fileID: 826112205}
+  - coralCountText: {fileID: 1769381871}
+    costText: {fileID: 636003651}
+  - coralCountText: {fileID: 2120510831}
+    costText: {fileID: 805848880}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1620983018}
@@ -245558,13 +245565,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1316292552}
-    costText: {fileID: 826112205}
-  - coralCountText: {fileID: 1769381871}
-    costText: {fileID: 636003651}
-  - coralCountText: {fileID: 2120510831}
-    costText: {fileID: 805848880}
 --- !u!114 &1620983018
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -248904,7 +248904,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -260201,6 +260201,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 121339388}
+    costText: {fileID: 1423565932}
+  - coralCountText: {fileID: 1325788803}
+    costText: {fileID: 1940176981}
+  - coralCountText: {fileID: 1989074217}
+    costText: {fileID: 859979335}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1689547826}
@@ -260225,13 +260232,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 121339388}
-    costText: {fileID: 1423565932}
-  - coralCountText: {fileID: 1325788803}
-    costText: {fileID: 1940176981}
-  - coralCountText: {fileID: 1989074217}
-    costText: {fileID: 859979335}
 --- !u!114 &1689547826
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -262586,6 +262586,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 53485859}
+    costText: {fileID: 1569253715}
+  - coralCountText: {fileID: 1863399032}
+    costText: {fileID: 491244526}
+  - coralCountText: {fileID: 1922181243}
+    costText: {fileID: 1671411619}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1711104052}
@@ -262610,13 +262617,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 53485859}
-    costText: {fileID: 1569253715}
-  - coralCountText: {fileID: 1863399032}
-    costText: {fileID: 491244526}
-  - coralCountText: {fileID: 1922181243}
-    costText: {fileID: 1671411619}
 --- !u!114 &1711104052
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -266605,6 +266605,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 4021710}
+    costText: {fileID: 1676272575}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1732783258}
@@ -266629,9 +266632,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 4021710}
-    costText: {fileID: 1676272575}
 --- !u!114 &1732783258
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -268049,7 +268049,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -277014,7 +277014,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -279501,6 +279501,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1351645197}
+    costText: {fileID: 81028361}
+  - coralCountText: {fileID: 1720485024}
+    costText: {fileID: 130550109}
+  - coralCountText: {fileID: 2428048}
+    costText: {fileID: 1682932731}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1803452531}
@@ -279525,13 +279532,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1351645197}
-    costText: {fileID: 81028361}
-  - coralCountText: {fileID: 1720485024}
-    costText: {fileID: 130550109}
-  - coralCountText: {fileID: 2428048}
-    costText: {fileID: 1682932731}
 --- !u!114 &1803452531
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -284458,6 +284458,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1678809981}
+    costText: {fileID: 1836995255}
+  - coralCountText: {fileID: 628529803}
+    costText: {fileID: 1464528299}
+  - coralCountText: {fileID: 118934531}
+    costText: {fileID: 705640609}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1844372807}
@@ -284482,13 +284489,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1678809981}
-    costText: {fileID: 1836995255}
-  - coralCountText: {fileID: 628529803}
-    costText: {fileID: 1464528299}
-  - coralCountText: {fileID: 118934531}
-    costText: {fileID: 705640609}
 --- !u!114 &1844372807
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -291203,6 +291203,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 669834436}
+    costText: {fileID: 2055496607}
+  - coralCountText: {fileID: 274087685}
+    costText: {fileID: 266604013}
+  - coralCountText: {fileID: 1484246499}
+    costText: {fileID: 772945467}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1857453146}
@@ -291227,13 +291234,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 669834436}
-    costText: {fileID: 2055496607}
-  - coralCountText: {fileID: 274087685}
-    costText: {fileID: 266604013}
-  - coralCountText: {fileID: 1484246499}
-    costText: {fileID: 772945467}
 --- !u!114 &1857453146
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -299822,6 +299822,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 538090197}
+    costText: {fileID: 1078775791}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1893546643}
@@ -299846,9 +299849,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 538090197}
-    costText: {fileID: 1078775791}
 --- !u!114 &1893546643
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -301504,6 +301504,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 2029375909}
+    costText: {fileID: 153991724}
+  - coralCountText: {fileID: 233828260}
+    costText: {fileID: 1770515826}
+  - coralCountText: {fileID: 363833050}
+    costText: {fileID: 1990712885}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1905631127}
@@ -301528,13 +301535,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 2029375909}
-    costText: {fileID: 153991724}
-  - coralCountText: {fileID: 233828260}
-    costText: {fileID: 1770515826}
-  - coralCountText: {fileID: 363833050}
-    costText: {fileID: 1990712885}
 --- !u!114 &1905631127
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -302521,6 +302521,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1715519013}
+    costText: {fileID: 216417916}
+  - coralCountText: {fileID: 327891122}
+    costText: {fileID: 1943522619}
+  - coralCountText: {fileID: 1765951817}
+    costText: {fileID: 154203375}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1912118468}
@@ -302545,13 +302552,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1715519013}
-    costText: {fileID: 216417916}
-  - coralCountText: {fileID: 327891122}
-    costText: {fileID: 1943522619}
-  - coralCountText: {fileID: 1765951817}
-    costText: {fileID: 154203375}
 --- !u!114 &1912118468
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -302971,6 +302971,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1422174893}
+    costText: {fileID: 899045340}
+  - coralCountText: {fileID: 1079776412}
+    costText: {fileID: 124631242}
+  - coralCountText: {fileID: 690795564}
+    costText: {fileID: 1246807585}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1917874119}
@@ -302995,13 +303002,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1422174893}
-    costText: {fileID: 899045340}
-  - coralCountText: {fileID: 1079776412}
-    costText: {fileID: 124631242}
-  - coralCountText: {fileID: 690795564}
-    costText: {fileID: 1246807585}
 --- !u!114 &1917874119
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -308725,6 +308725,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 938024902}
+    costText: {fileID: 1859428205}
+  - coralCountText: {fileID: 1845378390}
+    costText: {fileID: 1697923647}
+  - coralCountText: {fileID: 153386851}
+    costText: {fileID: 1832019746}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1957997784}
@@ -308749,13 +308756,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 938024902}
-    costText: {fileID: 1859428205}
-  - coralCountText: {fileID: 1845378390}
-    costText: {fileID: 1697923647}
-  - coralCountText: {fileID: 153386851}
-    costText: {fileID: 1832019746}
 --- !u!114 &1957997784
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -308874,6 +308874,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1514670116}
+    costText: {fileID: 2102212204}
+  - coralCountText: {fileID: 882418815}
+    costText: {fileID: 1735485967}
+  - coralCountText: {fileID: 1403328359}
+    costText: {fileID: 605066142}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 1958581991}
@@ -308898,13 +308905,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1514670116}
-    costText: {fileID: 2102212204}
-  - coralCountText: {fileID: 882418815}
-    costText: {fileID: 1735485967}
-  - coralCountText: {fileID: 1403328359}
-    costText: {fileID: 605066142}
 --- !u!114 &1958581991
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -318368,6 +318368,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 369481370}
+    costText: {fileID: 247906335}
+  - coralCountText: {fileID: 1301780319}
+    costText: {fileID: 70260401}
+  - coralCountText: {fileID: 2085380930}
+    costText: {fileID: 1280567521}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 2035382217}
@@ -318392,13 +318399,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 369481370}
-    costText: {fileID: 247906335}
-  - coralCountText: {fileID: 1301780319}
-    costText: {fileID: 70260401}
-  - coralCountText: {fileID: 2085380930}
-    costText: {fileID: 1280567521}
 --- !u!114 &2035382217
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -319733,7 +319733,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -327012,6 +327012,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 724280672}
+    costText: {fileID: 1781146784}
+  - coralCountText: {fileID: 741659882}
+    costText: {fileID: 1297860461}
+  - coralCountText: {fileID: 1824554964}
+    costText: {fileID: 1869376680}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 2109177874}
@@ -327036,13 +327043,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 724280672}
-    costText: {fileID: 1781146784}
-  - coralCountText: {fileID: 741659882}
-    costText: {fileID: 1297860461}
-  - coralCountText: {fileID: 1824554964}
-    costText: {fileID: 1869376680}
 --- !u!114 &2109177874
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -327854,6 +327854,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1491763493}
+    costText: {fileID: 1087765922}
+  - coralCountText: {fileID: 786243621}
+    costText: {fileID: 658916968}
+  - coralCountText: {fileID: 32752610}
+    costText: {fileID: 1927302701}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 2117614906}
@@ -327878,13 +327885,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1491763493}
-    costText: {fileID: 1087765922}
-  - coralCountText: {fileID: 786243621}
-    costText: {fileID: 658916968}
-  - coralCountText: {fileID: 32752610}
-    costText: {fileID: 1927302701}
 --- !u!114 &2117614906
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -330764,7 +330764,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -331777,6 +331777,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   placementTag: Obstacle
+  "\u9700\u6C42\u5217\u8868":
+  - coralCountText: {fileID: 1109696204}
+    costText: {fileID: 712020084}
   coralCountText: {fileID: 0}
   costText: {fileID: 0}
   targetImage: {fileID: 2140523038}
@@ -331801,9 +331804,6 @@ MonoBehaviour:
   shakeDuration: 0.35
   darkenAmount: 0.55
   debugBaseProbe: 0
-  "\u9700\u6C42\u5217\u8868":
-  - coralCountText: {fileID: 1109696204}
-    costText: {fileID: 712020084}
 --- !u!114 &2140523038
 MonoBehaviour:
   m_ObjectHideFlags: 0

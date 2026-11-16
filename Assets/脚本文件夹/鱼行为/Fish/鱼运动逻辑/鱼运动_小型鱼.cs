@@ -3,7 +3,7 @@ using UnityEngine;
 /// <summary>
 /// 小型鱼：继承自由游动方式（沿当前朝向前进，用 moveSpeed）
 /// 先游回生成它的珊瑚（tag=coral）旁边，然后只在珊瑚周围范围内移动
-/// 出界时钳制回边界并转向珊瑚（带随机扰动）
+/// 出界时钳制回边界并立刻掉头返回
 /// 可穿过障碍物（生成时自动把碰撞器设为触发器、刚体设为运动学）
 /// </summary>
 public class 鱼运动_小型鱼 : 鱼运动
@@ -27,11 +27,6 @@ public class 鱼运动_小型鱼 : 鱼运动
     private Transform smallCoralTf;    // 生成它的珊瑚/挂载物
     private bool smallReachedCoral;    // 是否已游回珊瑚旁
 
-    // 贴边绕行方向：+1 / -1，0 = 未锁定。
-    // 出界时只随机选一次，回到范围内才解锁；原来每帧 Random 一次会让目标点在切线两侧来回跳，
-    // 表现为"贴到边缘被卡住、抽搐一下"
-    private float edgeTangentSign;
-
     /// <summary>
     /// 由生成器（ObjectSpawner）在 Instantiate 后直接调用，把挂载物传进来
     /// 避免鱼生成在spawnArea随机位置时，距离珊瑚太远找不到
@@ -48,7 +43,6 @@ public class 鱼运动_小型鱼 : 鱼运动
     protected override void OnFishReset()
     {
         smallReachedCoral = false;
-        edgeTangentSign = 0f;
         if (smallCoralTf == null) smallCoralTf = FindNearestCoral();
         transform.rotation = Quaternion.identity;
     }
@@ -88,7 +82,6 @@ public class 鱼运动_小型鱼 : 鱼运动
             if (distToAnchor <= smallRange * 0.5f)
             {
                 smallReachedCoral = true;
-                edgeTangentSign = 0f;
                 // 到达珊瑚后给一个随机旋转，避免只横着游
                 transform.rotation = Quaternion.Euler(0, 0, Random.Range(-60f, 60f));
             }
@@ -105,7 +98,7 @@ public class 鱼运动_小型鱼 : 鱼运动
         }
         else
         {
-            // 阶段2：在珊瑚周围范围内自由游动，出界时沿切线方向滑行
+            // 阶段2：在珊瑚周围范围内自由游动，碰到边界立刻掉头
             if (forward.sqrMagnitude > 0.0001f)
             {
                 transform.position += (Vector3)(forward * moveSpeed * Time.deltaTime);
@@ -115,30 +108,16 @@ public class 鱼运动_小型鱼 : 鱼运动
             float distToAnchor = offset.magnitude;
             if (distToAnchor > smallRange && distToAnchor > 0.0001f)
             {
-                // 钳制回边界内一点（留10%缓冲，避免反复触发边界）
                 Vector2 outward = offset / distToAnchor;
+
+                // 钳制回边界内一点（留10%缓冲，避免贴着边界反复触发）
                 transform.position = (Vector2)anchor + outward * (smallRange * 0.9f);
 
-                // 绕行方向只随机选一次并保持：每帧重选会让鱼在边缘来回翻转（卡住抽搐）
-                if (edgeTangentSign == 0f)
-                    edgeTangentSign = Random.value > 0.5f ? 1f : -1f;
-
-                // 转向切线方向（沿边界滑行，避免来回穿越中心弹跳）
-                // 切线 = 法线旋转90度，方向由锁定的 edgeTangentSign 决定
-                Vector2 tangent = edgeTangentSign > 0f
-                    ? new Vector2(-outward.y, outward.x)
-                    : new Vector2(outward.y, -outward.x);
-
-                // 朝切线方向转向，带一点朝内偏移（让鱼逐渐回到范围内）
-                Vector2 targetDir = (tangent - outward * 0.3f).normalized;
-                Vector3 targetPos = transform.position + (Vector3)targetDir;
-                TurnTowardPositionSmooth(targetPos, 0f);
-            }
-            else if (distToAnchor < smallRange * 0.75f)
-            {
-                // 明确回到范围内了才解锁，下次出界可以重新随机绕行方向
-                // （用 0.75 而不是 0.9：钳位后正好在 0.9 上，阈值太贴近会导致刚锁定就解锁）
-                edgeTangentSign = 0f;
+                // 掉头返回：FlipDirection 会翻转运动方向（GetForward2D 取反）
+                // 只在"还在往外游"时才翻转：掉头后方向指向圈内，下一帧不再满足条件，
+                // 因此每次触边只翻一次，不会在边缘每帧来回翻转
+                if (Vector2.Dot(forward, outward) > 0.0001f)
+                    FlipDirection();
             }
         }
     }

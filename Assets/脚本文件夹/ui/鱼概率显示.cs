@@ -199,7 +199,8 @@ public class FishJournalPage : MonoBehaviour
             }
             dropItemImage.sprite = drop;
             dropItemImage.enabled = drop != null;
-            dropItemImage.color = found ? Color.white : Color.black;
+            // 掉落物不做解锁隐藏/变黑：未解锁也照常显示（只有鱼本体走上面的黑白表现）
+            dropItemImage.color = Color.white;
         }
 
         // ========== 出现概率 ==========
