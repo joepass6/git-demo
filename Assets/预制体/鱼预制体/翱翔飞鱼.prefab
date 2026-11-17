@@ -14768,13 +14768,13 @@ MonoBehaviour:
   extraObstacleTag: 
   fishTag: fish
   dropCount: 1
-  dropInterval: 10
-  itemPrefab: {fileID: 0}
+  dropInterval: 600
+  itemPrefab: {fileID: 647409291031311344, guid: ed7fc4c3745500a42bf4f3b9ca31b403, type: 3}
   fallSpeed: 2
-  destroyTime: 50000
+  destroyTime: 1800
   enableParticle: 1
   emitCount: 1
-  fishName: "\u672A\u547D\u540D\u9C7C"
+  fishName: "\u7FF1\u7FD4\u98DE\u9C7C"
   fishSprite: {fileID: 0}
   playTime: 0
   treasureBuildTime: 0

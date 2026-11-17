@@ -478,6 +478,18 @@ public class LocalizationManager : MonoBehaviour
         foreach (Text d in deadLegacy) autoLegacyKeys.Remove(d);
     }
 
+    /// <summary>
+    /// 把指定的 legacy Text 显式绑定到 ui 表 key（LocalizedText 只支持 TMP，legacy Text 走这条）。
+    /// 绑定后立即按当前语言刷新，之后切语言由 ApplyAutoTexts 统一刷新。
+    /// </summary>
+    public void BindLegacyText(Text text, string key)
+    {
+        if (text == null || string.IsNullOrEmpty(key)) return;
+        if (tables == null || !tables.ContainsKey("ui")) return;
+        autoLegacyKeys[text] = key;
+        ApplyAutoTexts();
+    }
+
     // ==================== CSV 表格加载 ====================
 
     void BuildFontDictionary()

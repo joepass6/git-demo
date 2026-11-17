@@ -88,6 +88,37 @@
      }
  }
 
+ // 这三个开关标签是 legacy Text（LocalizedText 组件只支持 TMP），
+ // 按父节点名显式绑定到 ui 表的 key：不依赖"当前文字是否正好等于 key"，也不依赖 Start 协程时序。
+ static readonly string[] 兜底文本父节点 = { "开机自启动", "是否置顶", "神明显示开关" };
+ static readonly string[] 兜底文本Key = { "开机自启动", "是否置顶", "是否显示神明" };
+
+ void OnEnable()
+ {
+     BindFallbackTexts();
+ }
+
+ void BindFallbackTexts()
+ {
+     var mgr = LocalizationManager.Instance;
+     if (mgr == null) return;
+
+     Transform root = panel != null ? panel.transform : transform;
+     foreach (Text legacy in root.GetComponentsInChildren<Text>(true))
+     {
+         if (legacy == null || legacy.transform.parent == null) continue;
+         string parentName = legacy.transform.parent.name;
+         for (int i = 0; i < 兜底文本父节点.Length; i++)
+         {
+             if (parentName == 兜底文本父节点[i])
+             {
+                 mgr.BindLegacyText(legacy, 兜底文本Key[i]);
+                 break;
+             }
+         }
+     }
+ }
+
  void OnTopMostChanged(bool isOn)
  {
      // 兜底：Start 里没找到控制器（执行顺序/物体未激活）时，点开关再找一次，

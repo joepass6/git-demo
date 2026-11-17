@@ -14768,14 +14768,14 @@ MonoBehaviour:
   extraObstacleTag: wall
   fishTag: fish
   dropCount: 1
-  dropInterval: 10
+  dropInterval: 540
   itemPrefab: {fileID: 647409291031311344, guid: f56d3d20d01a15446a051f2bf4417614, type: 3}
   fallSpeed: 2
   useTargetDrop: 0
   dropTarget: {fileID: 0}
   dropTargetTag: 
   targetDropHeight: 0.8
-  destroyTime: 30
+  destroyTime: 2700
   enableParticle: 1
   emitCount: 1
   fishName: "\u767D\u70B9\u795E\u4ED9\u9C7C"

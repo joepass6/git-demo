@@ -14768,17 +14768,17 @@ MonoBehaviour:
   extraObstacleTag: 
   fishTag: fish
   dropCount: 1
-  dropInterval: 10
+  dropInterval: 60
   itemPrefab: {fileID: 0}
   fallSpeed: 2
   useTargetDrop: 1
   dropTarget: {fileID: 0}
   dropTargetTag: diao
   targetDropHeight: 0
-  destroyTime: 30
+  destroyTime: 360
   enableParticle: 1
   emitCount: 1
-  fishName: "\u672A\u547D\u540D\u9C7C"
+  fishName: "\u767D\u8033\u8C46\u5A18\u9C7C"
   fishSprite: {fileID: 0}
   playTime: 0
   treasureBuildTime: 0

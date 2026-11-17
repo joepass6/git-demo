@@ -128,6 +128,24 @@ public class DragAndPlaceSystem : MonoBehaviour
     private readonly Dictionary<TextMeshProUGUI, DropItemCounterUI> counterCache = new Dictionary<TextMeshProUGUI, DropItemCounterUI>();
     private List<宝物需求> effectiveRequirements;
     private readonly Dictionary<TextMeshProUGUI, Color> requirementTextColors = new Dictionary<TextMeshProUGUI, Color>();
+
+    /// <summary>正在播放“数量不足”反馈的文本 → 动画基准（字号/位置/变暗色）。
+    /// 连续触发时靠它先把上一次动画恢复到基准，再从头播，保证每次都从原始字号起跳。</summary>
+    private readonly Dictionary<TextMeshProUGUI, RequirementFeedbackState> requirementFeedback =
+        new Dictionary<TextMeshProUGUI, RequirementFeedbackState>();
+
+    class RequirementFeedbackState
+    {
+        public TextMeshProUGUI text;
+        public RectTransform rt;
+        public float baseFontSize;
+        public bool baseAutoSizing;
+        public Vector2 basePos;
+        public Color dimColor;
+        public Coroutine co;
+        public bool peakLogged;
+    }
+
     /// <summary>是否有珊瑚正在被拖拽/携带（携带期间点击优先用于放置，不拾取掉落物）</summary>
     public static bool IsCarryingObject { get; private set; }
     private GameObject currentHoverRock; // 当前预览体正悬停的石头（用于切换 SetVisible/SetOutline）
@@ -150,6 +168,20 @@ public class DragAndPlaceSystem : MonoBehaviour
     public float shakeDuration = 0.35f;
     [Tooltip("条件不足时变暗程度（0=不变，1=全黑，建议0.55左右）")]
     [Range(0f, 1f)] public float darkenAmount = 0.55f;
+
+    [Header("数量不足反馈（放置被拒绝时）")]
+    [Tooltip("数量不足导致放不下时，字号放大到的峰值倍数（基于该文本的原始字号）")]
+    [UnityEngine.Serialization.FormerlySerializedAs("insufficientClickScale")]
+    public float insufficientClickFontScale = 1.4f;
+
+    [Tooltip("反馈总时长（秒）：放大 → 保持并抖动 → 回弹恢复")]
+    public float insufficientClickDuration = 0.45f;
+
+    [Tooltip("抖动幅度（UI 像素），随时间线性衰减到 0")]
+    public float insufficientClickShake = 6f;
+
+    [Tooltip("反馈时数字闪现的颜色（条件不足的红色）")]
+    public Color insufficientClickColor = new Color(1f, 0.15f, 0.15f, 1f);
 
     [Header("调试")]
     [Tooltip("勾选后：拖拽时每当主石头发生变化就打一条日志（贴面角度 / 接触距离），用于排查吸附抖动")]
@@ -185,6 +217,8 @@ public class DragAndPlaceSystem : MonoBehaviour
     void OnDisable()
     {
         all.Remove(this);
+        // 反馈动画会改文本的字号/位置/颜色，被禁用时协程会中断，这里先把它们恢复到基准
+        StopAllRequirementFeedback();
         // 拖动中被面板关闭/禁用时 Update 不再执行，预览体会永久残留，这里兜底销毁
         if (currentDragObject != null)
         {
@@ -268,7 +302,10 @@ public class DragAndPlaceSystem : MonoBehaviour
 
             if (!canPlace)
             {
-                // 数量不够 → 拒绝 + 短暂摇晃反馈
+                // 数量不足导致放不下 → 所有不满足条目的文字反馈（字号放大+变红+抖动）
+                PlayInsufficientFeedbackForAll();
+
+                // 同时整块图标拒绝摇晃 + 拒绝音效
                 if (shakeInited)
                 {
                     if (rejectShakeCo != null) StopCoroutine(rejectShakeCo);
@@ -495,6 +532,8 @@ public class DragAndPlaceSystem : MonoBehaviour
     void ApplyOneColor(TextMeshProUGUI text, bool ok)
     {
         if (text == null) return;
+        // 反馈动画期间颜色由协程接管，避免每帧的变暗/恢复把它盖掉
+        if (requirementFeedback.ContainsKey(text)) return;
         Color original;
         if (!requirementTextColors.TryGetValue(text, out original))
         {
@@ -519,7 +558,176 @@ public class DragAndPlaceSystem : MonoBehaviour
         }
         foreach (var kv in requirementTextColors)
         {
-            if (kv.Key != null) kv.Key.color = kv.Value;
+            if (kv.Key == null) continue;
+            if (requirementFeedback.ContainsKey(kv.Key)) continue; // 反馈动画中，颜色交给协程
+            kv.Key.color = kv.Value;
+        }
+    }
+
+    // ==================== 数量不足反馈 ====================
+
+    /// <summary>
+    /// 放置被拒绝、且原因是需求数量不足时，对本对象 需求列表 里所有不满足的条目播放文字反馈。
+    /// 每个气泡都是独立的 DragAndPlaceSystem 实例，需求列表只引用自己提示面板里的文本，
+    /// 因此不会波及其它气泡或其它页面。
+    /// </summary>
+    void PlayInsufficientFeedbackForAll()
+    {
+        var reqs = EffectiveRequirements();
+        for (int i = 0; i < reqs.Count; i++)
+        {
+            var r = reqs[i];
+            if (r == null) continue;
+            if (ResolveCount(r) >= ResolveCost(r)) continue; // 只反馈不满足的条目
+
+            PlayRequirementFeedback(r.costText);
+            PlayRequirementFeedback(r.coralCountText);
+        }
+    }
+
+    /// <summary>开始（或重播）某个文本的不足反馈。</summary>
+    void PlayRequirementFeedback(TextMeshProUGUI text)
+    {
+        if (text == null) return;
+        RectTransform rt = text.rectTransform;
+        if (rt == null) return;
+
+        // 连续触发：先把上一次动画恢复到基准，再重新计时，保证每次都从原始字号/位置起抖
+        StopRequirementFeedback(text);
+
+        Color original;
+        if (!requirementTextColors.TryGetValue(text, out original))
+        {
+            original = text.color;
+            requirementTextColors[text] = original;
+        }
+        Color dim = Color.Lerp(original, Color.black, darkenAmount);
+
+        // TMP 开了 Auto Size 时，每帧布局都会重算并写回 fontSize，直接改字号不生效。
+        // 处理：播放期间临时关掉自动字号（当前 fontSize 就是自动算出的实际字号，作为基准），
+        // 结束后恢复原字号并重新开启自动字号 + 强制刷新一次版面。
+        bool autoSizing = text.enableAutoSizing;
+        float baseFontSize = text.fontSize;
+        if (autoSizing) text.enableAutoSizing = false;
+
+        var state = new RequirementFeedbackState
+        {
+            text = text,
+            rt = rt,
+            baseFontSize = baseFontSize,
+            baseAutoSizing = autoSizing,
+            basePos = rt.anchoredPosition,
+            dimColor = dim
+        };
+        requirementFeedback[text] = state;
+        float peak = baseFontSize * Mathf.Max(1f, insufficientClickFontScale);
+        Debug.Log($"[数字反馈] 开始播放: 文本='{text.gameObject.name}' rect='{rt.name}' " +
+                  $"fontSize {baseFontSize:F2} → 峰值 {peak:F2} (×{insufficientClickFontScale:F2}) " +
+                  $"autoSize={autoSizing} canvas={(text.canvas != null ? text.canvas.renderMode.ToString() : "null")} " +
+                  $"active={text.isActiveAndEnabled}");
+        state.co = StartCoroutine(RequirementFeedbackRoutine(state));
+    }
+
+    /// <summary>中断并立刻恢复到反馈前状态（字号/自动字号开关/位置/变暗色）。</summary>
+    void StopRequirementFeedback(TextMeshProUGUI text)
+    {
+        if (text == null) return;
+        RequirementFeedbackState state;
+        if (!requirementFeedback.TryGetValue(text, out state)) return;
+        requirementFeedback.Remove(text);
+        if (state.co != null) StopCoroutine(state.co);
+        ApplyRequirementFeedbackBase(state);
+    }
+
+    /// <summary>禁用/切面板等中断场景：把所有在播的反馈恢复干净，避免留下放大或红色。</summary>
+    void StopAllRequirementFeedback()
+    {
+        if (requirementFeedback.Count == 0) return;
+        var states = new List<RequirementFeedbackState>(requirementFeedback.Values);
+        requirementFeedback.Clear();
+        for (int i = 0; i < states.Count; i++)
+        {
+            var s = states[i];
+            if (s == null) continue;
+            if (s.co != null) StopCoroutine(s.co);
+            ApplyRequirementFeedbackBase(s);
+        }
+    }
+
+    void ApplyRequirementFeedbackBase(RequirementFeedbackState s)
+    {
+        if (s == null) return;
+        if (s.rt != null) s.rt.anchoredPosition = s.basePos;
+        if (s.text != null)
+        {
+            // 字号精确还原；原本开了 Auto Size 的，重新打开让它按框重算
+            s.text.fontSize = s.baseFontSize;
+            if (s.baseAutoSizing && !s.text.enableAutoSizing)
+            {
+                s.text.enableAutoSizing = true;
+                s.text.ForceMeshUpdate();
+            }
+            s.text.color = s.dimColor;
+        }
+    }
+
+    /// <summary>
+    /// 0.45 秒的反馈：起手 8% 冲到字号峰值 → 保持并高频抖动（幅度线性衰减）→ 最后 30% 回弹。
+    /// 字号直接用 TMP fontSize 放大（不是 localScale），位置抖动仍用 anchoredPosition；
+    /// 颜色：起手 10% 变红，最后 25% 渐回原来的变暗色；结束后恢复原始字号与位置。
+    /// </summary>
+    System.Collections.IEnumerator RequirementFeedbackRoutine(RequirementFeedbackState s)
+    {
+        float duration = Mathf.Max(0.05f, insufficientClickDuration);
+        float baseSize = Mathf.Max(0.01f, s.baseFontSize);
+        float peakSize = Mathf.Max(baseSize, baseSize * Mathf.Max(1f, insufficientClickFontScale));
+        float amplitude = Mathf.Max(0f, insufficientClickShake);
+
+        float t = 0f;
+        while (t < duration)
+        {
+            t += Time.deltaTime;
+            float k = Mathf.Clamp01(t / duration); // 0→1
+
+            // 字号：8% 起手冲峰，70% 前保持，最后 30% 平滑回弹
+            float attack = Mathf.Clamp01(k / 0.08f);
+            float release = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((k - 0.7f) / 0.3f));
+            float fontSize = Mathf.LerpUnclamped(baseSize, peakSize, attack * (1f - release));
+
+            // 抖动：快频率左右摆 + 轻微上下，幅度随时间衰减
+            float decay = 1f - k;
+            float dx = Mathf.Sin(t * 55f) * amplitude * decay;
+            float dy = Mathf.Sin(t * 47f) * amplitude * 0.35f * decay;
+
+            if (s.rt != null) s.rt.anchoredPosition = s.basePos + new Vector2(dx, dy);
+
+            // 变红：10% 内到红色，最后 25% 渐回变暗色
+            float colorK = Mathf.Clamp01(k / 0.1f) * Mathf.Clamp01((1f - k) / 0.25f);
+            if (s.text != null)
+            {
+                // 防止外部刷新（如 LocalizationManager.FitToBox）中途重开 Auto Size 把字号改回去
+                if (s.text.enableAutoSizing) s.text.enableAutoSizing = false;
+                s.text.fontSize = fontSize;
+                s.text.color = Color.Lerp(s.dimColor, insufficientClickColor, colorK);
+
+                if (!s.peakLogged && k >= 0.08f)
+                {
+                    s.peakLogged = true;
+                    Debug.Log($"[数字反馈] 峰值帧: 文本='{s.text.gameObject.name}' 写入字号={fontSize:F2} " +
+                              $"读回fontSize={s.text.fontSize:F2} autoSize={s.text.enableAutoSizing} " +
+                              $"active={s.text.isActiveAndEnabled} color={s.text.color}");
+                }
+            }
+
+            yield return null;
+        }
+
+        ApplyRequirementFeedbackBase(s);
+        requirementFeedback.Remove(s.text);
+        if (s.text != null)
+        {
+            Debug.Log($"[数字反馈] 结束还原: 文本='{s.text.gameObject.name}' fontSize={s.text.fontSize:F2} " +
+                      $"autoSize={s.text.enableAutoSizing} active={s.text.isActiveAndEnabled}");
         }
     }
 

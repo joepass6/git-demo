@@ -14771,7 +14771,7 @@ MonoBehaviour:
   dropInterval: 60
   itemPrefab: {fileID: 647409291031311344, guid: fd67d1b8814bb47419ce86ae2b14294a, type: 3}
   fallSpeed: 2
-  destroyTime: 300
+  destroyTime: 600
   enableParticle: 1
   emitCount: 1
   fishName: "\u864E\u76AE\u9CA8"
