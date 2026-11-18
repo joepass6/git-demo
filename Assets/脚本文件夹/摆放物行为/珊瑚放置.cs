@@ -81,6 +81,43 @@ public class DragAndPlaceSystem : MonoBehaviour
     /// 由各 DragAndPlaceSystem 在 OnEnable / Inspector 改动时写入。</summary>
     internal static bool AllowRockOverlap = true;
 
+    /// <summary>
+    /// 测试版唯一差异：放置成功后不扣库存数字（仅 TEST_BUILD 宏下为 true）。
+    /// 正式版这里被编译成常量 false，扣减逻辑完全保持原样。
+    /// 找礁石/吸附/倾斜/容量/探针/数量拦截等全部照正式版执行。
+    /// </summary>
+    static readonly bool 测试版不扣数字 =
+#if TEST_BUILD
+        true;
+#else
+        false;
+#endif
+
+    /// <summary>
+    /// 数量不足时是否仍然拦截。测试版默认 true（和正式版一样正常拦截）；
+    /// 用户之后想让测试版「数字不够也能放」，只改 TEST_BUILD 分支这一行为 false 即可。
+    /// 正式版恒为 true，编译期零差异。
+    /// </summary>
+    static readonly bool 测试版检查数量 =
+#if TEST_BUILD
+        true;
+#else
+        true;
+#endif
+
+    /// <summary>
+    /// 「随便放版」：任意珊瑚不限条件、不限库存、不需要礁石支撑，鼠标在哪就落在哪。
+    /// 只由独立宏 TEST_FREE_PLACE 打开（打包脚本注入），默认不定义 ——
+    /// 所以「只不扣数字」的测试版和正式版都不受影响。
+    /// 打开时：图标恒可放置、拖拽不找礁石/不吸附/不倾斜/不显示容量、松手直接落位且不扣数字。
+    /// </summary>
+    static readonly bool 自由摆放 =
+#if TEST_FREE_PLACE
+        true;
+#else
+        false;
+#endif
+
     /// <summary>主石头切换迟滞（世界单位）：新石头必须比当前这块明显更靠下才切换，防止两帧来回跳。
     /// 所有入口（放置 / 搬家 / 容量统计）共用同一份，所以做成静态常量。</summary>
     internal const float PrimarySwitchMargin = 0.12f;
@@ -106,6 +143,9 @@ public class DragAndPlaceSystem : MonoBehaviour
 
     [Tooltip("基准生命周期（秒）：每个气泡再乘 0.8~1.15 随机")]
     public float bubbleLifetime = 1.2f;
+
+    [Tooltip("放置成功气泡的最长存活时间（秒）。只压自定义气泡，不动珊瑚/场景自带的粒子")]
+    [Range(0.1f, 2f)] public float effectMaxLifetime = 0.5f;
 
     [Tooltip("气泡颜色（A = 初始不透明度）")]
     public Color bubbleColor = new Color(0.85f, 0.95f, 1f, 0.9f);
@@ -232,6 +272,8 @@ public class DragAndPlaceSystem : MonoBehaviour
     /// <summary>鼠标是否按在任意珊瑚拖拽图标上（按图标矩形检测，不依赖射线）</summary>
     public static bool IsPointerOverAnyIcon(Vector2 screenPos)
     {
+        // 与 CustomGraphicRaycaster / 鱼点击共用同一套 Screen→RT 换算
+        screenPos = DesktopWindowController.ScreenToRenderTexturePoint(screenPos);
         for (int i = 0; i < all.Count; i++)
         {
             var d = all[i];
@@ -248,6 +290,9 @@ public class DragAndPlaceSystem : MonoBehaviour
     void Start()
     {
         Debug.Log("[DragAndPlace] Start 启动!");
+
+        // 只把自定义放置气泡压短；珊瑚自带粒子的存活时间保持 prefab 原值，不做覆盖
+        bubbleLifetime = Mathf.Min(bubbleLifetime, effectMaxLifetime);
 
         // 自动给所有带 placementTag 的物体补 RockCapacity 组件
         RockCapacity.EnsureAll(placementTag);
@@ -284,9 +329,18 @@ public class DragAndPlaceSystem : MonoBehaviour
         {
             // 拖拽中：预览物体跟随鼠标
             Vector3 worldPos = DesktopWindowController.ScreenToWorldPointCorrect(mainCam, Input.mousePosition);
-            currentDragObject.transform.position = new Vector3(worldPos.x, worldPos.y, 0);
+            if (自由摆放)
+            {
+                // 随便放：不吸附、不倾斜，只钳制在窗口可见范围内（别让珊瑚跑到窗口外）
+                currentDragObject.transform.position = ClampToScreenBounds(currentDragObject, new Vector3(worldPos.x, worldPos.y, 0));
+            }
+            else
+            {
+                currentDragObject.transform.position = new Vector3(worldPos.x, worldPos.y, 0);
+            }
 
             // ===== 每帧检测悬停的石头，通知 RockCapacity 显示 UI + 描边 =====
+            // 随便放版不需要礁石支撑：不找石头、不吸顶面、不倾斜、不显示容量
             UpdateHoverRock();
 
             // 鼠标松开 → 尝试放置
@@ -372,6 +426,9 @@ public class DragAndPlaceSystem : MonoBehaviour
     {
         if (currentDragObject == null) return;
 
+        // 随便放版：不需要礁石支撑，整段跳过（不找石头/不吸附/不倾斜/不显示容量）
+        if (自由摆放) return;
+
         // 先用「水平姿态」做支撑面检测：倾斜会撑大 AABB，让底座探针变宽/变高，
         // 可能凭空多碰到旁边的石头 → 主石头来回跳。测完再摆倾斜，互不干扰。
         if (currentDragObject != null)
@@ -424,6 +481,17 @@ public class DragAndPlaceSystem : MonoBehaviour
 
     void CheckCanPlace()
     {
+        // 随便放版：恒为可放置（不看宝物条件、不看数量）
+        if (自由摆放)
+        {
+            if (!canPlace)
+            {
+                canPlace = true;
+                Debug.Log($"[DragAndPlace] {gameObject.name}: 随便放版，强制可放置");
+            }
+            return;
+        }
+
         // 一条需求都没有（老场景没配文本）时默认允许放置
         var reqs = EffectiveRequirements();
         bool newCanPlace = true;
@@ -431,7 +499,8 @@ public class DragAndPlaceSystem : MonoBehaviour
         {
             var r = reqs[i];
             if (r == null) continue;
-            if (ResolveCount(r) < ResolveCost(r))
+            // 唯一的数量开关：默认 true（正常拦截）；改成 false 就是测试版「数字不够也能放」
+            if (测试版检查数量 && ResolveCount(r) < ResolveCost(r))
             {
                 newCanPlace = false;
                 break;
@@ -472,9 +541,48 @@ public class DragAndPlaceSystem : MonoBehaviour
         return effectiveRequirements;
     }
 
-    /// <summary>数量：有库存类型时必须读 DropItem 库存（存档的唯一真源），只读文本会在被别的路径重刷后拿到旧数字。</summary>
-    float ResolveCount(宝物需求 req)
+    /// <summary>
+    /// 按这株珊瑚配置的需求逐条退回库存（卖出时调用）。
+    /// 多框需求：每条按自己的 itemType 与 cost 各退一次，同类型自动累加；
+    /// 测试版（TEST_BUILD 的「不扣数字」）放置时没扣，这里也不退，避免刷数字。
+    /// 返回实际退回的条目数。
+    /// </summary>
+    public int 按需求退回库存()
     {
+        if (测试版不扣数字)
+        {
+            Debug.Log($"[DragAndPlace] 测试版：{gameObject.name} 卖出不返还（放置时未扣数字）");
+            return 0;
+        }
+
+        var reqs = EffectiveRequirements();
+        int refunded = 0;
+        for (int i = 0; i < reqs.Count; i++)
+        {
+            var r = reqs[i];
+            if (r == null) continue;
+            int need = Mathf.Max(0, Mathf.RoundToInt(ResolveCost(r)));
+            if (need <= 0) continue;
+
+            string type = ResolveItemType(r);
+            if (!string.IsNullOrEmpty(type))
+            {
+                DropItem.AddCount(type, need);
+                Debug.Log($"[DragAndPlace] 卖出退回 {type} +{need}（现有 {DropItem.GetCount(type)}）");
+            }
+            else if (r.coralCountText != null)
+            {
+                // 没有库存类型的旧配置：退回文本（和放置扣减保持同一套兜底）
+                r.coralCountText.text = (ParseNumber(r.coralCountText) + need).ToString();
+            }
+            refunded++;
+        }
+        Debug.Log($"[DragAndPlace] 卖出返还 {gameObject.name}: 退回 {refunded} 条需求");
+        return refunded;
+    }
+
+    /// <summary>数量：有库存类型时必须读 DropItem 库存（存档的唯一真源），只读文本会在被别的路径重刷后拿到旧数字。</summary>
+    float ResolveCount(宝物需求 req)    {
         if (req == null) return 0f;
         string type = ResolveItemType(req);
         if (!string.IsNullOrEmpty(type)) return DropItem.GetCount(type);
@@ -523,7 +631,8 @@ public class DragAndPlaceSystem : MonoBehaviour
         {
             var r = reqs[i];
             if (r == null) continue;
-            bool ok = ResolveCount(r) >= ResolveCost(r);
+            // 随便放版：需求文本一律按满足显示（不因缺资源变暗），和"不限条件"的实际行为一致
+            bool ok = 自由摆放 || ResolveCount(r) >= ResolveCost(r);
             ApplyOneColor(r.coralCountText, ok);
             ApplyOneColor(r.costText, ok);
         }
@@ -753,8 +862,11 @@ public class DragAndPlaceSystem : MonoBehaviour
         Camera uiCam = (parentCanvas != null && parentCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
             ? parentCanvas.worldCamera
             : null;
+        // 鼠标坐标统一换算到 RT 像素（CustomGraphicRaycaster 内部也是同一套换算，
+        // 所以下面 EventSystem 那条备用路径必须继续传原始屏幕坐标，不能传换算后的值）
+        Vector2 mousePos = DesktopWindowController.ScreenToRenderTexturePoint(Input.mousePosition);
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            rt, Input.mousePosition, uiCam, out localPoint);
+            rt, mousePos, uiCam, out localPoint);
         bool directHit = rt.rect.Contains(localPoint);
 
         Debug.Log($"[DragAndPlace] 点击检测: 物体名={gameObject.name}, 鼠标本地坐标={localPoint}, 矩形范围={rt.rect}, 命中={directHit}");
@@ -868,6 +980,15 @@ public class DragAndPlaceSystem : MonoBehaviour
 
         if (currentDragObject == null) return;
 
+        // 随便放版：鼠标位置直接落位（不查底座探针、不查容量、不扣库存），
+        // 存档登记 / 抬到最前 / 放置特效 / 气泡照常走
+        if (自由摆放)
+        {
+            PlaceFree(currentDragObject.transform.position);
+            currentDragObject = null;
+            return;
+        }
+
         // 用物体的底座探针检测：收集所有接触的 placementTag 石头（一个珊瑚可能同时压多块）
         Vector3 placePos = currentDragObject.transform.position;
 
@@ -935,28 +1056,36 @@ public class DragAndPlaceSystem : MonoBehaviour
             //    只改文本时 _counts 仍是旧值 → 存档保存的是未扣数量 → 读档后数量回满/少扣。
             //    AddCount/SetCount 内部会刷新所有同类型的计数文本（多个图标/面板显示同一个数字）。
             //    同一类型出现在多个框时，每个框各调一次 AddCount，等价于累加扣减。
-            var reqs = EffectiveRequirements();
-            int deducted = 0;
-            for (int i = 0; i < reqs.Count; i++)
+            // 测试版唯一差异：这里跳过扣数字，气泡里的数量文本也保持不动（正式版照常扣）。
+            if (!测试版不扣数字)
             {
-                var r = reqs[i];
-                if (r == null) continue;
-                int need = Mathf.Max(0, Mathf.RoundToInt(ResolveCost(r)));
-                if (need <= 0) continue;
+                var reqs = EffectiveRequirements();
+                int deducted = 0;
+                for (int i = 0; i < reqs.Count; i++)
+                {
+                    var r = reqs[i];
+                    if (r == null) continue;
+                    int need = Mathf.Max(0, Mathf.RoundToInt(ResolveCost(r)));
+                    if (need <= 0) continue;
 
-                string type = ResolveItemType(r);
-                if (!string.IsNullOrEmpty(type))
-                {
-                    DropItem.AddCount(type, -need);
+                    string type = ResolveItemType(r);
+                    if (!string.IsNullOrEmpty(type))
+                    {
+                        DropItem.AddCount(type, -need);
+                    }
+                    else if (r.coralCountText != null)
+                    {
+                        // 没有库存类型的旧配置：退回文本扣减（保持原行为）
+                        r.coralCountText.text = (ParseNumber(r.coralCountText) - need).ToString();
+                    }
+                    deducted++;
                 }
-                else if (r.coralCountText != null)
-                {
-                    // 没有库存类型的旧配置：退回文本扣减（保持原行为）
-                    r.coralCountText.text = (ParseNumber(r.coralCountText) - need).ToString();
-                }
-                deducted++;
+                Debug.Log($"[DragAndPlace] {gameObject.name}: 已扣 {deducted} 条需求");
             }
-            Debug.Log($"[DragAndPlace] {gameObject.name}: 已扣 {deducted} 条需求");
+            else
+            {
+                Debug.Log($"[DragAndPlace] 测试版：{gameObject.name} 放置成功，跳过扣数字（数量文本不变）");
+            }
 
             // 7. 刷新所有石头的容量统计（第一次放置也必须扣减）
             RockCapacity.RefreshAll(placementTag);
@@ -974,6 +1103,72 @@ public class DragAndPlaceSystem : MonoBehaviour
         }
 
         currentDragObject = null;
+    }
+
+    /// <summary>
+    /// 随便放版落位：不查底座探针 / 容量 / 库存，直接按鼠标位置生成真实物体。
+    /// 收尾（存档登记、抬到最前、放置特效、气泡、容量统计刷新）与正式版放置成功一致。
+    /// </summary>
+    void PlaceFree(Vector3 finalPos)
+    {
+        Vector3 pos = new Vector3(finalPos.x, finalPos.y, 0f);
+        GameObject placed = Instantiate(prefabToSpawn, pos, Quaternion.identity);
+        Destroy(currentDragObject);
+        currentDragObject = placed;
+
+        Debug.Log($"[DragAndPlace] 随便放：直接落位 {placed.name} @ {pos}");
+
+        var spawner = placed.GetComponent<ObjectSpawner>();
+        if (spawner != null)
+        {
+            SaveSystem.RegisterPlacedSpawner(spawner);
+            Debug.Log($"[DragAndPlace] ✅ 已登记到 SaveSystem: {placed.name}");
+        }
+        else
+        {
+            Debug.LogWarning($"[DragAndPlace] ⚠️ {placed.name} 没有 ObjectSpawner，SaveSystem 无法追踪保存");
+        }
+
+        触发放置事件(placed);
+        BringToFront(placed, baseSortingOrder);
+        PlayPlaceEffect(placed);
+        SpawnBubbleBurst(placed);
+
+        // 容量统计照常刷新：随便放的珊瑚如果确实压在石头上，统计里也会如实算进去
+        RockCapacity.RefreshAll(placementTag);
+    }
+
+    /// <summary>
+    /// 随便放版专用：把物体钳制在摄像机可见范围内（按物体渲染包围盒留出半个身位），
+    /// 避免拖到窗口边角时珊瑚有一半跑到窗口外。只改位置，不改尺寸/旋转。
+    /// </summary>
+    static Vector3 ClampToScreenBounds(GameObject obj, Vector3 worldPos)
+    {
+        Camera cam = Camera.main;
+        if (cam == null) return worldPos;
+
+        float depth = cam.orthographic ? Mathf.Abs(cam.nearClipPlane) : Mathf.Abs(cam.transform.position.z);
+        Vector3 bl = cam.ViewportToWorldPoint(new Vector3(0f, 0f, depth));
+        Vector3 tr = cam.ViewportToWorldPoint(new Vector3(1f, 1f, depth));
+        float minX = Mathf.Min(bl.x, tr.x), maxX = Mathf.Max(bl.x, tr.x);
+        float minY = Mathf.Min(bl.y, tr.y), maxY = Mathf.Max(bl.y, tr.y);
+
+        // 物体包围盒中心相对 transform.position 的偏移（预制体根节点不一定在几何中心）
+        Vector3 offset = Vector3.zero;
+        SpriteRenderer sr = obj != null ? obj.GetComponentInChildren<SpriteRenderer>() : null;
+        if (sr != null)
+        {
+            Bounds b = sr.bounds;
+            offset = b.center - obj.transform.position;
+        }
+        float halfW = sr != null ? sr.bounds.extents.x : 0f;
+        float halfH = sr != null ? sr.bounds.extents.y : 0f;
+
+        const float margin = 0.02f;
+        Vector3 visual = worldPos + offset;
+        visual.x = Mathf.Clamp(visual.x, minX + halfW + margin, maxX - halfW - margin);
+        visual.y = Mathf.Clamp(visual.y, minY + halfH + margin, maxY - halfH - margin);
+        return visual - offset;
     }
 
     /// <summary>
@@ -1037,6 +1232,7 @@ public class DragAndPlaceSystem : MonoBehaviour
         foreach (var ps in allPs)
         {
             if (ps == null) continue;
+            // 不覆盖 startLifetime：珊瑚/场景粒子保持 prefab 原值
             ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             ps.Play();
         }

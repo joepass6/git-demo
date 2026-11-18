@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Rendering;
 using Unity.Collections;
 using System;
 using System.Collections.Generic;
@@ -30,17 +31,39 @@ public class DesktopWindowController : MonoBehaviour
     public float maxWindowScale = 1.2f;
     float windowScale = 1f;
 
-    // 旧场景序列化的是 0.5 / 1.5（1.5 时画面裁掉大半座塔，0.5 时缩得过小）。
+    // 旧场景序列化的是 0.5 / 1.5（1.5 时画面裁掉大半座塔，0.5 时缩得过小），
+    // 现在场景里还存着 0.1 / 0.9（0.9 连 1:1 贴合档都到不了）。
     // 改字段初始值不会影响已保存的场景，所以按项目既有做法做一次“旧默认值→新默认值”迁移；
     // 用户手动改成别的值时仍然尊重用户值（不改 .unity，避免编辑器重载）。
     const float LegacyMinWindowScale = 0.5f;
+    const float LegacyMinWindowScale2 = 0.1f;
     const float LegacyMaxWindowScale = 1.5f;
+    const float LegacyMaxWindowScale2 = 0.9f;
     const float DefaultMinWindowScale = 0.7f;
     const float DefaultMaxWindowScale = 1.25f;
+
+    /// <summary>1.0 = 1:1 贴合档（相机 orthoSize = 贴合包围盒半高），也是和编辑器对齐的档位。</summary>
+    const float DefaultWindowScale = 1f;
     float EffectiveMinWindowScale =>
-        Mathf.Abs(minWindowScale - LegacyMinWindowScale) < 0.001f ? DefaultMinWindowScale : minWindowScale;
+        (Mathf.Abs(minWindowScale - LegacyMinWindowScale) < 0.001f ||
+         Mathf.Abs(minWindowScale - LegacyMinWindowScale2) < 0.001f)
+            ? DefaultMinWindowScale : minWindowScale;
     float EffectiveMaxWindowScale =>
-        Mathf.Abs(maxWindowScale - LegacyMaxWindowScale) < 0.001f ? DefaultMaxWindowScale : maxWindowScale;
+        (Mathf.Abs(maxWindowScale - LegacyMaxWindowScale) < 0.001f ||
+         Mathf.Abs(maxWindowScale - LegacyMaxWindowScale2) < 0.001f)
+            ? DefaultMaxWindowScale : maxWindowScale;
+
+    /// <summary>
+    /// 老存档的 windowScale 迁移：
+    /// 0.50 是旧版默认档（UI 系数 0.556、相机 ortho×2），和编辑器的 1.0 档完全不是一个画面，
+    /// 直接读进来就是用户说的“UI 小一圈、画面缩一圈”。这里一次性迁到 1.0；
+    /// 其余值只做范围钳制，保持用户手动调过的档位。
+    /// </summary>
+    public static float MigrateLegacyWindowScale(float saved)
+    {
+        if (Mathf.Abs(saved - 0.5f) <= 0.06f) return DefaultWindowScale;
+        return Mathf.Clamp(saved, DefaultMinWindowScale, DefaultMaxWindowScale);
+    }
 
     /// <summary>
     /// UI 设计基准高度（像素）：取洞穴主体的实际像素高度（1:1 取景时约 996px）。
@@ -112,6 +135,16 @@ public class DesktopWindowController : MonoBehaviour
     public bool topMost = true;
     const string TopMostKey = "WindowTopMost";
 
+    // 窗口位置/缩放属于“显示偏好”，放 PlayerPrefs（每次拖动/缩放后 1 秒内落盘），
+    // save.json 里的 windowState 继续保留，作为老存档的一次性迁移来源。
+    const string WindowPosXKey = "WindowPosX";
+    const string WindowPosYKey = "WindowPosY";
+    const string WindowScalePrefKey = "WindowScale";
+
+    [Header("点击诊断")]
+    [Tooltip("每次鼠标按下打印屏幕坐标/客户区/UI 射线命中，用于定位“按钮点不到”；定位完可关掉")]
+    public bool debugClickLog = true;
+
     [Header("时钟面板锁定塔身")]
     public bool lockClockToTower = true;
     [Tooltip("微调偏移（世界单位），Ctrl+方向键调完自动存档")]
@@ -150,13 +183,17 @@ public class DesktopWindowController : MonoBehaviour
     [DllImport("user32.dll")] static extern int  SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
     [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
     [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+    [DllImport("user32.dll")] static extern bool GetClientRect(IntPtr hWnd, out RECT lpRect);
     [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
     [DllImport("user32.dll")] static extern bool ReleaseCapture();
     [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
     [DllImport("user32.dll")] static extern bool SetProcessDPIAware();
     [DllImport("user32.dll")] static extern IntPtr SetProcessDpiAwarenessContext(IntPtr value);
     [DllImport("user32.dll")] static extern bool SystemParametersInfo(uint uiAction, uint uiParam, ref RECT pvParam, uint fWinIni);
+    [DllImport("user32.dll")] static extern IntPtr MonitorFromRect(ref RECT lprc, uint dwFlags);
+    [DllImport("user32.dll")] static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
     const uint SPI_GETWORKAREA = 0x0030;
+    const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
     static readonly IntPtr DPI_AWARE_PER_MONITOR_V2 = new IntPtr(-4);
 
     [DllImport("user32.dll")] static extern IntPtr GetDC(IntPtr hWnd);
@@ -169,6 +206,8 @@ public class DesktopWindowController : MonoBehaviour
     [DllImport("user32.dll")] static extern bool UpdateLayeredWindow(IntPtr hWnd, IntPtr hdcDst, ref POINT pptDst, ref SIZE psize, IntPtr hdcSrc, ref POINT pprSrc, uint crKey, ref BLENDFUNCTION pblend, uint dwFlags);
 
     [StructLayout(LayoutKind.Sequential)] struct RECT { public int Left, Top, Right, Bottom; }
+    [StructLayout(LayoutKind.Sequential)]
+    struct MONITORINFO { public int cbSize; public RECT rcMonitor; public RECT rcWork; public uint dwFlags; }
     [StructLayout(LayoutKind.Sequential)] struct POINT { public int X, Y; }
     [StructLayout(LayoutKind.Sequential)] struct SIZE { public int CX, CY; }
     [StructLayout(LayoutKind.Sequential)] struct BLENDFUNCTION { public byte BlendOp, BlendFlags, SourceConstantAlpha, AlphaFormat; }
@@ -190,39 +229,86 @@ public class DesktopWindowController : MonoBehaviour
     IntPtr hwnd;
     bool transparentReady;
     RenderTexture rt;
-    RenderTexture rtPremul;      // GPU 预乘后的中间 RT（无深度，尺寸与 rt 一致），每帧复用
+    RenderTexture rtPremul;      // GPU 预乘后的中间 RT（无深度，尺寸与 rt 一致），双缓冲 A
+    RenderTexture rtPremul2;     // 双缓冲 B：A 在异步回读时写 B，避免读写同一张 RT
     Material premulMat;          // 预乘 + BGR 重排材质，创建一次后复用
     Texture2D readback;
     IntPtr memDC = IntPtr.Zero, dib = IntPtr.Zero, dibOld = IntPtr.Zero, dibBits = IntPtr.Zero;
     int texW, texH;
-    byte[] bgra;
+    byte[] bgra;                 // 正在上屏的一帧（BGRA）
+    byte[] bgraPending;          // GPU 回读落点
+
+    // 异步回读状态：GPU→CPU 的整帧回读是每帧最大的停顿来源（1200×1200×4≈5.8MB），
+    // 改成 AsyncGPUReadback 后 CPU 不再等 GPU，代价是上屏比逻辑帧晚 1 帧。
+    int premulPending = -1;      // 正在回读的缓冲下标，-1 = 空闲
+    int premulWrite;             // 本帧写入的缓冲下标
+    bool asyncReadbackEnabled;
+    bool frameReady;
+
+    // 性能计数：每 300 帧打一条，用户回传日志即可判断卡顿是否来自上屏
+    int presentFrameCount;
+    float presentAccumMs;
+    float lastRepairTime;
 
     // 公开的 RT 尺寸（供其他脚本做 Screen→RT 坐标转换）
     public static int RTWidth { get; private set; }
     public static int RTHeight { get; private set; }
 
     /// <summary>
-    /// 透明窗口下 Screen 分辨率 ≠ RenderTexture 分辨率，
-    /// 直接 Camera.ScreenToWorldPoint 会偏移 → 先把 Screen 坐标按比例缩放到 RT 坐标再转。
+    /// 屏幕坐标（Input.mousePosition 所在空间，即窗口客户区像素）→ RenderTexture 像素。
+    ///
+    /// 这是全项目唯一的“鼠标 → RT”换算入口：鱼点击、珊瑚拖拽、UI 射线、
+    /// 世界坐标悬停判定都必须调它，不要再各写一套（编辑器/打包版各写一份补丁，
+    /// 迟早会有一处漏掉或多乘一次）。
+    ///
+    /// 透明窗口把画面渲进固定尺寸的 RT，而窗口被 SetWindowPos 改成另一个尺寸；
+    /// 只有当 Screen 尺寸与 RT 尺寸不同才需要缩放，相同时原样返回（开销为零）。
+    /// 编辑器里 RTWidth=0，退回相机像素尺寸，通常与 Screen 相同 → 等价于不换算。
+    /// </summary>
+    public static Vector2 ScreenToRenderTexturePoint(Vector2 screenPos)
+    {
+        float sw = Screen.width, sh = Screen.height;
+        Camera cam = Camera.main;
+        float rw = RTWidth > 0 ? RTWidth : (cam != null ? cam.pixelWidth : 0);
+        float rh = RTHeight > 0 ? RTHeight : (cam != null ? cam.pixelHeight : 0);
+        if (sw <= 0f || sh <= 0f || rw <= 0f || rh <= 0f) return screenPos;
+        if (Mathf.Approximately(sw, rw) && Mathf.Approximately(sh, rh)) return screenPos;
+        return new Vector2(screenPos.x * rw / sw, screenPos.y * rh / sh);
+    }
+
+    /// <summary>
+    /// 屏幕坐标 → 相机世界坐标。2D 正交相机下 z 取近裁剪面即可（x/y 与 z 无关）。
     /// </summary>
     public static Vector3 ScreenToWorldPointCorrect(Camera cam, Vector2 screenPos)
     {
         if (cam == null) cam = Camera.main;
-        if (cam == null) return new Vector3(screenPos.x, screenPos.y, 0);
-#if UNITY_EDITOR
-        return cam.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, cam.nearClipPlane));
-#else
-        float sw = Screen.width, sh = Screen.height;
-        float rw = RTWidth > 0 ? RTWidth : cam.pixelWidth;
-        float rh = RTHeight > 0 ? RTHeight : cam.pixelHeight;
-        Vector2 scaledPos = screenPos;
-        if (sw > 0 && sh > 0 && rw > 0 && rh > 0)
+        if (cam == null) return new Vector3(screenPos.x, screenPos.y, 0f);
+        Vector2 rtPos = ScreenToRenderTexturePoint(screenPos);
+        return cam.ScreenToWorldPoint(new Vector3(rtPos.x, rtPos.y, cam.nearClipPlane));
+    }
+
+    /// <summary>
+    /// 鼠标是否点在场景里可点击的对象上（鱼/珊瑚）。
+    ///
+    /// 透明窗口版里“点场景任意位置拖动窗口”会立刻进入 Windows 模态拖动循环，
+    /// Unity 这一帧及之后收不到输入 → 表现就是“点鱼没反应、窗口反而动了”。
+    /// 编辑器里 HandleWindowDrag 是空操作，所以编辑器没有这个症状。
+    /// </summary>
+    bool IsPointerOverWorldInteractable()
+    {
+        Camera cam = zoomCamera != null ? zoomCamera : Camera.main;
+        if (cam == null) return false;
+
+        Vector2 world = ScreenToWorldPointCorrect(cam, Input.mousePosition);
+        Collider2D[] hits = Physics2D.OverlapPointAll(world);
+        for (int i = 0; i < hits.Length; i++)
         {
-            scaledPos.x = screenPos.x * rw / sw;
-            scaledPos.y = screenPos.y * rh / sh;
+            Collider2D h = hits[i];
+            if (h == null) continue;
+            if (h.GetComponentInParent<鱼运动>() != null) return true;
+            if (h.CompareTag("coral")) return true;
         }
-        return cam.ScreenToWorldPoint(new Vector3(scaledPos.x, scaledPos.y, cam.nearClipPlane));
-#endif
+        return false;
     }
 
     // ==================== DPI ====================
@@ -244,12 +330,21 @@ public class DesktopWindowController : MonoBehaviour
         // 神明开关：必须先按存档显隐，再算贴合包围盒（否则关掉后仍会被白名单撑大窗口）
         LoadGodState();
 
+        // 窗口位置/缩放：在第一次摆窗口之前就按 PlayerPrefs 里的显示偏好恢复，
+        // 这样启动时不会先闪到默认位置再跳回来。
+        LoadWindowPrefs();
+
         Application.runInBackground = true;
+
 
 #if !UNITY_EDITOR
         MakeProcessDpiAware();
-        FixCanvasScalers(); // 编辑器里让 Unity 自己管 ScaleWithScreenSize，不要碰
 #endif
+        // 编辑器里也执行：以前编辑器走 CanvasScaler 自己的 ScaleWithScreenSize，
+        // 构建版走 ConstantPixelSize + 本项目公式，两边 UI 大小天然对不上。
+        // 现在两边同一模式、同一公式（windowScale 在编辑器里恒为 1），
+        // 相同画面高度下 UI 才是像素级一致。
+        FixCanvasScalers();
         CenterCameraOnTarget();
         FitWindowToTarget();
 
@@ -264,6 +359,14 @@ public class DesktopWindowController : MonoBehaviour
 #endif
 
         StartCoroutine(LockClockWhenReady());
+        ValidateEventSystem();
+
+#if !UNITY_EDITOR
+        // 窗口位置/缩放不是每次都能等到 OnApplicationQuit（任务管理器/崩溃/强关都收不到），
+        // 这里每秒比对一次，玩家拖完/缩放完 1 秒内就落盘到 PlayerPrefs。
+        StartCoroutine(AutoPersistWindowState());
+        if (!enableTransparent) StartCoroutine(RestoreWindowPositionWhenReady());
+#endif
 
         if (minimizeButton != null)
         {
@@ -524,7 +627,19 @@ public class DesktopWindowController : MonoBehaviour
 #if !UNITY_EDITOR
         if (fitW > 0 && fitH > 0)
         {
-            SetWindowPos(hwnd, IntPtr.Zero, 0, 0, fitW, fitH, SWP_NOZORDER | SWP_NOACTIVATE);
+            // 有记住的位置就一次到位；没有就只改尺寸、保持 Windows 给的位置
+            // （以前这里写死 0,0 且没带 SWP_NOMOVE，每次启动都先把窗口甩到左上角）
+            Vector2 saved;
+            if (TryGetSavedWindowPosition(out saved))
+            {
+                Vector2 p = ClampWindowPosToWorkArea(saved.x, saved.y);
+                SetWindowPos(hwnd, IntPtr.Zero, (int)p.x, (int)p.y, fitW, fitH, SWP_NOZORDER | SWP_NOACTIVATE);
+                Debug.Log($"[桌面窗口] 启动即恢复窗口位置 ({p.x:F0}, {p.y:F0})");
+            }
+            else
+            {
+                SetWindowPos(hwnd, IntPtr.Zero, 0, 0, fitW, fitH, SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE);
+            }
             Debug.Log($"[桌面窗口] 固定窗口尺寸 {fitW}x{fitH}");
         }
 #endif
@@ -719,11 +834,26 @@ public class DesktopWindowController : MonoBehaviour
                 if (origRaycaster != null) Destroy(origRaycaster);
                 customRaycaster = c.gameObject.AddComponent<CustomGraphicRaycaster>();
             }
-
             // 挪到最顶层 Sorting Layer + sortingOrder ≥30000
             if (c.sortingLayerID != topLayerId) c.sortingLayerID = topLayerId;
             if (c.sortingOrder < 30000) c.sortingOrder = Mathf.Min(32767, 30000 + c.sortingOrder);
         }
+
+        // 嵌套 Canvas 也有自己的 GraphicRaycaster，而上面的循环只处理根画布。
+        // 只换根画布的话，嵌套面板里的按钮仍然用原始 Screen 坐标做射线，
+        // 一旦 Screen 与 RT 尺寸不同就会整体偏移（表现为“按钮要点偏一点才中”）。
+        int replaced = 0;
+        foreach (Canvas c in cachedCanvases)
+        {
+            if (c == null) continue;
+            if (c.GetComponent<CustomGraphicRaycaster>() != null) continue;
+            var orig = c.GetComponent<GraphicRaycaster>();
+            if (orig != null) Destroy(orig);
+            c.gameObject.AddComponent<CustomGraphicRaycaster>();
+            replaced++;
+        }
+        if (replaced > 0)
+            Debug.Log($"[桌面窗口] 已为 {replaced} 个嵌套 Canvas 统一射线换算");
 
         Debug.Log($"[桌面窗口] Canvas 扫描: {rootCount} 个根 Canvas, 相机={cam.name}, texW/H={texW}x{texH}, windowScale={windowScale:F2}");
     }
@@ -747,6 +877,18 @@ public class DesktopWindowController : MonoBehaviour
         RTWidth = texW;
         RTHeight = texH;
 
+        // 坐标自检：鱼/珊瑚/UI 三处点击都依赖这组数字。若 Screen 与 RT 不一致，
+        // 说明换算确实在生效；若一致则换算系数恒为 1，点击应当与编辑器等价。
+        float kx = Screen.width > 0 ? (float)texW / Screen.width : 1f;
+        float ky = Screen.height > 0 ? (float)texH / Screen.height : 1f;
+        Debug.Log($"[桌面窗口] 坐标基准: Screen={Screen.width}x{Screen.height}, RT={texW}x{texH}, " +
+                  $"窗口={fitW}x{fitH}, 换算系数=({kx:F3},{ky:F3})");
+        if (Screen.width != texW || Screen.height != texH)
+        {
+            Debug.LogWarning($"[桌面窗口] Screen 与 RT 尺寸不一致（{Screen.width}x{Screen.height} vs {texW}x{texH}）：" +
+                             "所有鼠标换算已自动补偿；若点击仍偏移，请把这一行日志发回。");
+        }
+
         cam.clearFlags = CameraClearFlags.SolidColor;
         cam.backgroundColor = new Color(0f, 0f, 0f, 0f);
         if (rt != null) rt.Release();
@@ -759,14 +901,22 @@ public class DesktopWindowController : MonoBehaviour
         if (readback != null) Destroy(readback);
         readback = new Texture2D(texW, texH, TextureFormat.RGBA32, false);
         bgra = new byte[texW * texH * 4];
+        bgraPending = new byte[texW * texH * 4];
 
-        // 预乘中间 RT：尺寸/格式与 rt 保持一致，只建一次，之后每帧复用
+        // 预乘中间 RT：双缓冲，尺寸/格式与 rt 保持一致，只建一次，之后每帧复用。
+        // 双缓冲的作用：一块正在做异步回读时，下一帧写另一块，不会读写冲突。
         if (rtPremul != null) { rtPremul.Release(); Destroy(rtPremul); }
-        rtPremul = new RenderTexture(texW, texH, 0, RenderTextureFormat.ARGB32);
-        rtPremul.name = "桌面窗口_预乘";
-        rtPremul.filterMode = FilterMode.Point;
-        rtPremul.wrapMode = TextureWrapMode.Clamp;
-        rtPremul.Create();
+        rtPremul = CreatePremulRT("桌面窗口_预乘A");
+        if (rtPremul2 != null) { rtPremul2.Release(); Destroy(rtPremul2); }
+        rtPremul2 = CreatePremulRT("桌面窗口_预乘B");
+
+        premulPending = -1;
+        premulWrite = 0;
+        frameReady = false;
+        asyncReadbackEnabled = SystemInfo.supportsAsyncGPUReadback;
+        presentFrameCount = 0;
+        presentAccumMs = 0f;
+
         EnsurePremulMaterial();
 
         CreateDib();
@@ -779,6 +929,51 @@ public class DesktopWindowController : MonoBehaviour
         OnWindowScaleChanged?.Invoke(windowScale);
 
         Debug.Log($"[桌面窗口] ULW 已启动 ({texW}x{texH}), orthoSize={cam.orthographicSize:F2} (base={baseOrthoSize:F2}/scale={windowScale:F2}), UI系数={TargetScaleFactor():F3}（基准 {CanvasBaseScaleFactor(new Vector2(1920f, UiDesignHeight)):F3}×0.94×{windowScale:F2}）");
+    }
+
+    RenderTexture CreatePremulRT(string rtName)
+    {
+        RenderTexture t = new RenderTexture(texW, texH, 0, RenderTextureFormat.ARGB32);
+        t.name = rtName;
+        t.filterMode = FilterMode.Point;
+        t.wrapMode = TextureWrapMode.Clamp;
+        t.Create();
+        return t;
+    }
+
+    RenderTexture PremulAt(int index) => index == 0 ? rtPremul : rtPremul2;
+
+    /// <summary>
+    /// GPU 异步回读完成回调（Unity 在主线程调用）。
+    /// request 的 NativeArray 只在回调内有效，必须当场拷贝；拿到的字节序与 ReadPixels 相同，
+    /// 已经是「预乘 + BGRA」，可以直接进 DIB。
+    /// </summary>
+    void OnAsyncReadback(AsyncGPUReadbackRequest request)
+    {
+        premulPending = -1;
+        if (request.hasError)
+        {
+            asyncReadbackEnabled = false;
+            Debug.LogWarning("[桌面窗口] GPU 异步回读失败，回退到同步 ReadPixels");
+            return;
+        }
+        request.GetData<byte>().CopyTo(bgraPending);
+        byte[] tmp = bgra;
+        bgra = bgraPending;
+        bgraPending = tmp;
+        frameReady = true;
+    }
+
+    /// <summary>同步兜底路径（不支持 AsyncGPUReadback 或异步失败时使用）。</summary>
+    void SyncReadback(int index)
+    {
+        RenderTexture prev = RenderTexture.active;
+        RenderTexture.active = PremulAt(index);
+        readback.ReadPixels(new Rect(0, 0, texW, texH), 0, 0);
+        RenderTexture.active = prev;
+
+        readback.GetRawTextureData<byte>().CopyTo(bgra);
+        frameReady = true;
     }
 
     /// <summary>
@@ -837,6 +1032,9 @@ public class DesktopWindowController : MonoBehaviour
         DestroyDib();
         if (rt != null) { rt.Release(); rt = null; }
         if (rtPremul != null) { rtPremul.Release(); Destroy(rtPremul); rtPremul = null; }
+        if (rtPremul2 != null) { rtPremul2.Release(); Destroy(rtPremul2); rtPremul2 = null; }
+        premulPending = -1;
+        frameReady = false;
         if (premulMat != null) { Destroy(premulMat); premulMat = null; }
         if (readback != null) { Destroy(readback); readback = null; }
     }
@@ -848,10 +1046,19 @@ public class DesktopWindowController : MonoBehaviour
         // 固定窗口尺寸 → RT 永不变，永远只 PresentFrame
         if (transparentReady)
         {
-            RepairWindowStyle();
+            // 窗口样式自愈低频执行即可（函数内部还有 30 帧节流）：
+            // 这里用时间门控，避免掉帧时“30 帧”被拉成很长、也避免高帧率下过于频繁。
+            if (Time.unscaledTime - lastRepairTime >= 0.5f)
+            {
+                lastRepairTime = Time.unscaledTime;
+                RepairWindowStyle();
+            }
             PresentFrame();
         }
 #endif
+
+        // 点击诊断：按下时一次性打印“坐标是否偏 / 是否被别的 Graphic 挡住 / 输入有没有到”
+        if (debugClickLog && Input.GetMouseButtonDown(0)) LogClickDiagnostics();
 
         HandleWindowDrag();
         HandleWheelZoom();
@@ -908,26 +1115,35 @@ public class DesktopWindowController : MonoBehaviour
     {
         if (hwnd == IntPtr.Zero || !IsWindow(hwnd)) return;
 
-        if (premulMat != null && rtPremul != null && rt != null)
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+
+        if (premulMat != null && rtPremul != null && rtPremul2 != null && rt != null)
         {
-            // ===== GPU 通道重排：一次全屏 Blit 代替 texW*texH 次 C# 循环 =====
-            // Graphics.Blit 会把 rt 采样后写进 rtPremul，Shader 里只做 BGR 重排
-            // （RT 里已经是预乘 alpha，不能再乘一次），输出的显存字节序已经是 DIB 需要的 BGRA，
-            // CPU 侧只剩纯内存拷贝。
-            var prevActive = RenderTexture.active;
-            Graphics.Blit(rt, rtPremul, premulMat);
+            // ===== GPU 通道重排 + 异步回读 =====
+            // 以前每帧 readback.ReadPixels 会强制 CPU 等 GPU 画完（1200×1200×4≈5.8MB），
+            // 这是构建版卡顿的主因。改成 AsyncGPUReadback 后 CPU 不再被阻塞，
+            // 上屏比逻辑帧晚 1 帧（肉眼不可见）。
+            // 双缓冲：正在回读的那一块不能再写，写另一块。
+            int write = premulPending == 0 ? 1 : (premulPending == 1 ? 0 : premulWrite);
+            Graphics.Blit(rt, PremulAt(write), premulMat);
 
-            RenderTexture.active = rtPremul;
-            readback.ReadPixels(new Rect(0, 0, texW, texH), 0, 0);
-            RenderTexture.active = prevActive;
-
-            // ReadPixels 之后数据已在 CPU 侧，直接整块搬进托管数组（一次 memcpy），
-            // 不再逐像素做乘法和通道交换。
-            readback.GetRawTextureData<byte>().CopyTo(bgra);
+            if (asyncReadbackEnabled)
+            {
+                if (premulPending < 0)
+                {
+                    premulPending = write;
+                    AsyncGPUReadback.Request(PremulAt(write), 0, TextureFormat.RGBA32, OnAsyncReadback);
+                }
+            }
+            else
+            {
+                SyncReadback(write);
+            }
+            premulWrite = write == 0 ? 1 : 0;
         }
         else
         {
-            // ===== 兜底：找不到 Shader 时完全保持原来的 CPU 路径 =====
+            // ===== 兜底：找不到预乘 Shader 时完全保持原来的 CPU 路径 =====
             var prevActive = RenderTexture.active;
             RenderTexture.active = rt;
             readback.ReadPixels(new Rect(0, 0, texW, texH), 0, 0);
@@ -945,7 +1161,12 @@ public class DesktopWindowController : MonoBehaviour
                 bgra[o + 2] = c.r;
                 bgra[o + 3] = c.a;
             }
+            frameReady = true;
         }
+
+        // 首帧 / 回读还没回来：本帧不上屏，窗口保持上一帧内容
+        if (!frameReady) return;
+        frameReady = false;
 
         Marshal.Copy(bgra, 0, dibBits, bgra.Length);
 
@@ -966,6 +1187,17 @@ public class DesktopWindowController : MonoBehaviour
 
         if (!ok && Time.frameCount % 300 == 0)
             Debug.LogWarning("[桌面窗口] UpdateLayeredWindow 失败");
+
+        // 上屏耗时自测：每 300 帧一条，用户回传日志即可判断卡顿是否来自这条管线
+        watch.Stop();
+        presentAccumMs += (float)watch.Elapsed.TotalMilliseconds;
+        presentFrameCount++;
+        if (presentFrameCount >= 300)
+        {
+            Debug.Log($"[性能] 上屏平均 {presentAccumMs / presentFrameCount:F2} ms/帧（{presentFrameCount} 帧，异步回读={asyncReadbackEnabled}）");
+            presentAccumMs = 0f;
+            presentFrameCount = 0;
+        }
     }
 
 #if UNITY_EDITOR
@@ -1041,12 +1273,81 @@ public class DesktopWindowController : MonoBehaviour
 #endif
     }
 
+    // ==================== 点击诊断 ====================
+    /// <summary>
+    /// 一次点击就能区分三种故障：
+    ///   1) 偏了：screen 与 rt 明显不同、命中对象与鼠标位置对不上；
+    ///   2) 被挡了：最上层命中的不是目标按钮（看打印的前 5 个命中）；
+    ///   3) 输入没到：EventSystem 缺失/无 InputModule，或根本没有命中。
+    /// </summary>
+    void LogClickDiagnostics()
+    {
+        Vector2 screenPos = Input.mousePosition;
+        Vector2 rtPos = ScreenToRenderTexturePoint(screenPos);
+
+        string client = "?";
+        if (hwnd != IntPtr.Zero && GetClientRect(hwnd, out RECT cr))
+            client = $"{cr.Right - cr.Left}x{cr.Bottom - cr.Top}";
+
+        var es = UnityEngine.EventSystems.EventSystem.current;
+        if (es == null)
+        {
+            Debug.LogWarning($"[点击诊断] screen={screenPos} rt={rtPos} Screen={Screen.width}x{Screen.height} " +
+                             $"客户区={client} 焦点={Application.isFocused} → EventSystem 不存在，UI 没有接收者");
+            return;
+        }
+
+        var results = new List<UnityEngine.EventSystems.RaycastResult>();
+        var data = new UnityEngine.EventSystems.PointerEventData(es) { position = screenPos };
+        es.RaycastAll(data, results);
+
+        string top = results.Count > 0
+            ? $"{results[0].gameObject.name}[{results[0].module?.GetType().Name}]"
+            : "无";
+
+        Debug.Log($"[点击诊断] screen={screenPos} rt={rtPos} Screen={Screen.width}x{Screen.height} " +
+                  $"客户区={client} 命中={results.Count} 最上层={top} 焦点={Application.isFocused} " +
+                  $"世界交互物={IsPointerOverWorldInteractable()}");
+
+        for (int i = 0; i < results.Count && i < 5; i++)
+        {
+            var r = results[i];
+            var g = r.gameObject.GetComponent<UnityEngine.UI.Graphic>();
+            Debug.Log($"    命中[{i}] {r.gameObject.name} depth={r.depth} sorting={r.sortingOrder} " +
+                      $"graphic={(g != null ? g.GetType().Name : "无")} " +
+                      $"raycast={(g != null ? g.raycastTarget : false)} " +
+                      $"alpha={(g != null ? g.color.a : 0f):F2} module={r.module?.GetType().Name}");
+        }
+    }
+
+    /// <summary>启动自检：没有 EventSystem / 没有 InputModule，所有 UGUI 点击都不会响应。</summary>
+    void ValidateEventSystem()
+    {
+        var es = UnityEngine.EventSystems.EventSystem.current;
+        if (es == null)
+        {
+            Debug.LogError("[桌面窗口] 场景里没有启用的 EventSystem：所有 UGUI 按钮都不会响应");
+            return;
+        }
+        var module = es.GetComponent<UnityEngine.EventSystems.BaseInputModule>();
+        if (module == null || !module.isActiveAndEnabled)
+        {
+            Debug.LogError($"[桌面窗口] EventSystem({es.name}) 没有可用的 InputModule：" +
+                           "UGUI 点击不会响应（检查 StandaloneInputModule / InputSystemUIInputModule）");
+            return;
+        }
+        Debug.Log($"[桌面窗口] EventSystem 就绪: {es.name}, 输入模块={module.GetType().Name}");
+    }
+
     // ==================== 拖动窗口 ====================
     void HandleWindowDrag()
     {
         if (!dragWindowAnywhere) return;
         if (!Input.GetMouseButtonDown(0)) return;
         if (IsPointerOverUI()) return;
+        // 点鱼/珊瑚时不能抢：进入模态拖动后 Unity 收不到这一帧的点击，
+        // 鱼的 HandleClickInput 和珊瑚的放置判定都跑不到（编辑器里拖动是空操作，所以只在打包版出现）。
+        if (IsPointerOverWorldInteractable()) return;
 
 #if !UNITY_EDITOR
         if (hwnd == IntPtr.Zero) hwnd = GetActiveWindow();
@@ -1218,6 +1519,171 @@ public class DesktopWindowController : MonoBehaviour
         SetWindowPos(hwnd, IntPtr.Zero, newX, newY, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
     }
 
+    // ==================== 窗口位置/缩放持久化（PlayerPrefs） ====================
+    // 结论：窗口位置/缩放以前只在 OnApplicationQuit 写进 save.json，
+    // 强关/崩溃/切包都会丢；现在改成显示偏好走 PlayerPrefs，拖动/缩放后 1 秒内落盘，
+    // save.json 的 windowState 保留为老存档的一次性迁移来源。
+
+    /// <summary>PlayerPrefs 里是否已经有记住的窗口位置。</summary>
+    public bool HasSavedWindowState()
+    {
+#if UNITY_EDITOR
+        return false;
+#else
+        return PlayerPrefs.HasKey(WindowPosXKey) && PlayerPrefs.HasKey(WindowPosYKey);
+#endif
+    }
+
+    /// <summary>PlayerPrefs 里是否已经有记住的窗口缩放档位。</summary>
+    public bool HasSavedWindowScale()
+    {
+#if UNITY_EDITOR
+        return false;
+#else
+        return PlayerPrefs.HasKey(WindowScalePrefKey);
+#endif
+    }
+
+    /// <summary>读取记住的窗口位置（左上角，物理像素）。没有记录返回 false。</summary>
+    public bool TryGetSavedWindowPosition(out Vector2 pos)
+    {
+        pos = Vector2.zero;
+#if UNITY_EDITOR
+        return false;
+#else
+        if (!HasSavedWindowState()) return false;
+        pos = new Vector2(PlayerPrefs.GetFloat(WindowPosXKey), PlayerPrefs.GetFloat(WindowPosYKey));
+        return true;
+#endif
+    }
+
+    /// <summary>启动时把缩放档位先抬回来（在 FitWindowToTarget / 透明管线初始化之前调用）。</summary>
+    void LoadWindowPrefs()
+    {
+#if !UNITY_EDITOR
+        if (!PlayerPrefs.HasKey(WindowScalePrefKey)) return;
+        float raw = PlayerPrefs.GetFloat(WindowScalePrefKey);
+        float migrated = MigrateLegacyWindowScale(raw);
+        windowScale = Mathf.Clamp(migrated, EffectiveMinWindowScale, EffectiveMaxWindowScale);
+        CurrentWindowScale = windowScale;
+        // 迁移只发生这一次：把迁移后的值写回，下次启动就是“用户当前档位”
+        if (!Mathf.Approximately(migrated, raw))
+        {
+            PlayerPrefs.SetFloat(WindowScalePrefKey, windowScale);
+            PlayerPrefs.Save();
+            Debug.Log($"[桌面窗口] windowScale 旧值 {raw:F2} 已迁移为 {windowScale:F2}");
+        }
+#endif
+    }
+
+    /// <summary>立即把当前窗口位置/缩放写进 PlayerPrefs（拖动/缩放结束、退出时调用）。</summary>
+    public void SaveWindowStateToPrefs()
+    {
+#if !UNITY_EDITOR
+        if (hwnd == IntPtr.Zero || !IsWindow(hwnd)) return;
+        Vector2 p = GetWindowPosition();
+        PlayerPrefs.SetFloat(WindowPosXKey, p.x);
+        PlayerPrefs.SetFloat(WindowPosYKey, p.y);
+        PlayerPrefs.SetFloat(WindowScalePrefKey, windowScale);
+        PlayerPrefs.Save();
+#endif
+    }
+
+    /// <summary>
+    /// 把窗口左上角夹回「窗口所在那块显示器」的工作区，保证窗口整体可见。
+    /// 🔑 多显示器时 SPI_GETWORKAREA 只返回主屏工作区，会把副屏上的坐标强行夹回主屏，
+    ///    表现就是“记住的位置每次启动都被挪走”；这里按窗口矩形找最近的那块显示器再夹。
+    /// </summary>
+    Vector2 ClampWindowPosToWorkArea(float x, float y)
+    {
+        int w = fitW > 0 ? fitW : 200;
+        int h = fitH > 0 ? fitH : 200;
+
+        RECT target = new RECT { Left = (int)x, Top = (int)y, Right = (int)x + w, Bottom = (int)y + h };
+        IntPtr mon = MonitorFromRect(ref target, MONITOR_DEFAULTTONEAREST);
+
+        RECT wa = default;
+        bool hasWorkArea = false;
+        if (mon != IntPtr.Zero)
+        {
+            MONITORINFO mi = new MONITORINFO();
+            mi.cbSize = Marshal.SizeOf(typeof(MONITORINFO));
+            if (GetMonitorInfo(mon, ref mi))
+            {
+                wa = mi.rcWork;
+                hasWorkArea = true;
+            }
+        }
+        if (!hasWorkArea && !SystemParametersInfo(SPI_GETWORKAREA, 0, ref wa, 0)) return new Vector2(x, y);
+
+        x = Mathf.Clamp(x, wa.Left, Mathf.Max(wa.Left, wa.Right - w));
+        y = Mathf.Clamp(y, wa.Top, Mathf.Max(wa.Top, wa.Bottom - h));
+        return new Vector2(x, y);
+    }
+
+    /// <summary>
+    /// 每秒比对一次真实窗口矩形和缩放档位，有变化就写 PlayerPrefs。
+    /// 拖动窗口走的是 Windows 模态循环，Unity 收不到鼠标松开事件，没法在“拖完”精确落盘，
+    /// 用轮询兜底最稳：最坏只丢最后 1 秒内的移动。
+    /// </summary>
+    System.Collections.IEnumerator AutoPersistWindowState()
+    {
+#if !UNITY_EDITOR
+        Vector2 lastPos = GetWindowPosition();
+        float lastScale = windowScale;
+        while (true)
+        {
+            yield return new WaitForSecondsRealtime(1f);
+
+            if (hwnd == IntPtr.Zero || !IsWindow(hwnd))
+            {
+                hwnd = GetActiveWindow();
+                if (hwnd == IntPtr.Zero || !IsWindow(hwnd)) continue;
+            }
+
+            Vector2 p = GetWindowPosition();
+            bool moved = Mathf.Abs(p.x - lastPos.x) > 1f || Mathf.Abs(p.y - lastPos.y) > 1f;
+            bool zoomed = Mathf.Abs(windowScale - lastScale) > 0.0001f;
+            if (!moved && !zoomed) continue;
+
+            lastPos = p;
+            lastScale = windowScale;
+            PlayerPrefs.SetFloat(WindowPosXKey, p.x);
+            PlayerPrefs.SetFloat(WindowPosYKey, p.y);
+            PlayerPrefs.SetFloat(WindowScalePrefKey, windowScale);
+            PlayerPrefs.Save();
+            Debug.Log($"[桌面窗口] 已记住窗口状态: pos=({p.x:F0},{p.y:F0}) scale={windowScale:F2}");
+        }
+#else
+        yield break;
+#endif
+    }
+
+    /// <summary>
+    /// 非透明窗口路径（enableTransparent=false，没走 SetupWindowStylesEarly）的兜底：
+    /// 等窗口句柄可用后，把记住的位置贴回去。
+    /// </summary>
+    System.Collections.IEnumerator RestoreWindowPositionWhenReady()
+    {
+#if !UNITY_EDITOR
+        for (int i = 0; i < 30; i++)
+        {
+            if (hwnd == IntPtr.Zero) hwnd = GetActiveWindow();
+            if (hwnd != IntPtr.Zero && IsWindow(hwnd)) break;
+            yield return null;
+        }
+        Vector2 saved;
+        if (TryGetSavedWindowPosition(out saved))
+            SetWindowPosition(saved.x, saved.y);
+#endif
+        yield break;
+    }
+
+    void OnApplicationQuit()
+    {
+        SaveWindowStateToPrefs();
+    }
+
     // ==================== 供 SaveSystem 调用的接口 ====================
     public float GetWindowScale() { return windowScale; }
     public void SetWindowScale(float scale)
@@ -1244,15 +1710,8 @@ public class DesktopWindowController : MonoBehaviour
         if (hwnd != IntPtr.Zero)
         {
             // 窗口变大后，旧存档里的坐标可能把窗口推到屏幕外，统一夹回工作区
-            RECT wa = default;
-            if (SystemParametersInfo(SPI_GETWORKAREA, 0, ref wa, 0))
-            {
-                int w = fitW > 0 ? fitW : 200;
-                int h = fitH > 0 ? fitH : 200;
-                x = Mathf.Clamp(x, wa.Left, Mathf.Max(wa.Left, wa.Right - w));
-                y = Mathf.Clamp(y, wa.Top, Mathf.Max(wa.Top, wa.Bottom - h));
-            }
-            SetWindowPos(hwnd, IntPtr.Zero, (int)x, (int)y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+            Vector2 p = ClampWindowPosToWorkArea(x, y);
+            SetWindowPos(hwnd, IntPtr.Zero, (int)p.x, (int)p.y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
         }
 #endif
     }

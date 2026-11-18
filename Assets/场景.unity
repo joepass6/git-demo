@@ -2091,6 +2091,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -19027,6 +19028,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -19630,6 +19632,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -26579,6 +26582,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -29022,6 +29026,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -41258,6 +41263,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -46691,6 +46697,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -49953,6 +49960,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -52691,6 +52699,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -53368,6 +53377,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -54126,6 +54136,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -54369,6 +54380,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -55783,6 +55795,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -67756,6 +67769,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -74399,6 +74413,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -79868,7 +79883,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -82020,6 +82035,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -85019,6 +85035,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -91254,6 +91271,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -112003,6 +112021,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -114279,6 +114298,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -115816,6 +115836,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -120786,6 +120807,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -126250,6 +126272,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -127884,6 +127907,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -133606,6 +133630,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -143214,6 +143239,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -146077,6 +146103,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -147900,6 +147927,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -149044,6 +149072,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -178831,6 +178860,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -179130,6 +179160,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -184430,6 +184461,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -188423,6 +188455,7 @@ MonoBehaviour:
   godRoot: {fileID: 0}
   godRootName: "\u795E\u660E"
   topMost: 1
+  debugClickLog: 1
   lockClockToTower: 1
   clockNudgeOffset: {x: 0, y: 0}
 --- !u!4 &1214407320
@@ -191346,6 +191379,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -193002,6 +193036,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -193692,6 +193727,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -194071,6 +194107,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -198248,11 +198285,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0012f1e165685342a7ea1ebb92427b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  countText: {fileID: 0}
-  costText: {fileID: 0}
   targetSpawner: {fileID: 0}
   uiPanel: {fileID: 0}
-  refundAmount: 1
 --- !u!114 &1281455826
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -200936,7 +200970,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -222028,6 +222062,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -222179,6 +222214,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -223827,6 +223863,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -231065,6 +231102,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -232108,6 +232146,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -240061,6 +240100,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -241226,6 +241266,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -241571,6 +241612,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -242714,6 +242756,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -243139,7 +243182,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -243840,6 +243883,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -245058,6 +245102,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -250052,6 +250097,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -265143,6 +265189,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -267458,6 +267505,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -267518,7 +267566,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8cff1b0b0326bd45b6a2759a9eb6b84, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  skill: {fileID: 0}
+  skill: {fileID: 11400000, guid: 2582bfc8c56857b42a3873d5c145f827, type: 2}
   coralTag: coral
 --- !u!1 &1711238185
 GameObject:
@@ -271729,6 +271777,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -284858,6 +284907,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -289819,6 +289869,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -296718,6 +296769,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -305337,6 +305389,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -307027,6 +307080,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -308048,6 +308102,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -308502,6 +308557,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -314260,6 +314316,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -314413,6 +314470,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -323912,6 +323970,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -332724,6 +332783,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -333570,6 +333630,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6
@@ -337643,6 +337704,7 @@ MonoBehaviour:
   bubbleSpreadRadius: 0.4
   bubbleSpreadAngle: 65
   bubbleLifetime: 1.2
+  effectMaxLifetime: 0.5
   bubbleColor: {r: 0.85, g: 0.95, b: 1, a: 0.9}
   bubbleEffectScale: 1
   shakeAmplitude: 6

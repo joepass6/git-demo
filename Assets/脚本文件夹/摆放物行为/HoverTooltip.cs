@@ -583,14 +583,10 @@ public class HoverTooltip : MonoBehaviour
     /// </summary>
     private static Vector3 ToCameraScreenPoint(Camera cam, Vector3 screenPos)
     {
-        if (cam == null || cam.targetTexture == null) return screenPos;
-        float tw = cam.targetTexture.width;
-        float th = cam.targetTexture.height;
-        if (tw <= 0f || th <= 0f || Screen.width <= 0 || Screen.height <= 0) return screenPos;
-
-        screenPos.x *= tw / Screen.width;
-        screenPos.y *= th / Screen.height;
-        return screenPos;
+        // 统一走 DesktopWindowController 的唯一换算入口（Screen→RT 尺寸补偿），
+        // 不在每个脚本里再复制一份比例公式。
+        Vector2 p = DesktopWindowController.ScreenToRenderTexturePoint(screenPos);
+        return new Vector3(p.x, p.y, screenPos.z);
     }
 
     private bool IsMouseInsideRect()

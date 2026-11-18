@@ -116,6 +116,13 @@ public class 鱼运动 : MonoBehaviour
     [Range(1f, 4f)]
     public float particleDensityBoost = 1.5f;
 
+    [Tooltip("点击特效粒子的存活时间（秒）。统一压短，避免长拖尾/慢慢消散；12 套粒子共用这一个值")]
+    [Range(0.05f, 2f)]
+    public float particleLifetime = 0.35f;
+
+    [Tooltip("预制体里误把鱼本体放在 coral 层的，初始化时纠正到这个 Sorting Layer（fish 层整体渲染在 coral 之上）")]
+    public string fishSortingLayer = "fish";
+
     [Header("鱼信息")]
     [Tooltip("鱼的名称")]
     public string fishName = "未命名鱼";
@@ -253,6 +260,7 @@ public class 鱼运动 : MonoBehaviour
         spawnPosition = transform.position;
 
         GetComponentsInChildren<ParticleSystem>(true, allParticles);
+        纠正鱼排序层();
         初始化特效();
 
         spawnTime = Time.time;
@@ -452,6 +460,32 @@ public class 鱼运动 : MonoBehaviour
     }
 
     /// <summary>
+    /// 预制体里有一批鱼（含 4 条小型鱼）本体在 coral 层、order 6。
+    /// 珊瑚放置/读档/搬家结束时会调用 珊瑚放置.BringToFront 把珊瑚 order 抬到 100+，
+    /// 同层下 6 < 100+，鱼就被珊瑚盖住。fish 层整体排在 coral 层之后渲染，
+    /// 所以只把「当前在 coral 层」的鱼本体切到 fish 层，order 保持原值（6）不变。
+    /// 已经是 fish 层的不动；椭圆轨道/轨道环绕的 layerNormal 也配的是 fish，切换后仍一致。
+    /// </summary>
+    void 纠正鱼排序层()
+    {
+        if (鱼本体渲染器 == null) 鱼本体渲染器 = GetComponentInChildren<SpriteRenderer>(true);
+        if (鱼本体渲染器 == null) return;
+
+        int 珊瑚层 = SortingLayer.NameToID("coral");
+        if (鱼本体渲染器.sortingLayerID != 珊瑚层) return;
+
+        string 层名 = string.IsNullOrEmpty(fishSortingLayer) ? "fish" : fishSortingLayer;
+        int 目标层 = SortingLayer.NameToID(层名);
+        if (目标层 == 珊瑚层) return;
+
+        SpriteRenderer[] 所有 = GetComponentsInChildren<SpriteRenderer>(true);
+        for (int i = 0; i < 所有.Length; i++)
+        {
+            if (所有[i] != null) 所有[i].sortingLayerID = 目标层;
+        }
+    }
+
+    /// <summary>
     /// 收集该鱼的本体渲染器和所有特效渲染器，并关掉 12 套粒子的自动播放。
     /// </summary>
     void 初始化特效()
@@ -466,6 +500,7 @@ public class 鱼运动 : MonoBehaviour
 
             关闭自动播放(ps);
             应用粒子缩放(ps);
+            应用粒子寿命(ps);
 
             ParticleSystemRenderer pr = ps.GetComponent<ParticleSystemRenderer>();
             if (pr != null) 特效渲染器.Add(pr);
@@ -492,6 +527,17 @@ public class 鱼运动 : MonoBehaviour
 
         var main = ps.main;
         main.startSizeMultiplier = 原始倍率 * Mathf.Clamp(particleScale, 0.05f, 2f);
+    }
+
+    /// <summary>
+    /// 粒子存活时间：预制体里 12 套粒子都是 5 秒，会拖尾、慢慢消散。
+    /// 统一改成常量 startLifetime（默认 0.35 秒），12 套共用 particleLifetime，改一处即可全改。
+    /// </summary>
+    void 应用粒子寿命(ParticleSystem ps)
+    {
+        if (ps == null) return;
+        var main = ps.main;
+        main.startLifetime = Mathf.Clamp(particleLifetime, 0.05f, 2f);
     }
 
     /// <summary>
@@ -533,21 +579,9 @@ public class 鱼运动 : MonoBehaviour
         Camera cam = Camera.main;
         if (cam == null) return;
 
-        Vector3 sp = Input.mousePosition;
-        if (cam.targetTexture != null)
-        {
-            float tw = cam.targetTexture.width;
-            float th = cam.targetTexture.height;
-            if (tw > 0f && th > 0f && Screen.width > 0 && Screen.height > 0)
-            {
-                sp.x *= tw / Screen.width;
-                sp.y *= th / Screen.height;
-            }
-        }
-
-        // 2D 正交相机：z 传 0 会得到相机自身位置，取物体所在平面（z=0）的距离
-        sp.z = Mathf.Abs(cam.transform.position.z);
-        Vector2 world = cam.ScreenToWorldPoint(sp);
+        // 统一走 DesktopWindowController 的换算（窗口/RT 尺寸不一致时自动补偿），
+        // 不再在这里单独复制一份缩放公式。
+        Vector2 world = DesktopWindowController.ScreenToWorldPointCorrect(cam, Input.mousePosition);
 
         Collider2D hit = Physics2D.OverlapPoint(world);
         if (hit == null) return;

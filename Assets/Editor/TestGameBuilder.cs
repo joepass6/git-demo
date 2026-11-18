@@ -38,20 +38,31 @@ public static class TestGameBuilder
             Debug.LogWarning("[测试版打包] 已取消");
             return;
         }
-        DoBuild(Path.Combine(dir, TestProductName + ".exe"), true);
+        DoBuild(Path.Combine(dir, TestProductName + ".exe"), true, TestProductName, null);
     }
 
-    /// <summary>命令行入口</summary>
+    /// <summary>
+    /// 命令行入口。默认行为完全不变（珊瑚牧歌_测试版 + TEST_BUILD）。
+    /// 可选参数：
+    ///   -buildOutput  输出目录
+    ///   -buildProductName  产品名（决定 exe 文件名与存档目录，用于互相隔离）
+    ///   -extraDefines  额外宏（分号分隔），例如 TEST_FREE_PLACE
+    /// </summary>
     public static void BuildTest()
     {
         string outDir = GetArg("-buildOutput");
         if (string.IsNullOrEmpty(outDir)) outDir = DefaultOutputDir;
 
-        bool ok = DoBuild(Path.Combine(outDir, TestProductName + ".exe"), false);
+        string productName = GetArg("-buildProductName");
+        if (string.IsNullOrEmpty(productName)) productName = TestProductName;
+
+        string extraDefines = GetArg("-extraDefines");
+
+        bool ok = DoBuild(Path.Combine(outDir, productName + ".exe"), false, productName, extraDefines);
         EditorApplication.Exit(ok ? 0 : 1);
     }
 
-    static bool DoBuild(string outputPath, bool interactive)
+    static bool DoBuild(string outputPath, bool interactive, string productName, string extraDefines)
     {
         var target = NamedBuildTarget.Standalone;
         string oldDefines = PlayerSettings.GetScriptingDefineSymbols(target);
@@ -62,11 +73,19 @@ public static class TestGameBuilder
             string outDir = Path.GetDirectoryName(outputPath);
             if (!Directory.Exists(outDir)) Directory.CreateDirectory(outDir);
 
-            // 1. 临时修改：产品名（隔离存档目录）+ TEST_BUILD 宏
-            PlayerSettings.productName = TestProductName;
+            // 1. 临时修改：产品名（隔离存档目录）+ TEST_BUILD 宏（+ 可选附加宏，如 TEST_FREE_PLACE）
+            PlayerSettings.productName = productName;
 
             var defines = new List<string>(oldDefines.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries));
             if (!defines.Contains(TestDefine)) defines.Add(TestDefine);
+            if (!string.IsNullOrEmpty(extraDefines))
+            {
+                foreach (string d in extraDefines.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    string def = d.Trim();
+                    if (def.Length > 0 && !defines.Contains(def)) defines.Add(def);
+                }
+            }
             string newDefines = string.Join(";", defines.ToArray());
             PlayerSettings.SetScriptingDefineSymbols(target, newDefines);
             AssetDatabase.SaveAssets();

@@ -16,23 +16,14 @@ public class CustomGraphicRaycaster : GraphicRaycaster
         Canvas cvs = GetComponent<Canvas>();
         if (cvs == null) return;
 
-        // WorldSpace Canvas 需要正确的 worldCamera
-        Camera cam = cvs.renderMode == RenderMode.WorldSpace && cvs.worldCamera != null
-            ? cvs.worldCamera
-            : Camera.main;
-        if (cam == null) return;
+        // ScreenSpaceCamera / WorldSpace 必须有相机才能算射线；
+        // 优先用画布自己的 worldCamera（EnsureCanvasesOnTop 写的是缩放相机，未必是 Camera.main）
+        if (cvs.renderMode != RenderMode.ScreenSpaceOverlay && cvs.worldCamera == null && Camera.main == null)
+            return;
 
         // 计算坐标缩放比：Screen → targetTexture
-        Vector2 pos = eventData.position;
-        float screenW = Screen.width;
-        float screenH = Screen.height;
-        float texW = cam.pixelWidth;
-        float texH = cam.pixelHeight;
-        if (screenW > 0 && screenH > 0 && texW > 0 && texH > 0)
-        {
-            pos.x = pos.x * texW / screenW;
-            pos.y = pos.y * texH / screenH;
-        }
+        // 统一走 DesktopWindowController 的唯一换算入口，避免这里和鱼/珊瑚各写一套。
+        Vector2 pos = DesktopWindowController.ScreenToRenderTexturePoint(eventData.position);
 
         // 临时替换 eventData.position 做 base raycast
         Vector2 origPos = eventData.position;

@@ -85,8 +85,10 @@ public class 鱼运动_轨道环绕 : 鱼运动
         phaseOffset = Random.Range(-0.02f, 0.02f);
 
         // 图层初始化
-        layerNormalID = string.IsNullOrEmpty(layerNormal) ? SortingLayer.NameToID("Default") : SortingLayer.NameToID(layerNormal);
-        layerHiddenID = string.IsNullOrEmpty(layerHidden) ? layerNormalID : SortingLayer.NameToID(layerHidden);
+        // 预制体里 layerNormal 可能是 "Foreground" 这种工程里不存在的层名，
+        // NameToID 会返回 0（Default），鱼从遮挡状态回来后就会掉到 coral 层下面；这里回落到 fish 层。
+        layerNormalID = ResolveLayer(layerNormal, "fish");
+        layerHiddenID = string.IsNullOrEmpty(layerHidden) ? layerNormalID : ResolveLayer(layerHidden, "Default");
         spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
         normalSortingOrder = new int[spriteRenderers.Length];
         for (int i = 0; i < spriteRenderers.Length; i++)
@@ -232,6 +234,22 @@ public class 鱼运动_轨道环绕 : 鱼运动
     }
 
     // ==================== 辅助 ====================
+
+    /// <summary>
+    /// 解析 Sorting Layer 名称。NameToID 对不存在的层名返回 0（与 Default 同值），
+    /// 所以名字不是 Default 却解析成 0 时，回落到 fallback 层。
+    /// </summary>
+    static int ResolveLayer(string name, string fallback)
+    {
+        if (string.IsNullOrEmpty(name)) name = fallback;
+        int id = SortingLayer.NameToID(name);
+        if (id == 0 && name != "Default")
+        {
+            int fb = SortingLayer.NameToID(fallback);
+            if (fb != 0) id = fb;
+        }
+        return id;
+    }
 
     void ApplySeparation()
     {

@@ -47,7 +47,7 @@ public class 鱼运动_固定位置 : 鱼运动
         // 点击允许转向
         if (turnOnClick && Input.GetMouseButtonDown(0))
         {
-            Vector3 world = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            Vector3 world = DesktopWindowController.ScreenToWorldPointCorrect(Camera.main, Input.mousePosition);
             world.z = 0f;
             Vector2 dir = ((Vector2)world - (Vector2)transform.position);
             if (dir.sqrMagnitude < 0.3f * 0.3f)  // 点击命中范围内才转

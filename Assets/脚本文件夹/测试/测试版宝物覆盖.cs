@@ -1,9 +1,11 @@
 // ============================================================
 // 测试版专用脚本：所有鱼的宝物（掉落物库存）强制为 99999999
-// 仅当打包时定义了 TEST_BUILD 宏才会编译；正式版（无此宏）
-// 整个文件不参与编译，对线上逻辑零影响。
+// 需要同时定义 TEST_BUILD + TEST_INFINITE_TREASURE 才编译。
+// 默认的 TEST_BUILD（不扣数字版）不再启用无限资源，保持“其他玩法全正常”；
+// 想测无限资源时，在 TestGameBuilder 里额外加一个 TEST_INFINITE_TREASURE 即可。
+// 正式版（两个宏都没有）整个文件不参与编译，对线上逻辑零影响。
 // ============================================================
-#if TEST_BUILD
+#if TEST_BUILD && TEST_INFINITE_TREASURE
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;

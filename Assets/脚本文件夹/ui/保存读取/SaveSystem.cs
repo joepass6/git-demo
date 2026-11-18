@@ -341,6 +341,22 @@ public class SaveSystem : MonoBehaviour
                     data.windowState.posX = dwc.GetWindowPosition().x;
                     data.windowState.posY = dwc.GetWindowPosition().y;
                     data.windowState.windowScale = dwc.GetWindowScale();
+
+                    // 退出瞬间拿不到窗口句柄时会返回 (0,0)：别把 save.json 里已有的位置冲掉，
+                    // 否则下次启动只能退回默认位置（真正的显示偏好已由 PlayerPrefs 兜底）。
+                    if (data.windowState.posX == 0f && data.windowState.posY == 0f && File.Exists(savePath))
+                    {
+                        try
+                        {
+                            SaveData old = JsonUtility.FromJson<SaveData>(File.ReadAllText(savePath));
+                            if (old != null && old.windowState != null)
+                            {
+                                data.windowState.posX = old.windowState.posX;
+                                data.windowState.posY = old.windowState.posY;
+                            }
+                        }
+                        catch { /* 旧存档读不出来就保持 0,0，PlayerPrefs 仍是权威 */ }
+                    }
                 }
             }
 
@@ -505,31 +521,57 @@ public class SaveSystem : MonoBehaviour
             ClearAndRestorePlacedObjects(data);
 
             // Step 6: 恢复窗口状态（位置 + 缩放）
+            // 🔑 优先级：PlayerPrefs（拖动/缩放后实时写入，最权威）> save.json（老存档迁移用）。
+            //    以前这里每次都用 save.json 覆盖，而 save.json 只在正常退出时写，
+            //    强关/崩溃后下次启动就会“退回上一次正常退出时的位置”。
             DesktopWindowController dwc = FindObjectOfType<DesktopWindowController>();
             if (dwc != null)
             {
-                if (data.windowState != null)
+                bool prefsHasPos = dwc.HasSavedWindowState();
+                bool prefsHasScale = dwc.HasSavedWindowScale();
+                bool migratedAny = false;
+
+                if (data.windowState != null && !prefsHasPos)
                 {
                     if (data.windowState.posX != 0 || data.windowState.posY != 0)
                     {
                         dwc.SetWindowPosition(data.windowState.posX, data.windowState.posY);
-                        Debug.Log($"[保存系统] 🪟 窗口位置恢复为 ({data.windowState.posX:F0}, {data.windowState.posY:F0})");
+                        migratedAny = true;
+                        Debug.Log($"[保存系统] 🪟 窗口位置从旧存档迁移为 ({data.windowState.posX:F0}, {data.windowState.posY:F0})");
                     }
                     else
                     {
                         Debug.Log("[保存系统] 🪟 跳过恢复窗口位置（存档值为 0,0 或未设置）");
                     }
+                }
 
-                    float savedScale = data.windowState.windowScale;
+                if (data.windowState != null && !prefsHasScale)
+                {
+                    float savedScale = DesktopWindowController.MigrateLegacyWindowScale(data.windowState.windowScale);
                     if (savedScale > 0.01f)
                     {
                         dwc.SetWindowScale(savedScale);
-                        Debug.Log($"[保存系统] 🪟 窗口缩放恢复为 {savedScale:F2}");
+                        migratedAny = true;
+                        Debug.Log($"[保存系统] 🪟 窗口缩放从旧存档迁移为 {savedScale:F2}" +
+                                  (Mathf.Abs(savedScale - data.windowState.windowScale) > 0.001f
+                                      ? $"（存档旧值 {data.windowState.windowScale:F2} 已迁移/钳制）"
+                                      : ""));
                     }
                     else
                     {
                         Debug.Log("[保存系统] 🪟 跳过恢复 windowScale（存档值无效），使用默认值 1.0");
                     }
+                }
+
+                if (prefsHasPos && prefsHasScale)
+                {
+                    Debug.Log("[保存系统] 🪟 窗口位置/缩放已由 PlayerPrefs 记住，跳过 save.json 覆盖");
+                }
+                else if (migratedAny)
+                {
+                    // 迁移只做一次：立刻回写 PlayerPrefs，后续启动不再依赖 save.json
+                    dwc.SaveWindowStateToPrefs();
+                    Debug.Log("[保存系统] 🪟 已把迁移后的窗口状态写入 PlayerPrefs（之后以 PlayerPrefs 为准）");
                 }
             }
             else

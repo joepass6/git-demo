@@ -643,6 +643,9 @@ public class ObjectSpawner : MonoBehaviour
             : Instantiate(prefab, spawnPosition, Quaternion.identity);
         obj.transform.SetParent(null);  // 确保鱼成为独立物体，不跟随生成器移动
 
+        // 只纠正排序层；粒子寿命保持 prefab 原值，不做全局覆盖
+        纠正鱼排序层(obj);
+
         // 把编号写到名字里，方便在 Hierarchy 里辨认
         string cleanName = prefab.name.Replace("(Clone)", "").Trim();
         obj.name = $"{cleanName} [{spawnEntries[kindIndex].kindId}]";
@@ -652,6 +655,28 @@ public class ObjectSpawner : MonoBehaviour
         // 图鉴收集：鱼生成出来就标记为已发现
         if (fishComp != null)
             FishJournalPage.MarkFound(prefab.name);
+    }
+
+    /// <summary>
+    /// 白猫猫鱼没有 鱼运动 组件（用 fishAnimator），本体也在 coral 层 order 6，
+    /// 会被 珊瑚放置.BringToFront 抬到 100+ 的珊瑚盖住。生成时把它切到 fish 层。
+    /// 有 鱼运动 的鱼由 鱼运动.InitFish → 纠正鱼排序层 自己处理。
+    /// </summary>
+    void 纠正鱼排序层(GameObject obj)
+    {
+        if (obj == null) return;
+        if (obj.GetComponentInChildren<fishAnimator>(true) == null) return;
+
+        int 珊瑚层 = SortingLayer.NameToID("coral");
+        int 鱼层 = SortingLayer.NameToID("fish");
+        if (鱼层 == 珊瑚层) return;
+
+        SpriteRenderer[] all = obj.GetComponentsInChildren<SpriteRenderer>(true);
+        for (int i = 0; i < all.Length; i++)
+        {
+            if (all[i] != null && all[i].sortingLayerID == 珊瑚层)
+                all[i].sortingLayerID = 鱼层;
+        }
     }
 
     /// <summary>
