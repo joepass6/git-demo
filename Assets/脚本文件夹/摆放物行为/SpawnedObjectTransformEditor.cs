@@ -44,12 +44,24 @@ public class SpawnedObjectTransformEditor : MonoBehaviour
     void Awake()
     {
         DetachCustomPanelFromHover();
+        确保点击遮挡();
         Bind(scaleUpButton, ScaleUp, "放大");
         Bind(scaleDownButton, ScaleDown, "缩小");
         Bind(rotateCwButton, RotateClockwise, "顺时针");
         Bind(rotateCcwButton, RotateCounterClockwise, "逆时针");
         Bind(mirrorFlipButton, MirrorFlip, "镜像翻转");
         Bind(openPanelButton, OpenCustomPanel, "打开面板");
+    }
+
+    /// <summary>
+    /// 调整页面挂在外层「调整界面」按钮下面，页面里的图片/文字被点中时会冒泡到入口按钮。
+    /// 给页面根挂空点击接收器，避免点页面内部被当成“又点了一次入口”而收起。
+    /// </summary>
+    void 确保点击遮挡()
+    {
+        if (customPanel == null) return;
+        if (customPanel.GetComponent<PanelClickBlocker>() == null)
+            customPanel.AddComponent<PanelClickBlocker>();
     }
 
     /// <summary>
@@ -212,14 +224,12 @@ public class SpawnedObjectTransformEditor : MonoBehaviour
             up = up.parent;
         }
 
-        // （旧的“HoverTooltip 接管显隐”分支已删除：显隐只由点击打开 + OnDisable 关闭决定）
+        // 调整页面没有关闭按钮 → 再点一次入口按钮收起；页面内部已挂点击遮挡，不会误触。
 
-        // 【确定性语义】点击只负责“打开”，从不负责“关闭”：
-        // 只要不可见就打开，已打开就保持不动；关闭只由面板关闭（OnDisable）/切换珊瑚触发。
         if (target.activeInHierarchy)
         {
-            Debug.Log($"[珊瑚调整] 点击【珊瑚调节】：{target.name} 已打开，保持不动（关闭由面板关闭/切换珊瑚触发）");
-            StartCoroutine(DumpLater(target));
+            target.SetActive(false);
+            Debug.Log($"[珊瑚调整] 再点一次【调整界面】，收起调整页面: {target.name}");
             return;
         }
 

@@ -3,18 +3,24 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
-/// 教程分页 + 感谢名单面板的自动接线，运行时按名字找物体，Inspector 不需要拖任何引用。
-///   教程：把「教程」节点下叠在一起的 按钮说明 / 拖放珊瑚(1~5) 当成页面，一次只显示一页；
-///         自动找「下一页 / 上一页 / 关闭 / 页码」，找不到就用工程现有按钮的图/字体在运行时生成；
-///         点「教程」标签可以开关教程内容。
-///   感谢名单：点「感谢名单」打开它下面隐藏的「名单」面板；面板里的关闭按钮、点面板背景都能关；
-///         每次点击都按面板当前 activeSelf 取反，不会重复绑监听叠出“关了又开”。
-/// 思路与 LocalizationManager 自动绑定语言面板一致：运行时按名字找 + 补绑 onClick。
+/// 教程分页 + 感谢名单接线（运行时按名字绑定，不生成任何 UI）。
+///
+/// 关闭规则（全局统一）：
+///   1. 面板里有关闭按钮 → 入口按钮只负责打开，关闭只能点面板里的关闭按钮；
+///   2. 面板里没有关闭按钮 → 再点一次打开它的那个入口按钮来收起。
+///
+/// 教程：用每一页里用户自己放的「下一页」按钮翻页（第 1 页的按钮叫 Button 也能按“页内唯一按钮”匹配到）；
+///       场景里没有的按钮一律不生成，只在日志里提示缺哪个。最后一页再点「下一页」收起教程。
+/// 感谢名单：点「感谢名单」打开「名单」；「名单」里有「关闭」按钮，所以入口只负责打开。
+///
+/// 另外给现有面板挂 PanelClickBlocker：面板内部的图片/文字被点中时，点击不会再冒泡到
+/// 外层“入口按钮”，避免“点到面板里就整块关掉”的误关。
 /// </summary>
 [DisallowMultipleComponent]
 public class 教程与感谢名单UI : MonoBehaviour
@@ -32,33 +38,20 @@ public class 教程与感谢名单UI : MonoBehaviour
     // ===== 教程 =====
     Transform 设置页面;
     Transform 教程节点;
-    Transform 教程控件容器;
+    Button 教程入口按钮;
     readonly List<GameObject> 页面列表 = new List<GameObject>();
-    readonly List<Transform> 教程控件 = new List<Transform>();
-    Button 上一页按钮;
-    Button 下一页按钮;
-    Button 教程关闭按钮;
-    TMP_Text 页码文本;
+    readonly List<UnityAction> 翻页动作列表 = new List<UnityAction>();
     int 当前页;
-    bool 教程已打开 = true;
+    bool 教程已打开 = false;
 
     // ===== 感谢名单 =====
     Transform 感谢入口;
     Transform 名单面板;
     Button 名单关闭按钮;
+    bool 名单有关闭按钮;
 
-    // ===== 生成按钮用的样式（从教程标签上抄图/字体，保持和现有 UI 一致）=====
-    Sprite 按钮图;
-    Image.Type 按钮图类型 = Image.Type.Simple;
-    Color 按钮底色 = Color.white;
-    Color 文字色 = Color.white;
-    TMP_FontAsset 字体;
-
-    // 缓存委托实例，重复初始化时能 RemoveListener 掉同一份，不会叠加
-    UnityAction 下一页动作;
-    UnityAction 上一页动作;
-    UnityAction 教程关闭动作;
-    UnityAction 教程标签动作;
+    // 缓存委托实例，重复初始化时 RemoveListener 掉同一份，不会叠加
+    UnityAction 教程入口动作;
     UnityAction 名单入口动作;
     UnityAction 名单关闭动作;
 
@@ -98,8 +91,8 @@ public class 教程与感谢名单UI : MonoBehaviour
 
         初始化教程();
         初始化感谢名单();
+        给现有面板加点击遮挡();
 
-        // 运行时生成的按钮不在 AudioManager 启动扫描范围内，用它的公开方法补一次音效
         if (AudioManager.Instance != null) AudioManager.Instance.绑定场景里所有按钮音效();
     }
 
@@ -110,59 +103,73 @@ public class 教程与感谢名单UI : MonoBehaviour
         教程节点 = 按名找(设置页面, "教程");
         if (教程节点 == null)
         {
-            Debug.LogWarning("[教程/感谢名单] 没找到 设置页面/图像/教程");
+            Debug.LogWarning("[教程] 没找到 设置页面/图像/教程");
             return;
         }
 
-        收集样式();
         收集页面();
 
-        上一页按钮 = 找按钮(教程节点, "上一页", "上一张", "上一个", "prev");
-        下一页按钮 = 找按钮(教程节点, "下一页", "下一张", "下一个", "next");
-        教程关闭按钮 = 找按钮(教程节点, "关闭", "close");
-        页码文本 = 找页码(教程节点);
+        教程入口按钮 = 教程节点.GetComponent<Button>();
+        if (教程入口按钮 == null) 教程入口按钮 = 教程节点.GetComponentInParent<Button>();
+        if (教程入口按钮 == null)
+        {
+            Debug.LogWarning("[教程] 「教程」节点上没有 Button，无法按“再点入口收起”的规则接线");
+        }
+        else
+        {
+            教程入口动作 = 点击教程入口;
+            绑定(教程入口按钮, 教程入口动作);
+        }
 
-        if (上一页按钮 == null || 下一页按钮 == null || 教程关闭按钮 == null || 页码文本 == null)
-            建教程控件();
+        string 场景按钮 = 列出按钮名(教程节点);
+        for (int i = 0; i < 页面列表.Count; i++)
+        {
+            GameObject 页 = 页面列表[i];
+            // 页面根挂遮挡：点页面里的图片/文字不会冒泡到外面的「教程」入口按钮
+            遮挡(页.transform);
 
-        // 场景里本来就有的按钮记进“教程控件”，关教程时一起隐藏
-        if (上一页按钮 != null) 教程控件.Add(上一页按钮.transform);
-        if (下一页按钮 != null) 教程控件.Add(下一页按钮.transform);
-        if (教程关闭按钮 != null) 教程控件.Add(教程关闭按钮.transform);
-        if (页码文本 != null) 教程控件.Add(页码文本.transform);
+            string 说明;
+            Button 下一页 = 找页内下一页按钮(页, out 说明);
+            if (下一页 == null)
+            {
+                Debug.LogWarning($"[教程] 第 {i + 1} 页「{页.name}」{说明}。本脚本不会生成按钮，请把「下一页」按钮放进这一页。教程下现有按钮：{场景按钮}");
+                continue;
+            }
 
-        下一页动作 = () => 翻页(1);
-        上一页动作 = () => 翻页(-1);
-        教程关闭动作 = () => { 教程已打开 = false; 刷新教程显示(); };
-        教程标签动作 = 切换教程;
-
-        绑定(下一页按钮, 下一页动作);
-        绑定(上一页按钮, 上一页动作);
-        绑定(教程关闭按钮, 教程关闭动作);
-
-        // 教程标签本身就是按钮：点它开/关教程
-        var 标签按钮 = 教程节点.GetComponent<Button>();
-        绑定(标签按钮, 教程标签动作);
+            int 页下标 = i;
+            UnityAction 动作 = () => 点下一页(页下标);
+            绑定(下一页, 动作);
+            翻页动作列表.Add(动作);
+            Debug.Log($"[教程] 第 {i + 1} 页「{页.name}」→ 下一页按钮「{下一页.name}」已绑定（{说明}）");
+        }
 
         刷新教程显示();
-        Debug.Log($"[教程/感谢名单] 教程页数={页面列表.Count}，下一页={(下一页按钮 != null ? 下一页按钮.name : "无")}，页码={(页码文本 != null ? "有" : "无")}");
+        Debug.Log($"[教程] 共 {页面列表.Count} 页；入口=「教程」标签；没有关闭按钮 → 再点一次「教程」收起。场景现有按钮：{场景按钮}");
     }
 
     void 收集页面()
     {
         页面列表.Clear();
+        翻页动作列表.Clear();
+
+        var 其它子物体 = new List<string>();
         foreach (Transform 子 in 教程节点)
         {
-            if (子.name.StartsWith("__")) continue;          // 运行时生成的控件
-            if (子.GetComponent<Button>() != null) continue; // 翻页/关闭按钮不算页面
-            if (子.GetComponent<TMP_Text>() != null) continue; // 「教程」标签文本
-            if (含任一(子.name, "页码", "页数", "page")) continue;
+            if (子.name.StartsWith("__")) continue;
+            if (子.GetComponent<Button>() != null) continue;                                  // 入口/翻页按钮不算页面
+            if (子.GetComponent<TMP_Text>() != null || 子.GetComponent<Text>() != null) continue; // 「教程」标签文本
+            if (!Regex.IsMatch(子.name, @"\d")) { 其它子物体.Add(子.name); continue; }         // 页容器名带数字（1~5）
             页面列表.Add(子.gameObject);
         }
 
-        // 名字里带数字的按数字排（拖放珊瑚 (1)~(5)），不带数字的（按钮说明）排最前
+        // 名字里的数字决定页序
         页面列表.Sort((a, b) => 页号(a.name).CompareTo(页号(b.name)));
         当前页 = 0;
+
+        if (页面列表.Count == 0)
+        {
+            Debug.LogWarning($"[教程] 没找到页容器（子物体名要带数字）。教程下现有子物体：{string.Join("、", 其它子物体)}");
+        }
     }
 
     static int 页号(string 名)
@@ -171,47 +178,87 @@ public class 教程与感谢名单UI : MonoBehaviour
         return m.Success ? int.Parse(m.Value) : -1;
     }
 
+    /// <summary>
+    /// 在「这一页」里找翻页按钮，只认用户自己放的按钮：
+    ///   1) 名字含 下一页/下一张/下一个/next；
+    ///   2) 否则这一页里只有一个 Button 时，直接用那一个（第 1 页的按钮就叫 Button）；
+    ///   3) 都不满足就返回 null，交给调用方打日志，绝不生成新按钮。
+    /// </summary>
+    static Button 找页内下一页按钮(GameObject 页, out string 说明)
+    {
+        var 候选 = new List<Button>();
+        foreach (Transform t in 全部子孙(页.transform))
+        {
+            if (t == 页.transform) continue;
+            var b = t.GetComponent<Button>();
+            if (b != null) 候选.Add(b);
+        }
+
+        foreach (var b in 候选)
+        {
+            if (含任一(b.name, "下一页", "下一张", "下一个", "next"))
+            {
+                说明 = "按名字匹配";
+                return b;
+            }
+        }
+
+        if (候选.Count == 1)
+        {
+            说明 = $"页内只有一个按钮「{候选[0].name}」，按唯一按钮匹配";
+            return 候选[0];
+        }
+
+        string 名单 = 候选.Count == 0 ? "无" : string.Join("、", 候选.ConvertAll(x => x.name));
+        说明 = $"没找到「下一页」按钮（规则：名字含 下一页/下一张/下一个/next，或页内唯一按钮）；页内现有按钮：{名单}";
+        return null;
+    }
+
     void 刷新教程显示()
     {
         for (int i = 0; i < 页面列表.Count; i++)
         {
             if (页面列表[i] != null) 页面列表[i].SetActive(教程已打开 && i == 当前页);
         }
+    }
 
-        foreach (Transform 控件 in 教程控件)
+    void 点下一页(int 页下标)
+    {
+        if (!教程已打开) return;
+        if (页下标 != 当前页) return;
+
+        if (当前页 >= 页面列表.Count - 1)
         {
-            if (控件 != null) 控件.gameObject.SetActive(教程已打开);
+            关闭教程("最后一页再点下一页");
+            return;
         }
-        if (教程控件容器 != null) 教程控件容器.gameObject.SetActive(教程已打开);
 
-        int 总数 = 页面列表.Count;
-        if (页码文本 != null) 页码文本.text = 总数 > 0 ? $"{当前页 + 1} / {总数}" : "0 / 0";
-        if (上一页按钮 != null) 上一页按钮.interactable = 教程已打开 && 当前页 > 0;
-        if (下一页按钮 != null) 下一页按钮.interactable = 教程已打开 && 当前页 < 总数 - 1;
-    }
-
-    void 翻页(int 方向)
-    {
-        if (!教程已打开 || 页面列表.Count == 0) return;
-
-        int 新页 = Mathf.Clamp(当前页 + 方向, 0, 页面列表.Count - 1);
-        if (新页 == 当前页) return;
-
-        当前页 = 新页;
+        当前页++;
         刷新教程显示();
+        Debug.Log($"[教程] 翻到第 {当前页 + 1}/{页面列表.Count} 页");
     }
 
-    void 切换教程()
+    void 点击教程入口()
     {
-        教程已打开 = !教程已打开;
+        if (教程已打开)
+        {
+            关闭教程("再点一次「教程」");
+            return;
+        }
+
+        教程已打开 = true;
+        当前页 = 0;
+        关闭名单();
         刷新教程显示();
+        Debug.Log("[教程] 打开第 1 页");
     }
 
-    void 关闭教程()
+    void 关闭教程(string 原因)
     {
         if (!教程已打开) return;
         教程已打开 = false;
         刷新教程显示();
+        Debug.Log($"[教程] 收起（{原因}）");
     }
 
     // ==================== 感谢名单 ====================
@@ -221,7 +268,7 @@ public class 教程与感谢名单UI : MonoBehaviour
         感谢入口 = 按名找("感谢名单");
         if (感谢入口 == null)
         {
-            Debug.LogWarning("[教程/感谢名单] 没找到「感谢名单」按钮");
+            Debug.LogWarning("[感谢名单] 没找到「感谢名单」按钮");
             return;
         }
 
@@ -229,7 +276,7 @@ public class 教程与感谢名单UI : MonoBehaviour
         if (入口按钮 == null) 入口按钮 = 感谢入口.GetComponentInParent<Button>();
         if (入口按钮 == null)
         {
-            Debug.LogWarning("[教程/感谢名单] 「感谢名单」上没有 Button 组件");
+            Debug.LogWarning("[感谢名单] 「感谢名单」上没有 Button 组件");
             return;
         }
 
@@ -237,34 +284,51 @@ public class 教程与感谢名单UI : MonoBehaviour
         if (名单面板 == null) 名单面板 = 按名找(感谢入口, "名单", false);
         if (名单面板 == null)
         {
-            Debug.LogWarning("[教程/感谢名单] 「感谢名单」下面没找到「名单」面板");
+            Debug.LogWarning("[感谢名单] 「感谢名单」下面没找到「名单」面板");
             return;
         }
 
-        名单面板.gameObject.SetActive(false);
+        if (名单面板.gameObject.activeSelf) 名单面板.gameObject.SetActive(false);
+        遮挡(名单面板);
 
-        名单入口动作 = 切换名单;
+        // 只认用户自己放的关闭按钮，不生成
+        名单关闭按钮 = 找按钮(名单面板, "关闭", "close");
+        名单有关闭按钮 = 名单关闭按钮 != null;
+
+        名单入口动作 = 点击感谢名单入口;
         名单关闭动作 = 关闭名单;
         绑定(入口按钮, 名单入口动作);
 
-        名单关闭按钮 = 找按钮(名单面板, "关闭", "close");
-        if (名单关闭按钮 == null) 名单关闭按钮 = 建名单关闭按钮();
-        绑定(名单关闭按钮, 名单关闭动作);
-
-        建背景关闭();
-
-        Debug.Log($"[教程/感谢名单] 感谢名单入口已绑定，面板={名单面板.name}，关闭按钮={(名单关闭按钮 != null ? 名单关闭按钮.name : "无")}");
+        if (名单有关闭按钮)
+        {
+            绑定(名单关闭按钮, 名单关闭动作);
+            Debug.Log($"[感谢名单] 有「{名单关闭按钮.name}」按钮 → 入口只负责打开，关闭只点关闭按钮");
+        }
+        else
+        {
+            Debug.LogWarning("[感谢名单] 「名单」面板里没有关闭按钮 → 按无关闭按钮规则：再点一次「感谢名单」收起。本脚本不会自动生成关闭按钮");
+        }
     }
 
-    void 切换名单()
+    void 点击感谢名单入口()
     {
         if (名单面板 == null) return;
 
-        bool 要打开 = !名单面板.gameObject.activeSelf;
-        名单面板.gameObject.SetActive(要打开);
+        if (名单面板.gameObject.activeSelf)
+        {
+            if (名单有关闭按钮)
+            {
+                Debug.Log("[感谢名单] 已打开；有关闭按钮的界面只能点「关闭」关闭，点入口不会关");
+                return;
+            }
 
-        // 名单面板比较大，打开时先把教程大图收起来，避免互相遮挡
-        if (要打开) 关闭教程();
+            名单面板.gameObject.SetActive(false);
+            Debug.Log("[感谢名单] 再点一次入口，收起");
+            return;
+        }
+
+        名单面板.gameObject.SetActive(true);
+        关闭教程("打开感谢名单");
     }
 
     void 关闭名单()
@@ -272,160 +336,34 @@ public class 教程与感谢名单UI : MonoBehaviour
         if (名单面板 != null) 名单面板.gameObject.SetActive(false);
     }
 
-    Button 建名单关闭按钮()
+    // ==================== 防“点到面板里就误关” ====================
+
+    /// <summary>
+    /// 现有面板大多是挂在外层“入口按钮”下面的，面板里的图片/文字被点中时，
+    /// 点击会沿父链冒泡到入口 Button，于是整块面板被 toggle 关掉。
+    /// 给面板根挂一个空的点击接收器，把面板内部的点击吃掉（内部按钮自己的 onClick 不受影响）。
+    /// </summary>
+    void 给现有面板加点击遮挡()
     {
-        var btn = 建按钮(名单面板, "__关闭名单", "关闭", new Vector2(-24f, -24f), new Vector2(120f, 48f));
-        var rt = (RectTransform)btn.transform;
-        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(1f, 1f);
-        rt.anchoredPosition = new Vector2(-24f, -24f);
-        return btn;
+        遮挡(按名找("设置页面"));
+        遮挡(按名找("语言选择"));
+        遮挡(按名找("名单"));
+        遮挡(按名找("交换宝"));
+        遮挡(按名找("珊瑚容器"));
+        遮挡(按名找("珊瑚调整页面容器"));
+
+        Transform 珊瑚界面 = 按名找("珊瑚界面");
+        if (珊瑚界面 != null) 遮挡(按名找(珊瑚界面, "珊瑚UI"));
+
+        Transform 鱼图鉴 = 按名找("鱼图鉴");
+        if (鱼图鉴 != null) 遮挡(按名找(鱼图鉴, "容器"));
     }
 
-    /// <summary>面板背景点击关闭：透明且铺满面板的按钮，放在最底层，不挡面板里的文字</summary>
-    void 建背景关闭()
+    static void 遮挡(Transform 面板)
     {
-        var go = new GameObject("__背景关闭", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
-        go.transform.SetParent(名单面板, false);
-        go.transform.SetAsFirstSibling();
-
-        var rt = (RectTransform)go.transform;
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.offsetMin = Vector2.zero;
-        rt.offsetMax = Vector2.zero;
-
-        var 图 = go.GetComponent<Image>();
-        图.color = new Color(0f, 0f, 0f, 0f);
-        图.raycastTarget = true;
-
-        var btn = go.GetComponent<Button>();
-        btn.transition = Selectable.Transition.None;
-        绑定(btn, 名单关闭动作);
-    }
-
-    // ==================== 生成 UI 的小工具 ====================
-
-    /// <summary>没有现成控件时，用教程标签的图/字体生成按钮，视觉和其它按钮一致</summary>
-    void 建教程控件()
-    {
-        if (教程控件容器 == null)
-        {
-            var 容器 = new GameObject("__教程控件", typeof(RectTransform));
-            教程控件容器 = 容器.transform;
-            教程控件容器.SetParent(教程节点, false);
-            教程控件容器.SetAsLastSibling();
-            var 容器Rect = (RectTransform)教程控件容器;
-            容器Rect.anchorMin = 容器Rect.anchorMax = 容器Rect.pivot = new Vector2(0.5f, 0.5f);
-            容器Rect.sizeDelta = Vector2.zero;
-        }
-
-        // 控件条放在第一张说明图的上方居中（下方会压到「社区页面」那排图标）
-        float x = -500f, y = 212f;
-        if (页面列表.Count > 0 && 页面列表[0].transform is RectTransform 首图)
-        {
-            x = 首图.anchoredPosition.x;
-            y = 首图.anchoredPosition.y + 首图.rect.height * 0.5f + 44f;
-        }
-
-        if (上一页按钮 == null)
-            上一页按钮 = 建按钮(教程控件容器, "__上一页", "上一页", new Vector2(x - 165f, y), new Vector2(140f, 48f));
-
-        if (页码文本 == null)
-            页码文本 = 建页码(new Vector2(x, y));
-
-        if (下一页按钮 == null)
-            下一页按钮 = 建按钮(教程控件容器, "__下一页", "下一页", new Vector2(x + 165f, y), new Vector2(140f, 48f));
-
-        if (教程关闭按钮 == null)
-            教程关闭按钮 = 建按钮(教程控件容器, "__关闭教程", "关闭", new Vector2(x + 320f, y), new Vector2(110f, 48f));
-    }
-
-    TMP_Text 建页码(Vector2 位置)
-    {
-        var go = new GameObject("__页码", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-        go.transform.SetParent(教程控件容器, false);
-
-        var rt = (RectTransform)go.transform;
-        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
-        rt.sizeDelta = new Vector2(130f, 48f);
-        rt.anchoredPosition = 位置;
-
-        var tmp = go.GetComponent<TextMeshProUGUI>();
-        tmp.text = "1 / 1";
-        设置字体(tmp);
-        tmp.fontSize = 24f;
-        tmp.color = 文字色;
-        tmp.alignment = TextAlignmentOptions.Center;
-        tmp.raycastTarget = false;
-        return tmp;
-    }
-
-    Button 建按钮(Transform 父, string 物体名, string 文本, Vector2 位置, Vector2 尺寸)
-    {
-        var go = new GameObject(物体名, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
-        go.transform.SetParent(父, false);
-
-        var rt = (RectTransform)go.transform;
-        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
-        rt.sizeDelta = 尺寸;
-        rt.anchoredPosition = 位置;
-
-        var 图 = go.GetComponent<Image>();
-        图.sprite = 按钮图;
-        图.type = 按钮图类型;
-        图.color = 按钮底色;
-        图.raycastTarget = true;
-
-        var btn = go.GetComponent<Button>();
-        btn.targetGraphic = 图;
-
-        var 文字物体 = new GameObject("Text (TMP)", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-        文字物体.transform.SetParent(go.transform, false);
-        var 文字Rect = (RectTransform)文字物体.transform;
-        文字Rect.anchorMin = Vector2.zero;
-        文字Rect.anchorMax = Vector2.one;
-        文字Rect.offsetMin = Vector2.zero;
-        文字Rect.offsetMax = Vector2.zero;
-
-        var tmp = 文字物体.GetComponent<TextMeshProUGUI>();
-        tmp.text = 文本;
-        设置字体(tmp);
-        tmp.fontSize = 24f;
-        tmp.color = 文字色;
-        tmp.alignment = TextAlignmentOptions.Center;
-        tmp.raycastTarget = false;
-
-        // 生成在 AudioManager 扫描之后，统一由 AudioManager.绑定场景里所有按钮音效 补一次音效
-        var 本地化 = 文字物体.AddComponent<LocalizedText>();
-        本地化.tableName = "ui";
-        本地化.key = 文本;
-
-        return btn;
-    }
-
-    void 设置字体(TMP_Text tmp)
-    {
-        if (tmp != null && 字体 != null) tmp.font = 字体;
-    }
-
-    /// <summary>抄「教程」标签的图片样式和字体，保证生成的按钮和现有 UI 一个风格</summary>
-    void 收集样式()
-    {
-        var 图 = 教程节点.GetComponent<Image>();
-        if (图 != null)
-        {
-            按钮图 = 图.sprite;
-            按钮图类型 = 图.type;
-            按钮底色 = 图.color;
-        }
-
-        TMP_Text 参考 = 教程节点.GetComponentInChildren<TMP_Text>(true);
-        if (参考 == null && 设置页面 != null) 参考 = 设置页面.GetComponentInChildren<TMP_Text>(true);
-        if (参考 != null)
-        {
-            字体 = 参考.font;
-            文字色 = 参考.color;
-        }
+        if (面板 == null) return;
+        if (面板.GetComponent<PanelClickBlocker>() == null)
+            面板.gameObject.AddComponent<PanelClickBlocker>();
     }
 
     // ==================== 查找 / 绑定 ====================
@@ -435,6 +373,16 @@ public class 教程与感谢名单UI : MonoBehaviour
         if (按钮 == null || 动作 == null) return;
         按钮.onClick.RemoveListener(动作);
         按钮.onClick.AddListener(动作);
+    }
+
+    static string 列出按钮名(Transform root)
+    {
+        var 名单 = new List<string>();
+        foreach (Transform t in 全部子孙(root))
+        {
+            if (t.GetComponent<Button>() != null) 名单.Add(t.name);
+        }
+        return 名单.Count == 0 ? "无" : string.Join("、", 名单);
     }
 
     static bool 含任一(string 文本, params string[] 关键词)
@@ -461,18 +409,7 @@ public class 教程与感谢名单UI : MonoBehaviour
         return null;
     }
 
-    static TMP_Text 找页码(Transform root)
-    {
-        if (root == null) return null;
-        foreach (Transform 子 in 全部子孙(root))
-        {
-            if (!含任一(子.name, "页码", "页数", "page")) continue;
-            var tmp = 子.GetComponent<TMP_Text>();
-            if (tmp != null) return tmp;
-        }
-        return null;
-    }
-
+    /// <summary>深度优先遍历（包含未激活物体）</summary>
     static IEnumerable<Transform> 全部子孙(Transform root)
     {
         var 栈 = new Stack<Transform>();
@@ -506,4 +443,14 @@ public class 教程与感谢名单UI : MonoBehaviour
         }
         return null;
     }
+}
+
+/// <summary>
+/// 空的点击接收器：挂在面板根上，让面板内部（图片/文字/空白）的点击停在面板这一层，
+/// 不再冒泡到外层“入口按钮”，从而避免点面板内部把面板关掉。
+/// 面板内部自己的 Button 会先收到点击，不受影响。
+/// </summary>
+public class PanelClickBlocker : MonoBehaviour, IPointerClickHandler
+{
+    public void OnPointerClick(PointerEventData eventData) { }
 }

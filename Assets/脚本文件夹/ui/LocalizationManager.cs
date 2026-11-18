@@ -1086,15 +1086,30 @@ public class LocalizationManager : MonoBehaviour
             }
         }
 
-        // ===== 4. 绑定入口按钮 → Toggle 语言面板 =====
+        // ===== 4. 绑定入口按钮：有关闭按钮时只负责打开，没有关闭按钮时再点入口收起 =====
+        bool 有关闭按钮 = closeButton != null;
         if (languageEntryButton != null && boundPanelBtnIds.Add(languageEntryButton.GetInstanceID()))
         {
             languageEntryButton.onClick.AddListener(() =>
             {
-                if (languagePanel != null) ToggleLanguagePanel();
-                else Debug.LogWarning("[多语言] 入口按钮已绑，但 languagePanel 没找到，不知道开什么面板");
+                if (languagePanel == null)
+                {
+                    Debug.LogWarning("[多语言] 入口按钮已绑，但 languagePanel 没找到，不知道开什么面板");
+                    return;
+                }
+
+                if (有关闭按钮)
+                {
+                    // 有关闭按钮的界面：入口只负责打开，关闭只能点关闭按钮
+                    if (!languagePanel.activeSelf) OpenLanguagePanel();
+                    else Debug.Log("[多语言] 语言面板有关闭按钮 → 入口只负责打开，关闭请点面板里的「关闭」");
+                    return;
+                }
+
+                // 没有关闭按钮的界面：再点一次入口收起
+                ToggleLanguagePanel();
             });
-            Debug.Log($"[多语言] ✅ 入口按钮已绑定: {languageEntryButton.name} -> Toggle {languagePanel?.name ?? "(未找到面板)"}");
+            Debug.Log($"[多语言] ✅ 入口按钮已绑定: {languageEntryButton.name} -> {(有关闭按钮 ? "只打开" : "Toggle")} {languagePanel?.name ?? "(未找到面板)"}");
         }
 
         // ===== 5. 绑定关闭按钮（只绑手动拖的，不自动搜）=====

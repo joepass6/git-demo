@@ -108,6 +108,14 @@ public class 鱼运动 : MonoBehaviour
     [Tooltip("每次点击发射的粒子数量")]
     public int emitCount = 1;
 
+    [Tooltip("点击特效粒子整体缩放系数（1=预制体原始大小）。只改 startSize 倍率，不动位置/发射范围")]
+    [Range(0.1f, 2f)]
+    public float particleScale = 0.6f;
+
+    [Tooltip("粒子缩小后补的数量倍率，保持视觉密度（实际发射数 = emitCount × 该系数，向上取整）")]
+    [Range(1f, 4f)]
+    public float particleDensityBoost = 1.5f;
+
     [Header("鱼信息")]
     [Tooltip("鱼的名称")]
     public string fishName = "未命名鱼";
@@ -128,6 +136,19 @@ public class 鱼运动 : MonoBehaviour
     protected float spawnTime;
     protected Vector3 spawnPosition;
     protected List<ParticleSystem> allParticles = new List<ParticleSystem>();
+
+    // ====== 粒子特效：排序跟随 + 单次播放 ======
+    // 规则：特效渲染器的 sortingLayerID 跟随该鱼本体 SpriteRenderer，
+    //       sortingOrder = 本体 order + 粒子排序偏移（稳定压在鱼身上方）。
+    const int 粒子排序偏移 = 1;
+
+    SpriteRenderer 鱼本体渲染器;
+    readonly List<ParticleSystemRenderer> 特效渲染器 = new List<ParticleSystemRenderer>();
+    // 预制体原始的 startSize 倍率（默认 1）；对象池复用会重复初始化，必须只捕获一次再乘系数，
+    // 否则 0.6 会被反复叠乘成 0.36、0.216……
+    readonly Dictionary<ParticleSystem, float> 原始粒子大小倍率 = new Dictionary<ParticleSystem, float>();
+    int 上次特效层 = int.MinValue;
+    int 上次特效序 = int.MinValue;
 
     // 最近一次播放点击反馈的帧号：内置 OnMouseDown 和手动补偿判定可能在同一帧都命中，
     // 用它保证一次点击只结算一次（否则会重复播音效、连发粒子）
@@ -182,6 +203,14 @@ public class 鱼运动 : MonoBehaviour
 
     // ==================== 生命周期 ====================
 
+    protected virtual void Awake()
+    {
+        // 预制体里的粒子是 playOnAwake=1、loop=1、emission 常开，
+        // 激活瞬间就会自己一直放；这里在首帧渲染前统一关掉，改为点击时才放一次。
+        GetComponentsInChildren<ParticleSystem>(true, allParticles);
+        for (int i = 0; i < allParticles.Count; i++) 关闭自动播放(allParticles[i]);
+    }
+
     protected virtual void Start()
     {
         InitFish();
@@ -224,6 +253,7 @@ public class 鱼运动 : MonoBehaviour
         spawnPosition = transform.position;
 
         GetComponentsInChildren<ParticleSystem>(true, allParticles);
+        初始化特效();
 
         spawnTime = Time.time;
         RegisterFish(fishName);
@@ -341,6 +371,9 @@ public class 鱼运动 : MonoBehaviour
         // 打包版里补一条坐标补偿过的点击判定（内置 OnMouseDown 在 RT≠窗口尺寸时会偏移）
         HandleClickInput();
 
+        // 本体的 sortingLayer/order 可能被子类动态改（椭圆轨道/轨道环绕的遮挡换层），每帧同步给粒子
+        同步特效排序();
+
         // 到期回池（用绝对时间戳，支持 ExtendLife 动态延长/缩短）
         if (lifeEndTime > 0f && Time.time >= lifeEndTime)
         {
@@ -386,13 +419,102 @@ public class 鱼运动 : MonoBehaviour
 
         if (enableParticle && allParticles.Count > 0)
         {
+            // 只让随机挑中的这一套放一次；其余 11 套保持停止，避免“常驻播放”把点击效果淹没
             int index = Random.Range(0, allParticles.Count);
             ParticleSystem ps = allParticles[index];
             if (ps != null)
             {
-                if (!ps.isPlaying) ps.Play();
-                ps.Emit(emitCount);
+                关闭自动播放(ps, false);
+                // 缩小后粒子稀疏，按补偿倍率多发射一点，视觉密度基本不变
+                int 发射数 = Mathf.Max(1, Mathf.CeilToInt(emitCount * particleDensityBoost));
+                ps.Clear(true);
+                ps.Play();
+                ps.Emit(发射数);
             }
+        }
+    }
+
+    /// <summary>
+    /// 关闭粒子的自动/循环播放。停止=true 时顺带清空当前残留粒子（用于初始化）。
+    /// </summary>
+    static void 关闭自动播放(ParticleSystem ps, bool 停止 = true)
+    {
+        if (ps == null) return;
+
+        var main = ps.main;
+        main.playOnAwake = false;
+        main.loop = false;
+
+        var emission = ps.emission;
+        emission.enabled = false;
+
+        if (停止) ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+    }
+
+    /// <summary>
+    /// 收集该鱼的本体渲染器和所有特效渲染器，并关掉 12 套粒子的自动播放。
+    /// </summary>
+    void 初始化特效()
+    {
+        鱼本体渲染器 = GetComponentInChildren<SpriteRenderer>(true);
+
+        特效渲染器.Clear();
+        for (int i = 0; i < allParticles.Count; i++)
+        {
+            ParticleSystem ps = allParticles[i];
+            if (ps == null) continue;
+
+            关闭自动播放(ps);
+            应用粒子缩放(ps);
+
+            ParticleSystemRenderer pr = ps.GetComponent<ParticleSystemRenderer>();
+            if (pr != null) 特效渲染器.Add(pr);
+        }
+
+        同步特效排序(true);
+    }
+
+    /// <summary>
+    /// 粒子整体缩放：只改 MainModule.startSizeMultiplier（缩放每颗粒子的初始尺寸），
+    /// 不动 transform.localScale，所以粒子世界位置、发射形状和半径都不受影响。
+    /// 原始倍率只捕获一次，对象池复用时不会反复叠乘。
+    /// </summary>
+    void 应用粒子缩放(ParticleSystem ps)
+    {
+        if (ps == null) return;
+
+        float 原始倍率;
+        if (!原始粒子大小倍率.TryGetValue(ps, out 原始倍率))
+        {
+            原始倍率 = ps.main.startSizeMultiplier;
+            原始粒子大小倍率[ps] = 原始倍率;
+        }
+
+        var main = ps.main;
+        main.startSizeMultiplier = 原始倍率 * Mathf.Clamp(particleScale, 0.05f, 2f);
+    }
+
+    /// <summary>
+    /// 让特效跟随本条鱼的排序层：同一 sortingLayerID，order = 本体 order + 粒子排序偏移。
+    /// 只在层/序变化时写一次，避免每帧无谓赋值。
+    /// </summary>
+    void 同步特效排序(bool 强制 = false)
+    {
+        if (鱼本体渲染器 == null) return;
+
+        int 层 = 鱼本体渲染器.sortingLayerID;
+        int 序 = 鱼本体渲染器.sortingOrder + 粒子排序偏移;
+
+        if (!强制 && 层 == 上次特效层 && 序 == 上次特效序) return;
+        上次特效层 = 层;
+        上次特效序 = 序;
+
+        for (int i = 0; i < 特效渲染器.Count; i++)
+        {
+            ParticleSystemRenderer pr = 特效渲染器[i];
+            if (pr == null) continue;
+            pr.sortingLayerID = 层;
+            pr.sortingOrder = 序;
         }
     }
 

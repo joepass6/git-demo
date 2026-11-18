@@ -5008,7 +5008,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8cff1b0b0326bd45b6a2759a9eb6b84, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  skill: {fileID: 0}
+  skill: {fileID: 11400000, guid: 12318404e17c68c479d2b5559a3625ea, type: 2}
   coralTag: coral
 --- !u!70 &3566973033610859423
 CapsuleCollider2D:
