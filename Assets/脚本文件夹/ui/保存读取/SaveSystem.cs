@@ -547,19 +547,20 @@ public class SaveSystem : MonoBehaviour
 
                 if (data.windowState != null && !prefsHasScale)
                 {
-                    float savedScale = DesktopWindowController.MigrateLegacyWindowScale(data.windowState.windowScale);
-                    if (savedScale > 0.01f)
+                    float rawScale = data.windowState.windowScale;
+                    if (rawScale > 0.01f)
                     {
+                        float savedScale = DesktopWindowController.MigrateLegacyWindowScale(rawScale);
                         dwc.SetWindowScale(savedScale);
                         migratedAny = true;
                         Debug.Log($"[保存系统] 🪟 窗口缩放从旧存档迁移为 {savedScale:F2}" +
-                                  (Mathf.Abs(savedScale - data.windowState.windowScale) > 0.001f
-                                      ? $"（存档旧值 {data.windowState.windowScale:F2} 已迁移/钳制）"
+                                  (Mathf.Abs(savedScale - rawScale) > 0.001f
+                                      ? $"（存档旧值 {rawScale:F2} 已钳制到 [0.1, 0.9]）"
                                       : ""));
                     }
                     else
                     {
-                        Debug.Log("[保存系统] 🪟 跳过恢复 windowScale（存档值无效），使用默认值 1.0");
+                        Debug.Log("[保存系统] 🪟 跳过恢复 windowScale（存档值未设置/无效），使用当前档位");
                     }
                 }
 

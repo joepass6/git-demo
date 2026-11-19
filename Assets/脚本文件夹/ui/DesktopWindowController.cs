@@ -28,41 +28,28 @@ public class DesktopWindowController : MonoBehaviour
     public Camera zoomCamera;
     [Tooltip("打包版：滚轮缩放=整个桌宠窗口放大缩小，这里是倍数范围")]
     public float minWindowScale = 0.1f;
-    public float maxWindowScale = 1.2f;
-    float windowScale = 1f;
-
-    // 旧场景序列化的是 0.5 / 1.5（1.5 时画面裁掉大半座塔，0.5 时缩得过小），
-    // 现在场景里还存着 0.1 / 0.9（0.9 连 1:1 贴合档都到不了）。
-    // 改字段初始值不会影响已保存的场景，所以按项目既有做法做一次“旧默认值→新默认值”迁移；
-    // 用户手动改成别的值时仍然尊重用户值（不改 .unity，避免编辑器重载）。
-    const float LegacyMinWindowScale = 0.5f;
-    const float LegacyMinWindowScale2 = 0.1f;
-    const float LegacyMaxWindowScale = 1.5f;
-    const float LegacyMaxWindowScale2 = 0.9f;
-    const float DefaultMinWindowScale = 0.7f;
-    const float DefaultMaxWindowScale = 1.25f;
-
-    /// <summary>1.0 = 1:1 贴合档（相机 orthoSize = 贴合包围盒半高），也是和编辑器对齐的档位。</summary>
-    const float DefaultWindowScale = 1f;
-    float EffectiveMinWindowScale =>
-        (Mathf.Abs(minWindowScale - LegacyMinWindowScale) < 0.001f ||
-         Mathf.Abs(minWindowScale - LegacyMinWindowScale2) < 0.001f)
-            ? DefaultMinWindowScale : minWindowScale;
-    float EffectiveMaxWindowScale =>
-        (Mathf.Abs(maxWindowScale - LegacyMaxWindowScale) < 0.001f ||
-         Mathf.Abs(maxWindowScale - LegacyMaxWindowScale2) < 0.001f)
-            ? DefaultMaxWindowScale : maxWindowScale;
+    public float maxWindowScale = 0.9f;
+    // 开局档位：取上限（等同以前的“1:1 贴合档”），运行时仍会被 FitWindowToTarget 钳进 [0.1, 0.9]
+    float windowScale = 0.9f;
 
     /// <summary>
-    /// 老存档的 windowScale 迁移：
-    /// 0.50 是旧版默认档（UI 系数 0.556、相机 ortho×2），和编辑器的 1.0 档完全不是一个画面，
-    /// 直接读进来就是用户说的“UI 小一圈、画面缩一圈”。这里一次性迁到 1.0；
-    /// 其余值只做范围钳制，保持用户手动调过的档位。
+    /// 缩放档位范围直接采用 Inspector 上序列化的值（当前 0.1 ~ 0.9）。
+    /// 不再把 0.1 / 0.9 当成“旧默认值”替换成 0.7 / 1.25 —— 那套迁移已按用户要求取消。
+    /// </summary>
+    float EffectiveMinWindowScale => minWindowScale;
+    float EffectiveMaxWindowScale => maxWindowScale;
+
+    /// <summary>存档 / PlayerPrefs 里 windowScale 的统一钳制范围（与 Inspector 的 0.1 / 0.9 对齐）。</summary>
+    public const float SavedWindowScaleMin = 0.1f;
+    public const float SavedWindowScaleMax = 0.9f;
+
+    /// <summary>
+    /// 老存档的 windowScale 迁移：以前会把 0.50 当成旧默认档抬到 1.0，
+    /// 但 1.0 已经超出现在的上限 0.9，按用户要求取消这次抬升 —— 一律只钳到 [0.1, 0.9]。
     /// </summary>
     public static float MigrateLegacyWindowScale(float saved)
     {
-        if (Mathf.Abs(saved - 0.5f) <= 0.06f) return DefaultWindowScale;
-        return Mathf.Clamp(saved, DefaultMinWindowScale, DefaultMaxWindowScale);
+        return Mathf.Clamp(saved, SavedWindowScaleMin, SavedWindowScaleMax);
     }
 
     /// <summary>
@@ -96,6 +83,24 @@ public class DesktopWindowController : MonoBehaviour
 
     [Header("窗口按钮")]
     public Button minimizeButton;
+
+    // 「缩到后台」按钮两段式状态：
+    //   0 = 正常档位（下一次点击 = 缩到最小，点击时先记住当前档位）
+    //   1 = 已缩到最小档（下一次点击 = 最小化到任务栏）
+    //   2 = 已最小化到任务栏（等 IsIconic 变回 false 时还原到记住的档位，状态回 0）
+    int minimizeStage = 0;
+#if !UNITY_EDITOR
+    // 第 1 下点击缩到最小档之前记下的档位（用户手动滚轮设的值），从任务栏恢复时还原到它
+    float scaleBeforeMinimize = 0f;
+    bool hasScaleBeforeMinimize = false;
+    bool minimizeWasIconic = false;
+    // 「一键缩放」按钮的补偿容器：最小档时整层反向放大，避免 10% 缩放下按钮小到点不到。
+    // 放在按钮的父级，不动按钮自己的 localScale —— HoverTooltip 悬停放大用的是按钮自身，互不覆盖。
+    RectTransform minimizeButtonWrapper;
+    RectTransform minimizeButtonRect;
+    RectTransform minimizeCanvasRect;
+    Vector2 minimizeButtonBaseAnchoredPos;
+#endif
 
     [Header("画面居中")]
     public Transform centerTarget;
@@ -157,7 +162,9 @@ public class DesktopWindowController : MonoBehaviour
     // 滚轮防抖：累积滚动量，停转 150ms 后才真正改 orthographicSize
     float pendingZoomScroll;
     float zoomDebounceDeadline;
-    const float ZoomStep = 0.05f; // 每次滚轮小步
+    // Windows 每格滚轮 = 0.1，ZoomStep=0.5 → 每格 0.05 档；
+    // 0.1 ~ 0.9 正好 16 档（旧值 0.05 时每格只有 0.005，走完 0.1→0.9 要 160 格，实际不可用）
+    const float ZoomStep = 0.5f;
 
     // Shift+Space 贴底缩小功能
     bool isMiniBottomMode = false;
@@ -179,6 +186,7 @@ public class DesktopWindowController : MonoBehaviour
     // ============ Win32 API ============
     [DllImport("user32.dll")] static extern IntPtr GetActiveWindow();
     [DllImport("user32.dll")] static extern bool IsWindow(IntPtr hWnd);
+    [DllImport("user32.dll")] static extern bool IsIconic(IntPtr hWnd);
     [DllImport("user32.dll")] static extern int  GetWindowLong(IntPtr hWnd, int nIndex);
     [DllImport("user32.dll")] static extern int  SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
     [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
@@ -368,11 +376,125 @@ public class DesktopWindowController : MonoBehaviour
         if (!enableTransparent) StartCoroutine(RestoreWindowPositionWhenReady());
 #endif
 
-        if (minimizeButton != null)
+        // 「缩到后台」按钮：优先按名字在场景里找（不依赖手拖引用），找不到再用场景里的旧引用
+        Button minimizeBtn = ResolveMinimizeButton();
+        if (minimizeBtn != null)
         {
-            minimizeButton.onClick = new Button.ButtonClickedEvent();
-            minimizeButton.onClick.AddListener(MinimizeWindow);
+            minimizeBtn.onClick = new Button.ButtonClickedEvent();
+            minimizeBtn.onClick.AddListener(MinimizeStageClick);
+            // 给按钮套一层只用于“最小档反向放大”的容器，不影响按钮自身的 localScale（悬停放大）
+            SetupMinimizeButtonCompensator(minimizeBtn);
+            Debug.Log($"[桌面窗口] 缩到后台按钮已绑定: {minimizeBtn.gameObject.name}（两段式：先缩小，再进任务栏）");
         }
+        else
+        {
+            Debug.LogWarning("[桌面窗口] 没找到「一键缩放 / 缩到后台」按钮，按钮两段式行为未绑定");
+        }
+    }
+
+    /// <summary>
+    /// 找「缩到后台」按钮：先按名字找场景里的「一键缩放」，
+    /// 找不到再退回 Inspector 上拖的 minimizeButton（兼容旧场景）。
+    /// </summary>
+    Button ResolveMinimizeButton()
+    {
+        GameObject go = GameObject.Find("一键缩放");
+        if (go != null)
+        {
+            Button b = go.GetComponent<Button>();
+            if (b != null) return b;
+        }
+        return minimizeButton;
+    }
+
+    /// <summary>
+    /// 给「缩到后台」按钮套一层补偿容器（运行时新建，不改场景）。
+    /// 容器复制按钮原来的 anchors / 位置 / 尺寸，按钮被拉伸填满容器，
+    /// 之后只改容器 localScale —— 按钮自身的 localScale 留给 HoverTooltip，互不覆盖。
+    /// </summary>
+    void SetupMinimizeButtonCompensator(Button btn)
+    {
+#if !UNITY_EDITOR
+        if (btn == null || minimizeButtonWrapper != null) return;
+        RectTransform rt = btn.transform as RectTransform;
+        if (rt == null) return;
+
+        var go = new GameObject("缩到后台_最小档补偿", typeof(RectTransform));
+        var wrt = (RectTransform)go.transform;
+        wrt.SetParent(rt.parent, false);
+        wrt.anchorMin = rt.anchorMin;
+        wrt.anchorMax = rt.anchorMax;
+        wrt.pivot = rt.pivot;
+        wrt.sizeDelta = rt.sizeDelta;
+        wrt.anchoredPosition = rt.anchoredPosition;
+        wrt.localRotation = rt.localRotation;
+        wrt.localScale = Vector3.one;
+        wrt.SetSiblingIndex(rt.GetSiblingIndex());
+
+        rt.SetParent(wrt, false);
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
+
+        minimizeButtonWrapper = wrt;
+        minimizeButtonRect = rt;
+        minimizeButtonBaseAnchoredPos = wrt.anchoredPosition;
+        Canvas root = rt.GetComponentInParent<Canvas>();
+        if (root != null) minimizeCanvasRect = root.rootCanvas.transform as RectTransform;
+
+        UpdateMinimizeButtonCompensation();
+        Debug.Log("[桌面窗口] 缩到后台按钮已加补偿容器（最小档反向放大，悬停放大仍走按钮自身 localScale）");
+#endif
+    }
+
+    /// <summary>
+    /// 最小档时把「缩到后台」按钮反向放大到“0.9 档时的屏幕大小”，
+    /// 并把整块按钮夹进窗口（根 Canvas）可视范围；恢复放大后还原原始尺寸和位置。
+    /// 补偿系数 = 0.9 / 当前档位（0.1 档 = 9 倍）。
+    /// </summary>
+    void UpdateMinimizeButtonCompensation()
+    {
+#if !UNITY_EDITOR
+        if (minimizeButtonWrapper == null || minimizeButtonRect == null) return;
+
+        float cur = Mathf.Max(0.01f, windowScale);
+        bool atMin = cur <= EffectiveMinWindowScale + 0.0001f;
+        float factor = atMin ? Mathf.Clamp(SavedWindowScaleMax / cur, 1f, 20f) : 1f;
+
+        Vector3 s = minimizeButtonWrapper.localScale;
+        if (!Mathf.Approximately(s.x, factor))
+            minimizeButtonWrapper.localScale = new Vector3(factor, factor, 1f);
+
+        // 位置：放大后整块按钮不能飞出窗口可视范围（用根 Canvas 的 rect 当窗口范围）
+        Vector2 pos = minimizeButtonBaseAnchoredPos;
+        if (factor > 1.0001f && minimizeCanvasRect != null)
+        {
+            Vector3[] corners = new Vector3[4];
+            minimizeButtonRect.GetWorldCorners(corners);
+            Vector2 cMin = minimizeCanvasRect.InverseTransformPoint(corners[0]);
+            Vector2 cMax = minimizeCanvasRect.InverseTransformPoint(corners[2]);
+            Rect cr = minimizeCanvasRect.rect;
+            float margin = Mathf.Min(cr.width, cr.height) * 0.02f;
+
+            float dx = 0f, dy = 0f;
+            if (cMin.x < cr.xMin + margin) dx = cr.xMin + margin - cMin.x;
+            else if (cMax.x > cr.xMax - margin) dx = cr.xMax - margin - cMax.x;
+            if (cMin.y < cr.yMin + margin) dy = cr.yMin + margin - cMin.y;
+            else if (cMax.y > cr.yMax - margin) dy = cr.yMax - margin - cMax.y;
+
+            if (Mathf.Abs(dx) > 0.01f || Mathf.Abs(dy) > 0.01f)
+            {
+                // 根 Canvas 局部位移 → 世界 → 容器父级局部（父级相对根 Canvas 只有均匀缩放）
+                Vector3 world = minimizeCanvasRect.TransformVector(new Vector3(dx, dy, 0f));
+                Vector3 parentLocal = minimizeButtonWrapper.parent.InverseTransformVector(world);
+                pos += new Vector2(parentLocal.x, parentLocal.y);
+            }
+        }
+        if (minimizeButtonWrapper.anchoredPosition != pos)
+            minimizeButtonWrapper.anchoredPosition = pos;
+#endif
     }
 
     void FixCanvasScalers()
@@ -1057,6 +1179,9 @@ public class DesktopWindowController : MonoBehaviour
         }
 #endif
 
+        // 从任务栏恢复：保持最小档并把相机/Canvas 同步回来
+        CheckMinimizeRestore();
+
         // 点击诊断：按下时一次性打印“坐标是否偏 / 是否被别的 Graphic 挡住 / 输入有没有到”
         if (debugClickLog && Input.GetMouseButtonDown(0)) LogClickDiagnostics();
 
@@ -1264,6 +1389,83 @@ public class DesktopWindowController : MonoBehaviour
     }
 
     // ==================== 最小化 ====================
+    /// <summary>
+    /// 「缩到后台」按钮两段式：
+    ///   第 1 下：先记住当前档位（用户手动滚轮设的值），再缩到最小档；
+    ///   第 2 下：最小化到任务栏（SW_MINIMIZE，任务栏保留按钮）；
+    ///   从任务栏恢复后还原到第 1 步记住的档位，状态复位成「正常」，下一次点击又是先缩小。
+    /// 编辑器里没有真实窗口：两段都只打日志，不改 windowScale（避免污染 save.json），也不调 Win32。
+    /// </summary>
+    public void MinimizeStageClick()
+    {
+        if (minimizeStage == 0)
+        {
+#if UNITY_EDITOR
+            Debug.Log($"[桌面窗口] 缩到后台(1/2)：编辑器内没有真实窗口，跳过缩到最小档（{EffectiveMinWindowScale:F2}）");
+            minimizeStage = 1;
+#else
+            // 每次从“正常”进入第一段都重新记录：用户中途滚轮改过档位也能还原到最新值
+            scaleBeforeMinimize = Mathf.Clamp(windowScale, SavedWindowScaleMin, SavedWindowScaleMax);
+            hasScaleBeforeMinimize = true;
+            ApplyWindowScale(EffectiveMinWindowScale);
+            minimizeStage = 1;
+            Debug.Log($"[桌面窗口] 缩到后台(1/2)：记住 {scaleBeforeMinimize:F2}，已缩到最小档 {EffectiveMinWindowScale:F2}");
+#endif
+            return;
+        }
+
+        if (minimizeStage == 1)
+        {
+#if UNITY_EDITOR
+            Debug.Log("[桌面窗口] 缩到后台(2/2)：编辑器内没有真实窗口，跳过最小化到任务栏");
+#else
+            if (hwnd == IntPtr.Zero) hwnd = GetActiveWindow();
+            if (hwnd == IntPtr.Zero || !IsWindow(hwnd))
+            {
+                Debug.LogWarning("[桌面窗口] 缩到后台(2/2)：拿不到窗口句柄，跳过最小化");
+                return;
+            }
+            MinimizeWindow();
+            // 先自己标记，避免 ShowWindow 生效前的一帧被当成“从任务栏恢复”
+            minimizeWasIconic = true;
+            minimizeStage = 2;
+            Debug.Log("[桌面窗口] 缩到后台(2/2)：已最小化到任务栏");
+#endif
+        }
+    }
+
+    /// <summary>
+    /// 从任务栏恢复检测：只有“自己点按钮进的任务栏”才处理。
+    /// 恢复后还原到第 1 步记住的档位（没记录过就退回默认上限 0.9），
+    /// 重新走一次 ApplyWindowScale 让相机/Canvas/RT 保持一致，状态复位成「正常（第一段）」。
+    /// </summary>
+    void CheckMinimizeRestore()
+    {
+#if !UNITY_EDITOR
+        if (minimizeStage != 2) return;
+        if (hwnd == IntPtr.Zero || !IsWindow(hwnd)) return;
+
+        bool iconic = IsIconic(hwnd);
+        if (iconic)
+        {
+            minimizeWasIconic = true;
+            return;
+        }
+        if (!minimizeWasIconic) return;
+        minimizeWasIconic = false;
+
+        // 还原档位：优先用第 1 步记住的值，未记录过（例如启动后被直接最小化）退回默认 0.9
+        float restoreScale = hasScaleBeforeMinimize ? scaleBeforeMinimize : SavedWindowScaleMax;
+        restoreScale = Mathf.Clamp(restoreScale, EffectiveMinWindowScale, EffectiveMaxWindowScale);
+
+        ApplyWindowScale(restoreScale);
+        // 明确复位到第一段（若恢复档位正好等于最小档，ApplyWindowScale 不会自动清状态）
+        minimizeStage = 0;
+        lastRepairTime = 0f; // 让下一次 Update 立刻跑一次窗口样式自愈
+        Debug.Log($"[桌面窗口] 从任务栏恢复：还原到 {restoreScale:F2} 档，状态复位为正常（下次点击先缩小）");
+#endif
+    }
+
     public void MinimizeWindow()
     {
 #if !UNITY_EDITOR
@@ -1428,6 +1630,10 @@ public class DesktopWindowController : MonoBehaviour
     {
         windowScale = Mathf.Clamp(scale, EffectiveMinWindowScale, EffectiveMaxWindowScale);
         CurrentWindowScale = windowScale; // 供世界→屏幕的像素偏移换算（UI 贴合场景物体）
+
+        // 只要比最小档大（滚轮放大 / 贴底缩小恢复），「缩到后台」按钮就回到第一段：
+        // 下一次点击重新是“先缩到最小”，而不是直接跳任务栏。
+        if (windowScale > EffectiveMinWindowScale + 0.0001f) minimizeStage = 0;
 #if !UNITY_EDITOR
         Camera cam = zoomCamera != null ? zoomCamera : Camera.main;
         if (cam == null || baseOrthoSize <= 0f) return false;
@@ -1444,6 +1650,9 @@ public class DesktopWindowController : MonoBehaviour
                 scaler.scaleFactor = targetSF;
         }
 #endif
+        // 最小档时把「缩到后台」按钮反向放大，保证 10% 缩放下仍然点得到
+        UpdateMinimizeButtonCompensation();
+
         // 一次性定位的 UI（珊瑚详情面板等）在 scaleFactor 变化后不会自己回到场景物体上方，
         // 这里通知它们重新贴一次。放在最后：此时相机/scaleFactor 都已是新值。
         OnWindowScaleChanged?.Invoke(windowScale);
