@@ -85,14 +85,11 @@ public class DesktopWindowController : MonoBehaviour
     public Button minimizeButton;
 
     // 「缩到后台」按钮两段式状态：
-    //   0 = 正常档位（下一次点击 = 缩到最小，点击时先记住当前档位）
+    //   0 = 正常档位（下一次点击 = 缩到最小）
     //   1 = 已缩到最小档（下一次点击 = 最小化到任务栏）
-    //   2 = 已最小化到任务栏（等 IsIconic 变回 false 时还原到记住的档位，状态回 0）
+    //   2 = 已最小化到任务栏（等 IsIconic 变回 false 时放大到最大档，状态回 0）
     int minimizeStage = 0;
 #if !UNITY_EDITOR
-    // 第 1 下点击缩到最小档之前记下的档位（用户手动滚轮设的值），从任务栏恢复时还原到它
-    float scaleBeforeMinimize = 0f;
-    bool hasScaleBeforeMinimize = false;
     bool minimizeWasIconic = false;
     // 「一键缩放」按钮的补偿容器：最小档时整层反向放大，避免 10% 缩放下按钮小到点不到。
     // 放在按钮的父级，不动按钮自己的 localScale —— HoverTooltip 悬停放大用的是按钮自身，互不覆盖。
@@ -1391,9 +1388,9 @@ public class DesktopWindowController : MonoBehaviour
     // ==================== 最小化 ====================
     /// <summary>
     /// 「缩到后台」按钮两段式：
-    ///   第 1 下：先记住当前档位（用户手动滚轮设的值），再缩到最小档；
+    ///   第 1 下：缩到最小档；
     ///   第 2 下：最小化到任务栏（SW_MINIMIZE，任务栏保留按钮）；
-    ///   从任务栏恢复后还原到第 1 步记住的档位，状态复位成「正常」，下一次点击又是先缩小。
+    ///   从任务栏恢复后直接放大到最大档（0.9），状态复位成「正常」，下一次点击又是先缩小。
     /// 编辑器里没有真实窗口：两段都只打日志，不改 windowScale（避免污染 save.json），也不调 Win32。
     /// </summary>
     public void MinimizeStageClick()
@@ -1404,12 +1401,9 @@ public class DesktopWindowController : MonoBehaviour
             Debug.Log($"[桌面窗口] 缩到后台(1/2)：编辑器内没有真实窗口，跳过缩到最小档（{EffectiveMinWindowScale:F2}）");
             minimizeStage = 1;
 #else
-            // 每次从“正常”进入第一段都重新记录：用户中途滚轮改过档位也能还原到最新值
-            scaleBeforeMinimize = Mathf.Clamp(windowScale, SavedWindowScaleMin, SavedWindowScaleMax);
-            hasScaleBeforeMinimize = true;
             ApplyWindowScale(EffectiveMinWindowScale);
             minimizeStage = 1;
-            Debug.Log($"[桌面窗口] 缩到后台(1/2)：记住 {scaleBeforeMinimize:F2}，已缩到最小档 {EffectiveMinWindowScale:F2}");
+            Debug.Log($"[桌面窗口] 缩到后台(1/2)：已缩到最小档 {EffectiveMinWindowScale:F2}");
 #endif
             return;
         }
@@ -1436,8 +1430,9 @@ public class DesktopWindowController : MonoBehaviour
 
     /// <summary>
     /// 从任务栏恢复检测：只有“自己点按钮进的任务栏”才处理。
-    /// 恢复后还原到第 1 步记住的档位（没记录过就退回默认上限 0.9），
+    /// 恢复后直接放大到最大档（EffectiveMaxWindowScale，即 0.9），
     /// 重新走一次 ApplyWindowScale 让相机/Canvas/RT 保持一致，状态复位成「正常（第一段）」。
+    /// 外部最小化（Win+D / 标题栏最小化）不接管，保持原档位。
     /// </summary>
     void CheckMinimizeRestore()
     {
@@ -1454,15 +1449,12 @@ public class DesktopWindowController : MonoBehaviour
         if (!minimizeWasIconic) return;
         minimizeWasIconic = false;
 
-        // 还原档位：优先用第 1 步记住的值，未记录过（例如启动后被直接最小化）退回默认 0.9
-        float restoreScale = hasScaleBeforeMinimize ? scaleBeforeMinimize : SavedWindowScaleMax;
-        restoreScale = Mathf.Clamp(restoreScale, EffectiveMinWindowScale, EffectiveMaxWindowScale);
-
-        ApplyWindowScale(restoreScale);
-        // 明确复位到第一段（若恢复档位正好等于最小档，ApplyWindowScale 不会自动清状态）
+        // 统一放大到最大档（0.9），不再还原缩小前的档位
+        ApplyWindowScale(EffectiveMaxWindowScale);
+        // 明确复位到第一段
         minimizeStage = 0;
         lastRepairTime = 0f; // 让下一次 Update 立刻跑一次窗口样式自愈
-        Debug.Log($"[桌面窗口] 从任务栏恢复：还原到 {restoreScale:F2} 档，状态复位为正常（下次点击先缩小）");
+        Debug.Log($"[桌面窗口] 从任务栏恢复：放大到最大档 {EffectiveMaxWindowScale:F2}，状态复位为正常（下次点击先缩小）");
 #endif
     }
 

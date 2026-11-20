@@ -188440,7 +188440,7 @@ MonoBehaviour:
   enableTransparent: 1
   dragWindowAnywhere: 1
   zoomCamera: {fileID: 1009990672}
-  minWindowScale: 0.1
+  minWindowScale: 0.2
   maxWindowScale: 0.9
   minimizeButton: {fileID: 876144266}
   centerTarget: {fileID: 253311951}
