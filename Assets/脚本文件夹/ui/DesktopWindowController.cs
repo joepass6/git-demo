@@ -99,6 +99,25 @@ public class DesktopWindowController : MonoBehaviour
     Vector2 minimizeButtonBaseAnchoredPos;
 #endif
 
+    [Header("缩小窗（缩小态显示）")]
+    [Tooltip("最小档时把「缩小窗」整层反向放大到 0.9 档的视觉大小；关掉就按 10% 原样显示")]
+    public bool 缩小窗最小档放大 = true;
+    RectTransform 缩小窗Rect;
+    缩小窗游动 缩小窗鱼;
+    // 缩小态要收起的正常内容（只关显示，不销毁）
+    GameObject[] 正常世界根;
+    bool[] 正常世界根状态;
+    Transform[] 正常面板子级;
+    bool[] 正常面板子级状态;
+    Image 正常面板底图;
+    bool 正常面板底图状态;
+    bool 正常内容已隐藏;
+    Transform 一键缩放Trans;
+    int 一键缩放原层级;
+#if !UNITY_EDITOR
+    Vector2 缩小窗基准位置;
+#endif
+
     [Header("画面居中")]
     public Transform centerTarget;
     public Vector2 centerOffset;
@@ -387,6 +406,9 @@ public class DesktopWindowController : MonoBehaviour
         {
             Debug.LogWarning("[桌面窗口] 没找到「一键缩放 / 缩到后台」按钮，按钮两段式行为未绑定");
         }
+
+        // 「缩小窗」：第一段缩小态时显示（里面两条鱼随机换图游动），正常档隐藏
+        SetupShrinkWindow();
     }
 
     /// <summary>
@@ -402,6 +424,229 @@ public class DesktopWindowController : MonoBehaviour
             if (b != null) return b;
         }
         return minimizeButton;
+    }
+
+    /// <summary>
+    /// 找「缩小窗 / 鱼1 / 鱼2」（含未激活子节点），挂上游动脚本，并先隐藏。
+    /// 不改场景 YAML：节点不存在就只打日志，不影响其它功能。
+    /// </summary>
+    void SetupShrinkWindow()
+    {
+        GameObject ui = GameObject.Find("界面ui");
+        if (ui == null) return;
+
+        Transform panel = FindDeep(ui.transform, "缩小窗");
+        if (panel == null)
+        {
+            Debug.LogWarning("[桌面窗口] 没找到「缩小窗」，缩小态的鱼窗不会显示");
+            return;
+        }
+
+        缩小窗Rect = panel as RectTransform;
+        Transform fish1 = FindDeep(panel, "鱼1");
+        Transform fish2 = FindDeep(panel, "鱼2");
+        Transform frame = FindDeep(panel, "框");
+
+        // 运行时关掉射线，别挡住其它按钮
+        Image panelImg = panel.GetComponent<Image>();
+        if (panelImg != null) panelImg.raycastTarget = false;
+        if (fish1 != null) { Image img = fish1.GetComponent<Image>(); if (img != null) img.raycastTarget = false; }
+        if (fish2 != null) { Image img = fish2.GetComponent<Image>(); if (img != null) img.raycastTarget = false; }
+        if (frame != null) { Image img = frame.GetComponent<Image>(); if (img != null) img.raycastTarget = false; }
+
+        缩小窗鱼 = panel.GetComponent<缩小窗游动>();
+        if (缩小窗鱼 == null) 缩小窗鱼 = panel.gameObject.AddComponent<缩小窗游动>();
+
+        Sprite[] 图库 = CollectFishSprites(ui.transform);
+        缩小窗鱼.初始化(缩小窗Rect, frame as RectTransform, fish1 as RectTransform, fish2 as RectTransform, 图库);
+
+        // 缩小态要隐藏的正常内容（只 SetActive，不销毁，不影响存档/对象池）
+        正常世界根 = new[] { GameObject.Find("场景"), GameObject.Find("场景内珊瑚页面UI") };
+        正常世界根状态 = new bool[正常世界根.Length];
+        for (int i = 0; i < 正常世界根.Length; i++)
+            正常世界根状态[i] = 正常世界根[i] != null && 正常世界根[i].activeSelf;
+
+        Transform panelParent = panel.parent;
+        if (panelParent != null)
+        {
+            var others = new List<Transform>();
+            foreach (Transform c in panelParent)
+            {
+                if (c == panel) continue;
+                if (minimizeButton != null && c == minimizeButton.transform) continue;
+                others.Add(c);
+            }
+            正常面板子级 = others.ToArray();
+            正常面板子级状态 = new bool[正常面板子级.Length];
+
+            Image bg = panelParent.GetComponent<Image>();
+            if (bg != null) { 正常面板底图 = bg; 正常面板底图状态 = bg.enabled; }
+        }
+        if (minimizeButton != null)
+        {
+            一键缩放Trans = minimizeButton.transform;
+            一键缩放原层级 = 一键缩放Trans.GetSiblingIndex();
+        }
+
+#if !UNITY_EDITOR
+        缩小窗基准位置 = 缩小窗Rect.anchoredPosition;
+#endif
+        panel.gameObject.SetActive(false);
+        UpdateShrinkWindowCompensation();
+        Debug.Log($"[桌面窗口] 缩小窗已接管：可随机鱼图 {图库.Length} 种，框={(frame != null ? frame.name : "无")}，启动时隐藏");
+    }
+
+    static Transform FindDeep(Transform root, string name)
+    {
+        if (root == null) return null;
+        if (root.name == name) return root;
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform hit = FindDeep(root.GetChild(i), name);
+            if (hit != null) return hit;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// 从「鱼图鉴」的 8 页 × 4 格里收集去重后的鱼图（只取名为 鱼1~鱼4 的格子，
+    /// 避开页面背景、边框、按钮图标等非鱼图片）。
+    /// 这些 sprite 已经序列化进场景，构建版一定能加载到，不依赖 Resources。
+    /// </summary>
+    static Sprite[] CollectFishSprites(Transform uiRoot)
+    {
+        Transform atlas = FindDeep(uiRoot, "鱼图鉴");
+        if (atlas == null) return Array.Empty<Sprite>();
+
+        var list = new List<Sprite>();
+        var seen = new HashSet<int>();
+        foreach (Transform t in atlas.GetComponentsInChildren<Transform>(true))
+        {
+            if (!IsFishSlotName(t.name)) continue;
+            Image img = t.GetComponent<Image>();
+            if (img == null) continue;
+            Sprite s = img.sprite;
+            if (s == null) continue;
+            if (seen.Add(s.GetInstanceID())) list.Add(s);
+        }
+        return list.ToArray();
+    }
+
+    static bool IsFishSlotName(string n)
+    {
+        return n == "鱼1" || n == "鱼2" || n == "鱼3" || n == "鱼4";
+    }
+
+    /// <summary>显示/隐藏缩小窗；显示时重新抽两条鱼，并把正常场景/主界面收起来。</summary>
+    void SetShrinkWindowVisible(bool visible)
+    {
+        if (缩小窗Rect == null) return;
+        bool changed = 缩小窗Rect.gameObject.activeSelf != visible;
+        if (changed) 缩小窗Rect.gameObject.SetActive(visible);
+
+        if (visible)
+        {
+            SetNormalSceneVisible(false);
+            // 缩小窗放大后可能盖住「一键缩放」按钮，把按钮提到最后一层，保证第二下点得到
+            if (一键缩放Trans != null) 一键缩放Trans.SetAsLastSibling();
+            if (缩小窗鱼 != null) 缩小窗鱼.刷新();
+        }
+        else
+        {
+            SetNormalSceneVisible(true);
+            if (一键缩放Trans != null && 一键缩放Trans.GetSiblingIndex() != 一键缩放原层级)
+                一键缩放Trans.SetSiblingIndex(Mathf.Clamp(一键缩放原层级, 0, 一键缩放Trans.parent.childCount - 1));
+        }
+        UpdateShrinkWindowCompensation();
+    }
+
+    /// <summary>
+    /// 缩小态时收起正常内容：3D 场景、珊瑚调整 UI、主界面面板底图，
+    /// 以及主面板里除「缩小窗」「一键缩放」之外的所有子级。
+    /// 只做 SetActive / enabled 开关，不销毁对象，存档、鱼对象池、计时逻辑都不受影响。
+    /// </summary>
+    void SetNormalSceneVisible(bool visible)
+    {
+        if (visible)
+        {
+            if (!正常内容已隐藏) return;
+            if (正常世界根 != null)
+                for (int i = 0; i < 正常世界根.Length; i++)
+                    if (正常世界根[i] != null) 正常世界根[i].SetActive(正常世界根状态[i]);
+            if (正常面板子级 != null)
+                for (int i = 0; i < 正常面板子级.Length; i++)
+                    if (正常面板子级[i] != null) 正常面板子级[i].gameObject.SetActive(正常面板子级状态[i]);
+            if (正常面板底图 != null) 正常面板底图.enabled = 正常面板底图状态;
+            正常内容已隐藏 = false;
+        }
+        else
+        {
+            if (正常内容已隐藏) return;
+            if (正常世界根 != null)
+                foreach (GameObject g in 正常世界根) if (g != null) g.SetActive(false);
+            if (正常面板子级 != null)
+                for (int i = 0; i < 正常面板子级.Length; i++)
+                    if (正常面板子级[i] != null)
+                    {
+                        正常面板子级状态[i] = 正常面板子级[i].gameObject.activeSelf;
+                        正常面板子级[i].gameObject.SetActive(false);
+                    }
+            if (正常面板底图 != null)
+            {
+                正常面板底图状态 = 正常面板底图.enabled;
+                正常面板底图.enabled = false;
+            }
+            正常内容已隐藏 = true;
+        }
+    }
+
+    /// <summary>
+    /// 最小档时把整个「缩小窗」反向放大（默认 0.9 / 当前档位 = 9×），
+    /// 并把整块 UI 夹进窗口（根 Canvas）可视范围；其它档位恢复原始尺寸和位置。
+    /// </summary>
+    void UpdateShrinkWindowCompensation()
+    {
+#if !UNITY_EDITOR
+        if (缩小窗Rect == null) return;
+
+        float cur = Mathf.Max(0.01f, windowScale);
+        bool atMin = cur <= EffectiveMinWindowScale + 0.0001f;
+        float factor = (缩小窗最小档放大 && atMin) ? Mathf.Clamp(EffectiveMaxWindowScale / cur, 1f, 20f) : 1f;
+
+        if (!Mathf.Approximately(缩小窗Rect.localScale.x, factor))
+            缩小窗Rect.localScale = new Vector3(factor, factor, 1f);
+
+        Vector2 pos = 缩小窗基准位置;
+        if (factor > 1.0001f)
+        {
+            Canvas ownCanvas = 缩小窗Rect.GetComponentInParent<Canvas>(true);
+            RectTransform canvasRect = ownCanvas != null ? ownCanvas.rootCanvas.transform as RectTransform : null;
+            if (canvasRect != null)
+            {
+                Vector3[] corners = new Vector3[4];
+                缩小窗Rect.GetWorldCorners(corners);
+                Vector2 cMin = canvasRect.InverseTransformPoint(corners[0]);
+                Vector2 cMax = canvasRect.InverseTransformPoint(corners[2]);
+                Rect cr = canvasRect.rect;
+                float margin = Mathf.Min(cr.width, cr.height) * 0.02f;
+
+                float dx = 0f, dy = 0f;
+                if (cMin.x < cr.xMin + margin) dx = cr.xMin + margin - cMin.x;
+                else if (cMax.x > cr.xMax - margin) dx = cr.xMax - margin - cMax.x;
+                if (cMin.y < cr.yMin + margin) dy = cr.yMin + margin - cMin.y;
+                else if (cMax.y > cr.yMax - margin) dy = cr.yMax - margin - cMax.y;
+
+                if (Mathf.Abs(dx) > 0.01f || Mathf.Abs(dy) > 0.01f)
+                {
+                    Vector3 world = canvasRect.TransformVector(new Vector3(dx, dy, 0f));
+                    Vector3 parentLocal = 缩小窗Rect.parent.InverseTransformVector(world);
+                    pos += new Vector2(parentLocal.x, parentLocal.y);
+                }
+            }
+        }
+        if (缩小窗Rect.anchoredPosition != pos)
+            缩小窗Rect.anchoredPosition = pos;
+#endif
     }
 
     /// <summary>
@@ -1405,6 +1650,8 @@ public class DesktopWindowController : MonoBehaviour
             minimizeStage = 1;
             Debug.Log($"[桌面窗口] 缩到后台(1/2)：已缩到最小档 {EffectiveMinWindowScale:F2}");
 #endif
+            // 缩小态的表现：显示「缩小窗」并重新抽两条鱼
+            SetShrinkWindowVisible(true);
             return;
         }
 
@@ -1451,6 +1698,8 @@ public class DesktopWindowController : MonoBehaviour
 
         // 统一放大到最大档（0.9），不再还原缩小前的档位
         ApplyWindowScale(EffectiveMaxWindowScale);
+        // 回到正常界面，「缩小窗」隐藏
+        SetShrinkWindowVisible(false);
         // 明确复位到第一段
         minimizeStage = 0;
         lastRepairTime = 0f; // 让下一次 Update 立刻跑一次窗口样式自愈
@@ -1644,6 +1893,10 @@ public class DesktopWindowController : MonoBehaviour
 #endif
         // 最小档时把「缩到后台」按钮反向放大，保证 10% 缩放下仍然点得到
         UpdateMinimizeButtonCompensation();
+
+        // 「缩小窗」只在最小档显示：滚轮放大 / 从任务栏恢复都要收起，并同步它的补偿倍数
+        if (windowScale > EffectiveMinWindowScale + 0.0001f) SetShrinkWindowVisible(false);
+        else UpdateShrinkWindowCompensation();
 
         // 一次性定位的 UI（珊瑚详情面板等）在 scaleFactor 变化后不会自己回到场景物体上方，
         // 这里通知它们重新贴一次。放在最后：此时相机/scaleFactor 都已是新值。
