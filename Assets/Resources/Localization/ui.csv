@@ -1,80 +1,84 @@
-ï»¿ï»¿key,ç®€ä½“ä¸­æ–‡,ç¹ä½“ä¸­æ–‡,English,å¾·è¯­,æ³•è¯­,è¥¿ç­ç‰™è¯­,ä¿„è¯­,æ—¥è¯­,éŸ©è¯­
-è½¬æ¢,è½¬æ¢,è½‰æ›,Convert,Konvertieren,Convertir,Convertir,ĞšĞ¾Ğ½Ğ²ĞµÑ€Ñ‚Ğ¸Ñ€Ğ¾Ğ²Ğ°Ñ‚ÑŒ,å¤‰æ›,ë³€í™˜
-æ¶ˆè€—100,æ¶ˆè€—100,æ¶ˆè€—100,Cost 100,Kosten 100,CoÃ»t 100,Costo 100,Ğ¡Ñ‚Ğ¾Ğ¸Ğ¼Ğ¾ÑÑ‚ÑŒ 100,ã‚³ã‚¹ãƒˆ100,ë¹„ìš© 100
-æ‹¥æœ‰æ•°é‡ï¼š0,æ‹¥æœ‰æ•°é‡ï¼š0,æ“æœ‰æ•¸é‡ï¼š0,Owned: 0,Besitz: 0,PossÃ©dÃ© : 0,En propiedad: 0,Ğ’ Ğ½Ğ°Ğ»Ğ¸Ñ‡Ğ¸Ğ¸: 0,æ‰€æœ‰æ•°ï¼š0,ë³´ìœ  ìˆ˜: 0
-æ­£å¼ç‰ˆè§£é”æ›´å¤šçŠç‘š,æ­£å¼ç‰ˆè§£é”æ›´å¤šçŠç‘š,æ­£å¼ç‰ˆè§£é–æ›´å¤šçŠç‘š,Unlock more corals in the full version,Schalte mehr Korallen in der Vollversion frei,DÃ©bloquez plus de coraux dans la version complÃ¨te,Desbloquea mÃ¡s corales en la versiÃ³n completa,Ğ Ğ°Ğ·Ğ±Ğ»Ğ¾ĞºĞ¸Ñ€ÑƒĞ¹Ñ‚Ğµ Ğ±Ğ¾Ğ»ÑŒÑˆĞµ ĞºĞ¾Ñ€Ğ°Ğ»Ğ»Ğ¾Ğ² Ğ² Ğ¿Ğ¾Ğ»Ğ½Ğ¾Ğ¹ Ğ²ĞµÑ€ÑĞ¸Ğ¸,ãƒ•ãƒ«ãƒãƒ¼ã‚¸ãƒ§ãƒ³ã§ã‚ˆã‚Šå¤šãã®ã‚µãƒ³ã‚´ã‚’ã‚¢ãƒ³ãƒ­ãƒƒã‚¯,ì •ì‹ ë²„ì „ì—ì„œ ë” ë§ì€ ì‚°í˜¸ë¥¼ ì ê¸ˆ í•´ì œí•˜ì„¸ìš”
-æ”¾å¤§,æ”¾å¤§,æ”¾å¤§,Zoom In,VergrÃ¶ÃŸern,Agrandir,Acercar,Ğ£Ğ²ĞµĞ»Ğ¸Ñ‡Ğ¸Ñ‚ÑŒ,æ‹¡å¤§,í™•ëŒ€
-ç¼©å°,ç¼©å°,ç¸®å°,Zoom Out,Verkleinern,RÃ©duire,Alejar,Ğ£Ğ¼ĞµĞ½ÑŒÑˆĞ¸Ñ‚ÑŒ,ç¸®å°,ì¶•ì†Œ
-é¡ºæ—¶é’ˆè½¬,é¡ºæ—¶é’ˆè½¬,é †æ™‚é‡è½‰,Rotate Clockwise,Im Uhrzeigersinn,Rotation horaire,Girar a la derecha,ĞŸĞ¾ Ñ‡Ğ°ÑĞ¾Ğ²Ğ¾Ğ¹,æ™‚è¨ˆå›ã‚Š,ì‹œê³„ ë°©í–¥
-ç¿»è½¬,ç¿»è½¬,ç¿»è½‰,Flip,Spiegeln,Retourner,Voltear,ĞÑ‚Ñ€Ğ°Ğ·Ğ¸Ñ‚ÑŒ,åè»¢,ë’¤ì§‘ê¸°
-é€†æ—¶é’ˆè½¬,é€†æ—¶é’ˆè½¬,é€†æ™‚é‡è½‰,Rotate Counterclockwise,Gegen den Uhrzeigersinn,Rotation antihoraire,Girar a la izquierda,ĞŸÑ€Ğ¾Ñ‚Ğ¸Ğ² Ñ‡Ğ°ÑĞ¾Ğ²Ğ¾Ğ¹,åæ™‚è¨ˆå›ã‚Š,ë°˜ì‹œê³„ ë°©í–¥
-å…³é—­,å…³é—­,é—œé–‰,Close,SchlieÃŸen,Fermer,Cerrar,Ğ—Ğ°ĞºÑ€Ñ‹Ñ‚ÑŒ,é–‰ã˜ã‚‹,ë‹«ê¸°
-å–æ‰,å–æ‰,è³£æ‰,Sell,Verkaufen,Vendre,Vender,ĞŸÑ€Ğ¾Ğ´Ğ°Ñ‚ÑŒ,å£²å´,íŒë§¤
-æ¬å®¶,æ¬å®¶,æ¬å®¶,Move,Verschieben,DÃ©placer,Mover,ĞŸĞµÑ€ĞµĞ¼ĞµÑÑ‚Ğ¸Ñ‚ÑŒ,ç§»å‹•,ì´ë™
-éŸ³æ•ˆéŸ³é‡,éŸ³æ•ˆéŸ³é‡,éŸ³æ•ˆéŸ³é‡,SFX Volume,SFX-LautstÃ¤rke,Volume des effets,Volumen de efectos,Ğ“Ñ€Ğ¾Ğ¼ĞºĞ¾ÑÑ‚ÑŒ ÑÑ„Ñ„ĞµĞºÑ‚Ğ¾Ğ²,åŠ¹æœéŸ³ã®éŸ³é‡,íš¨ê³¼ìŒ ë³¼ë¥¨
-èƒŒæ™¯éŸ³é‡,èƒŒæ™¯éŸ³é‡,èƒŒæ™¯éŸ³é‡,Music Volume,Musik-LautstÃ¤rke,Volume de la musique,Volumen de mÃºsica,Ğ“Ñ€Ğ¾Ğ¼ĞºĞ¾ÑÑ‚ÑŒ Ğ¼ÑƒĞ·Ñ‹ĞºĞ¸,éŸ³æ¥½ã®éŸ³é‡,ë°°ê²½ìŒì•… ë³¼ë¥¨
-æ¸…é™¤å­˜æ¡£,æ¸…é™¤å­˜æ¡£,æ¸…é™¤å­˜æª”,Clear Save Data,Spielstand lÃ¶schen,Effacer la sauvegarde,Borrar guardado,Ğ£Ğ´Ğ°Ğ»Ğ¸Ñ‚ÑŒ ÑĞ¾Ñ…Ñ€Ğ°Ğ½ĞµĞ½Ğ¸Ğµ,ã‚»ãƒ¼ãƒ–ãƒ‡ãƒ¼ã‚¿å‰Šé™¤,ì €ì¥ ë°ì´í„° ì‚­ì œ
-è¯­è¨€,è¯­è¨€,èªè¨€,Language,Sprache,Langue,Idioma,Ğ¯Ğ·Ñ‹Ğº,è¨€èª,ì–¸ì–´
-æ„Ÿè°¢åå•,æ„Ÿè°¢åå•,æ„Ÿè¬åå–®,Credits,Credits,CrÃ©dits,CrÃ©ditos,Ğ¢Ğ¸Ñ‚Ñ€Ñ‹,ã‚¯ãƒ¬ã‚¸ãƒƒãƒˆ,í¬ë ˆë”§
-åœºä¸Šæ²¡æœ‰é±¼ï¼,åœºä¸Šæ²¡æœ‰é±¼ï¼,å ´ä¸Šæ²’æœ‰é­šï¼,No fish in the tank!,Keine Fische im Becken!,Aucun poisson dans le bassin !,Â¡No hay peces en el tanque!,Ğ’ Ğ°ĞºĞ²Ğ°Ñ€Ğ¸ÑƒĞ¼Ğµ Ğ½ĞµÑ‚ Ñ€Ñ‹Ğ±!,æ°´æ§½ã«é­šãŒã„ã¾ã›ã‚“ï¼,ìˆ˜ì¡°ì— ë¬¼ê³ ê¸°ê°€ ì—†ìŠµë‹ˆë‹¤!
-åŠ å…¥ç©å®¶ç¤¾åŒº,åŠ å…¥ç©å®¶ç¤¾åŒº,åŠ å…¥ç©å®¶ç¤¾ç¾¤,Join the Community,Community beitreten,Rejoindre la communautÃ©,Unirse a la comunidad,Ğ’ÑÑ‚ÑƒĞ¿Ğ¸Ñ‚ÑŒ Ğ² ÑĞ¾Ğ¾Ğ±Ñ‰ĞµÑÑ‚Ğ²Ğ¾,ã‚³ãƒŸãƒ¥ãƒ‹ãƒ†ã‚£ã«å‚åŠ ,ì»¤ë®¤ë‹ˆí‹° ê°€ì…
-é€€å‡ºæ¸¸æˆ,é€€å‡ºæ¸¸æˆ,é€€å‡ºéŠæˆ²,Quit Game,Spiel beenden,Quitter le jeu,Salir del juego,Ğ’Ñ‹Ğ¹Ñ‚Ğ¸ Ğ¸Ğ· Ğ¸Ğ³Ñ€Ñ‹,ã‚²ãƒ¼ãƒ çµ‚äº†,ê²Œì„ ì¢…ë£Œ
-fz,æ”¾ç½®,æ”¾ç½®,Place,Platzieren,Placer,Colocar,Ğ Ğ°Ğ·Ğ¼ĞµÑÑ‚Ğ¸Ñ‚ÑŒ,é…ç½®,ë°°ì¹˜
-ç°æœ‰æ•°é‡ï¼š{0},ç°æœ‰æ•°é‡ï¼š{0},ç¾æœ‰æ•¸é‡ï¼š{0},Owned: {0},Besitz: {0},PossÃ©dÃ© : {0},En propiedad: {0},Ğ’ Ğ½Ğ°Ğ»Ğ¸Ñ‡Ğ¸Ğ¸: {0},æ‰€æŒæ•°ï¼š{0},ë³´ìœ  ìˆ˜: {0}
-éœ€è¦æ•°é‡ï¼š{0},éœ€è¦æ•°é‡ï¼š{0},éœ€è¦æ•¸é‡ï¼š{0},Required: {0},BenÃ¶tigt: {0},Requis : {0},Necesario: {0},Ğ¢Ñ€ĞµĞ±ÑƒĞµÑ‚ÑÑ: {0},å¿…è¦æ•°ï¼š{0},í•„ìš” ìˆ˜: {0}
-æ‹¥æœ‰æ•°é‡ï¼š{0},æ‹¥æœ‰æ•°é‡ï¼š{0},æ“æœ‰æ•¸é‡ï¼š{0},Owned: {0},Besitz: {0},PossÃ©dÃ© : {0},En propiedad: {0},Ğ’ Ğ½Ğ°Ğ»Ğ¸Ñ‡Ğ¸Ğ¸: {0},æ‰€æœ‰æ•°ï¼š{0},ë³´ìœ  ìˆ˜: {0}
-å¯ä»¥æ”¾ç½®{0},å¯ä»¥æ”¾ç½®{0},å¯ä»¥æ”¾ç½®{0},Can place {0},VerfÃ¼gbar: {0},Placeable : {0},Disponible: {0},ĞœĞ¾Ğ¶Ğ½Ğ¾ Ñ€Ğ°Ğ·Ğ¼ĞµÑÑ‚Ğ¸Ñ‚ÑŒ: {0},é…ç½®å¯èƒ½ {0},ë°°ì¹˜ ê°€ëŠ¥ {0}
-å·²æ”¾ç½®{0},å·²æ”¾ç½®{0},å·²æ”¾ç½®{0},Placed {0},Platziert: {0},PlacÃ© : {0},Colocado: {0},Ğ Ğ°Ğ·Ğ¼ĞµÑ‰ĞµĞ½Ğ¾: {0},é…ç½®æ¸ˆã¿ {0},ë°°ì¹˜ ì™„ë£Œ {0}
-çŠç‘šè°ƒèŠ‚,çŠç‘šè°ƒèŠ‚,çŠç‘šèª¿ç¯€,Adjust Coral,Koralle anpassen,Ajuster le corail,Ajustar coral,ĞĞ°ÑÑ‚Ñ€Ğ¾Ğ¹ĞºĞ° ĞºĞ¾Ñ€Ğ°Ğ»Ğ»Ğ°,ã‚µãƒ³ã‚´èª¿æ•´,ì‚°í˜¸ ì¡°ì •
-å‡ºç°æ¦‚ç‡ï¼š,å‡ºç°æ¦‚ç‡ï¼š,å‡ºç¾æ¦‚ç‡ï¼š,Spawn Rate:,Spawnrate:,Taux de spawn:,Tasa de apariciÃ³n:,Ğ§Ğ°ÑÑ‚Ğ¾Ñ‚Ğ° Ğ¿Ğ¾ÑĞ²Ğ»ĞµĞ½Ğ¸Ñ:,å‡ºç¾ç‡ï¼š,ë“±ì¥ í™•ë¥ :
-æ‰å®æ—¶é—´ï¼š,æ‰å®æ—¶é—´ï¼š,æ‰å¯¶æ™‚é–“ï¼š,Drop Interval:,Drop-Intervall:,Intervalle de drop:,Intervalo de caÃ­da:,Ğ˜Ğ½Ñ‚ĞµÑ€Ğ²Ğ°Ğ» Ğ²Ñ‹Ğ¿Ğ°Ğ´ĞµĞ½Ğ¸Ñ:,ãƒ‰ãƒ­ãƒƒãƒ—é–“éš”ï¼š,ë“œë¡­ ê°„ê²©:
-åœç•™æ—¶é—´ï¼š,åœç•™æ—¶é—´ï¼š,åœç•™æ™‚é–“ï¼š,Stay Time:,Verweildauer:,DurÃ©e de prÃ©sence:,Tiempo de estancia:,Ğ’Ñ€ĞµĞ¼Ñ Ğ¿Ñ€ĞµĞ±Ñ‹Ğ²Ğ°Ğ½Ğ¸Ñ:,æ»åœ¨æ™‚é–“ï¼š,ì²´ë¥˜ ì‹œê°„:
-æ•™ç¨‹,æ•™ç¨‹,æ•™ç¨‹,Tutorial,Tutorial,Tutoriel,Tutorial,Ğ£Ñ‡ĞµĞ±Ğ½Ğ¸Ğº,ãƒãƒ¥ãƒ¼ãƒˆãƒªã‚¢ãƒ«,íŠœí† ë¦¬ì–¼
-å¼€æœºè‡ªå¯åŠ¨,å¼€æœºè‡ªå¯åŠ¨,é–‹æ©Ÿè‡ªå•Ÿå‹•,Auto Start,Autostart,DÃ©marrage automatique,Autoinicio,ĞĞ²Ñ‚Ğ¾Ğ·Ğ°Ğ³Ñ€ÑƒĞ·ĞºĞ°,è‡ªå‹•èµ·å‹•,ìë™ ì‹œì‘
-ç¥æ˜æ˜¾ç¤ºå¼€å…³,ç¥æ˜æ˜¾ç¤ºå¼€å…³,ç¥æ˜é¡¯ç¤ºé–‹é—œ,Show Deity,Gottheit anzeigen,Afficher la divinitÃ©,Mostrar deidad,ĞŸĞ¾ĞºĞ°Ğ·Ñ‹Ğ²Ğ°Ñ‚ÑŒ Ğ±Ğ¾Ğ¶ĞµÑÑ‚Ğ²Ğ¾,ç¥æ§˜ã‚’è¡¨ç¤º,ì‹  í‘œì‹œ
-å¯æ”¾ç½®,å¯æ”¾ç½®,å¯æ”¾ç½®,Placeable,Platzierbar,Placeable,Colocable,ĞœĞ¾Ğ¶Ğ½Ğ¾ Ñ€Ğ°Ğ·Ğ¼ĞµÑÑ‚Ğ¸Ñ‚ÑŒ,é…ç½®å¯èƒ½,ë°°ì¹˜ ê°€ëŠ¥
-é±¼å›¾é‰´,é±¼å›¾é‰´,é­šåœ–é‘‘,Fish Journal,Fisch-EnzyklopÃ¤die,Journal des poissons,Atlas de peces,Ğ–ÑƒÑ€Ğ½Ğ°Ğ» Ñ€Ñ‹Ğ±,é­šå›³é‘‘,ë¬¼ê³ ê¸° ë„ê°
-å·²æ”¾æ»¡ï¼,å·²æ”¾æ»¡ï¼,å·²æ”¾æ»¿ï¼,Full!,Voll!,Plein!,Â¡Lleno!,ĞŸĞ¾Ğ»Ğ½Ğ¾!,æº€æ¯ï¼,ê°€ë“ ì°¼ìŠµë‹ˆë‹¤!
-ç°æœ‰å®ç‰©ï¼š,ç°æœ‰å®ç‰©ï¼š,ç¾æœ‰å¯¶ç‰©ï¼š,Current Treasures:,Aktuelle SchÃ¤tze:,TrÃ©sors actuels:,Tesoros actuales:,Ğ¢ĞµĞºÑƒÑ‰Ğ¸Ğµ ÑĞ¾ĞºÑ€Ğ¾Ğ²Ğ¸Ñ‰Ğ°:,ç¾åœ¨ã®å®ç‰©ï¼š,í˜„ì¬ ë³´ë¬¼:
-éœ€è¦çš„å®ç‰©ï¼š,éœ€è¦çš„å®ç‰©ï¼š,éœ€è¦çš„å¯¶ç‰©ï¼š,Required Treasures:,BenÃ¶tigte SchÃ¤tze:,TrÃ©sors requis:,Tesoros necesarios:,Ğ¢Ñ€ĞµĞ±ÑƒĞµĞ¼Ñ‹Ğµ ÑĞ¾ĞºÑ€Ğ¾Ğ²Ğ¸Ñ‰Ğ°:,å¿…è¦ãªå®ç‰©ï¼š,í•„ìš”í•œ ë³´ë¬¼:
-æ¶ˆè€—ï¼š,æ¶ˆè€—ï¼š,æ¶ˆè€—ï¼š,Cost:,Kosten:,CoÃ»t:,Costo:,Ğ¡Ñ‚Ğ¾Ğ¸Ğ¼Ğ¾ÑÑ‚ÑŒ:,ã‚³ã‚¹ãƒˆï¼š,ë¹„ìš©:
-è®¾ç½®,è®¾ç½®,è¨­ç½®,Settings,Einstellungen,ParamÃ¨tres,Ajustes,ĞĞ°ÑÑ‚Ñ€Ğ¾Ğ¹ĞºĞ¸,è¨­å®š,ì„¤ì •
-æ˜¯å¦ç½®é¡¶,æ˜¯å¦ç½®é¡¶,æ˜¯å¦ç½®é ‚,Always on Top,Immer im Vordergrund,Toujours au premier plan,Siempre arriba,Ğ’ÑĞµĞ³Ğ´Ğ° Ğ¿Ğ¾Ğ²ĞµÑ€Ñ…,å¸¸ã«æœ€å‰é¢,í•­ìƒ ìœ„ì— í‘œì‹œ
-ä¸€é”®ç¼©æ”¾,ä¸€é”®ç¼©æ”¾,ä¸€éµç¸®æ”¾,Quick Zoom,Schnellzoom,Zoom rapide,Zoom rÃ¡pido,Ğ‘Ñ‹ÑÑ‚Ñ€Ğ¾Ğµ Ğ¼Ğ°ÑÑˆÑ‚Ğ°Ğ±Ğ¸Ñ€Ğ¾Ğ²Ğ°Ğ½Ğ¸Ğµ,ã‚¯ã‚¤ãƒƒã‚¯ã‚ºãƒ¼ãƒ ,ë¹ ë¥¸ ì¤Œ
-çŠç‘šé€‰æ‹©ç•Œé¢,çŠç‘šé€‰æ‹©ç•Œé¢,çŠç‘šé¸æ“‡ä»‹é¢,Coral Selection,Korallenauswahl,SÃ©lection de corail,SelecciÃ³n de coral,Ğ’Ñ‹Ğ±Ğ¾Ñ€ ĞºĞ¾Ñ€Ğ°Ğ»Ğ»Ğ°,ã‚µãƒ³ã‚´é¸æŠ,ì‚°í˜¸ ì„ íƒ
-å¤šä½™å®ç‰©äº¤æ¢,å¤šä½™å®ç‰©äº¤æ¢,å¤šé¤˜å¯¶ç‰©äº¤æ›,Excess Treasure Swap,ÃœberschÃ¼ssiger Schatztausch,Ã‰change de trÃ©sors excÃ©dentaires,Intercambio de tesoros excedentes,ĞĞ±Ğ¼ĞµĞ½ Ğ»Ğ¸ÑˆĞ½Ğ¸Ğ¼Ğ¸ ÑĞ¾ĞºÑ€Ğ¾Ğ²Ğ¸Ñ‰Ğ°Ğ¼Ğ¸,ä½™å‰°å®ç‰©äº¤æ›,ì‰ì—¬ ë³´ë¬¼ êµí™˜
-è‹±è¯­,è‹±è¯­,è‹±èª,English,Englisch,Anglais,InglÃ©s,ĞĞ½Ğ³Ğ»Ğ¸Ğ¹ÑĞºĞ¸Ğ¹,è‹±èª,ì˜ì–´
-æ—¥è¯­,æ—¥è¯­,æ—¥èª,Japanese,Japanisch,Japonais,JaponÃ©s,Ğ¯Ğ¿Ğ¾Ğ½ÑĞºĞ¸Ğ¹,æ—¥æœ¬èª,ì¼ë³¸ì–´
-éŸ©è¯­,éŸ©è¯­,éŸ“èª,Korean,Korean,KorÃ©en,Coreano,ĞšĞ¾Ñ€ĞµĞ¹ÑĞºĞ¸Ğ¹,éŸ“å›½èª,í•œêµ­ì–´
-å¾·è¯­,å¾·è¯­,å¾·èª,German,Deutsch,Allemand,AlemÃ¡n,ĞĞµĞ¼ĞµÑ†ĞºĞ¸Ğ¹,ãƒ‰ã‚¤ãƒ„èª,ë…ì¼ì–´
-æ³•è¯­,æ³•è¯­,æ³•èª,French,FranzÃ¶sisch,FranÃ§ais,FrancÃ©s,Ğ¤Ñ€Ğ°Ğ½Ñ†ÑƒĞ·ÑĞºĞ¸Ğ¹,ãƒ•ãƒ©ãƒ³ã‚¹èª,í”„ë‘ìŠ¤ì–´
-ä¿„è¯­,ä¿„è¯­,ä¿„èª,Russian,Russisch,Russe,Ruso,Ğ ÑƒÑÑĞºĞ¸Ğ¹,ãƒ­ã‚·ã‚¢èª,ëŸ¬ì‹œì•„ì–´
-ç¹ä½“,ç¹ä½“,ç¹é«”,Traditional Chinese,Traditionelles Chinesisch,Chinois traditionnel,Chino tradicional,Ğ¢Ñ€Ğ°Ğ´Ğ¸Ñ†Ğ¸Ğ¾Ğ½Ğ½Ñ‹Ğ¹ ĞºĞ¸Ñ‚Ğ°Ğ¹ÑĞºĞ¸Ğ¹,ç¹ä½“å­—,ì¤‘êµ­ì–´ ë²ˆì²´
-ç®€ä¸­,ç®€ä¸­,ç°¡ä¸­,Simplified Chinese,Vereinfachtes Chinesisch,Chinois simplifiÃ©,Chino simplificado,Ğ£Ğ¿Ñ€Ğ¾Ñ‰ĞµĞ½Ğ½Ñ‹Ğ¹ ĞºĞ¸Ñ‚Ğ°Ğ¹ÑĞºĞ¸Ğ¹,ç°¡ä½“å­—,ì¤‘êµ­ì–´ ê°„ì²´
-è¥¿ç­ç‰™è¯­,è¥¿ç­ç‰™è¯­,è¥¿ç­ç‰™èª,Spanish,Spanisch,Espagnol,EspaÃ±ol,Ğ˜ÑĞ¿Ğ°Ğ½ÑĞºĞ¸Ğ¹,ã‚¹ãƒšã‚¤ãƒ³èª,ìŠ¤í˜ì¸ì–´
-éšæœºå®ç‰©æ•°é‡ï¼š{0},éšæœºå®ç‰©æ•°é‡ï¼š{0},éš¨æ©Ÿå¯¶ç‰©æ•¸é‡ï¼š{0},Random Treasures: {0},ZufÃ¤llige SchÃ¤tze: {0},TrÃ©sors alÃ©atoires : {0},Tesoros aleatorios: {0},Ğ¡Ğ»ÑƒÑ‡Ğ°Ğ¹Ğ½Ñ‹Ğµ ÑĞ¾ĞºÑ€Ğ¾Ğ²Ğ¸Ñ‰Ğ°: {0},ãƒ©ãƒ³ãƒ€ãƒ å®ç‰©ï¼š{0},ëœë¤ ë³´ë¬¼: {0}
-æ”¾å¤§,æ”¾å¤§,æ”¾å¤§,Zoom In,VergrÃ¶ÃŸern,Agrandir,Acercar,Ğ£Ğ²ĞµĞ»Ğ¸Ñ‡Ğ¸Ñ‚ÑŒ,æ‹¡å¤§,í™•ëŒ€
-ç¼©å°,ç¼©å°,ç¸®å°,Zoom Out,Verkleinern,RÃ©duire,Alejar,Ğ£Ğ¼ĞµĞ½ÑŒÑˆĞ¸Ñ‚ÑŒ,ç¸®å°,ì¶•ì†Œ
-é€†æ—¶é’ˆè½¬,é€†æ—¶é’ˆè½¬,é€†æ™‚é‡è½‰,Rotate Counterclockwise,Gegen den Uhrzeigersinn,Rotation antihoraire,Girar a la izquierda,ĞŸÑ€Ğ¾Ñ‚Ğ¸Ğ² Ñ‡Ğ°ÑĞ¾Ğ²Ğ¾Ğ¹,åæ™‚è¨ˆå›ã‚Š,ë°˜ì‹œê³„ ë°©í–¥
-é€€å‡ºæ¸¸æˆ,é€€å‡ºæ¸¸æˆ,é€€å‡ºéŠæˆ²,Quit Game,Spiel beenden,Quitter le jeu,Salir del juego,Ğ’Ñ‹Ğ¹Ñ‚Ğ¸ Ğ¸Ğ· Ğ¸Ğ³Ñ€Ñ‹,ã‚²ãƒ¼ãƒ çµ‚äº†,ê²Œì„ ì¢…ë£Œ
-è®¾ç½®,è®¾ç½®,è¨­ç½®,Settings,Einstellungen,ParamÃ¨tres,Ajustes,ĞĞ°ÑÑ‚Ñ€Ğ¾Ğ¹ĞºĞ¸,è¨­å®š,ì„¤ì •
-æ˜¯å¦ç½®é¡¶,æ˜¯å¦ç½®é¡¶,æ˜¯å¦ç½®é ‚,Always on Top,Immer im Vordergrund,Toujours au premier plan,Siempre arriba,Ğ’ÑĞµĞ³Ğ´Ğ° Ğ¿Ğ¾Ğ²ĞµÑ€Ñ…,å¸¸ã«æœ€å‰é¢,í•­ìƒ ìœ„ì— í‘œì‹œ
-ä¸€é”®\nç¼©æ”¾,ä¸€é”®ç¼©æ”¾,ä¸€éµç¸®æ”¾,Quick Zoom,Schnellzoom,Zoom rapide,Zoom rÃ¡pido,Ğ‘Ñ‹ÑÑ‚Ñ€Ğ¾Ğµ Ğ¼Ğ°ÑÑˆÑ‚Ğ°Ğ±Ğ¸Ñ€Ğ¾Ğ²Ğ°Ğ½Ğ¸Ğµ,ã‚¯ã‚¤ãƒƒã‚¯ã‚ºãƒ¼ãƒ ,ë¹ ë¥¸ ì¤Œ
-çŠç‘š\né€‰æ‹©\nç•Œé¢,çŠç‘šé€‰æ‹©ç•Œé¢,çŠç‘šé¸æ“‡ä»‹é¢,Coral Selection,Korallenauswahl,SÃ©lection de corail,SelecciÃ³n de coral,Ğ’Ñ‹Ğ±Ğ¾Ñ€ ĞºĞ¾Ñ€Ğ°Ğ»Ğ»Ğ°,ã‚µãƒ³ã‚´é¸æŠ,ì‚°í˜¸ ì„ íƒ
-éšæœºå®ç‰©æ•°é‡ï¼š0,éšæœºå®ç‰©æ•°é‡ï¼š0,éš¨æ©Ÿå¯¶ç‰©æ•¸é‡ï¼š0,Random Treasures: 0,ZufÃ¤llige SchÃ¤tze: 0,TrÃ©sors alÃ©atoires : 0,Tesoros aleatorios: 0,Ğ¡Ğ»ÑƒÑ‡Ğ°Ğ¹Ğ½Ñ‹Ğµ ÑĞ¾ĞºÑ€Ğ¾Ğ²Ğ¸Ñ‰Ğ°: 0,ãƒ©ãƒ³ãƒ€ãƒ å®ç‰©ï¼š0,ëœë¤ ë³´ë¬¼: 0
-æ¶ˆè€—ï¼š,æ¶ˆè€—ï¼š,æ¶ˆè€—ï¼š,Cost:,Kosten:,CoÃ»t:,Costo:,Ğ¡Ñ‚Ğ¾Ğ¸Ğ¼Ğ¾ÑÑ‚ÑŒ:,ã‚³ã‚¹ãƒˆï¼š,ë¹„ìš©:
-å¤šä½™\nå®ç‰©\näº¤æ¢,å¤šä½™å®ç‰©äº¤æ¢,å¤šé¤˜å¯¶ç‰©äº¤æ›,Excess Treasure Swap,ÃœberschÃ¼ssiger Schatztausch,Ã‰change de trÃ©sors excÃ©dentaires,Intercambio de tesoros excedentes,ĞĞ±Ğ¼ĞµĞ½ Ğ»Ğ¸ÑˆĞ½Ğ¸Ğ¼Ğ¸ ÑĞ¾ĞºÑ€Ğ¾Ğ²Ğ¸Ñ‰Ğ°Ğ¼Ğ¸,ä½™å‰°å®ç‰©äº¤æ›,ì‰ì—¬ ë³´ë¬¼ êµí™˜
-æ˜¯å¦æ˜¾ç¤ºç¥æ˜,æ˜¯å¦æ˜¾ç¤ºç¥æ˜,æ˜¯å¦é¡¯ç¤ºç¥æ˜,Show Deity,Gottheit anzeigen,Afficher la divinitÃ©,Mostrar deidad,ĞŸĞ¾ĞºĞ°Ğ·Ñ‹Ğ²Ğ°Ñ‚ÑŒ Ğ±Ğ¾Ğ¶ĞµÑÑ‚Ğ²Ğ¾,ç¥æ§˜ã‚’è¡¨ç¤º,ì‹  í‘œì‹œ
-ä¸‹ä¸€é¡µ,ä¸‹ä¸€é¡µ,ä¸‹ä¸€é ,Next,Weiter,Suivant,Siguiente,Ğ”Ğ°Ğ»ĞµĞµ,æ¬¡ã¸,ë‹¤ìŒ
-ä¸Šä¸€é¡µ,ä¸Šä¸€é¡µ,ä¸Šä¸€é ,Previous,ZurÃ¼ck,PrÃ©cÃ©dent,Anterior,ĞĞ°Ğ·Ğ°Ğ´,å‰ã¸,ì´ì „
-ä¸åŒçš„çŠæ”¾åœ¨ä¸€èµ·ï¼Œä¼šå‡ºç°ä¸åŒçš„é±¼,ä¸åŒçš„çŠæ”¾åœ¨ä¸€èµ·ï¼Œä¼šå‡ºç°ä¸åŒçš„é±¼,ä¸åŒçš„çŠæ”¾åœ¨ä¸€èµ·ï¼Œæœƒå‡ºç¾ä¸åŒçš„é­š,Different corals together attract different fish,Verschiedene Korallen zusammen bringen verschiedene Fische hervor,DiffÃ©rents coraux ensemble font apparaÃ®tre diffÃ©rents poissons,Corales diferentes juntos atraen peces diferentes,Ğ Ğ°Ğ·Ğ½Ñ‹Ğµ ĞºĞ¾Ñ€Ğ°Ğ»Ğ»Ñ‹ Ñ€ÑĞ´Ğ¾Ğ¼ Ğ¿Ñ€Ğ¸Ğ²Ğ»ĞµĞºĞ°ÑÑ‚ Ñ€Ğ°Ğ·Ğ½Ñ‹Ñ… Ñ€Ñ‹Ğ±,é•ã†ã‚µãƒ³ã‚´ã‚’ä¸€ç·’ã«ç½®ãã¨é•ã†é­šãŒç¾ã‚Œã¾ã™,ë‹¤ë¥¸ ì‚°í˜¸ë¥¼ í•¨ê»˜ ë‘ë©´ ë‹¤ë¥¸ ë¬¼ê³ ê¸°ê°€ ë‚˜íƒ€ë‚©ë‹ˆë‹¤
-ä¸åŒçš„é±¼å®å¯ä»¥ä¹°ä¸åŒçš„çŠç‘š,ä¸åŒçš„é±¼å®å¯ä»¥ä¹°ä¸åŒçš„çŠç‘š,ä¸åŒçš„é­šå¯¶å¯ä»¥è²·ä¸åŒçš„çŠç‘š,Different fish treasures can buy different corals,Mit verschiedenen FischschÃ¤tzen kaufst du verschiedene Korallen,DiffÃ©rents trÃ©sors de poissons achÃ¨tent diffÃ©rents coraux,Diferentes tesoros de peces compran diferentes corales,Ğ Ğ°Ğ·Ğ½Ñ‹Ğµ ÑĞ¾ĞºÑ€Ğ¾Ğ²Ğ¸Ñ‰Ğ° Ñ€Ñ‹Ğ± Ğ¿Ğ¾ĞºÑƒĞ¿Ğ°ÑÑ‚ Ñ€Ğ°Ğ·Ğ½Ñ‹Ğµ ĞºĞ¾Ñ€Ğ°Ğ»Ğ»Ñ‹,é•ã†é­šã®å®ç‰©ã§é•ã†ã‚µãƒ³ã‚´ã‚’è²·ãˆã¾ã™,ë‹¤ë¥¸ ë¬¼ê³ ê¸° ë³´ë¬¼ë¡œ ë‹¤ë¥¸ ì‚°í˜¸ë¥¼ ì‚´ ìˆ˜ ìˆìŠµë‹ˆë‹¤
-è‡ªåŠ¨äº§ç”Ÿé±¼,è‡ªåŠ¨äº§ç”Ÿé±¼,è‡ªå‹•ç”¢ç”Ÿé­š,Auto-spawns fish,Erzeugt automatisch Fische,GÃ©nÃ¨re automatiquement des poissons,Genera peces automÃ¡ticamente,ĞĞ²Ñ‚Ğ¾Ğ¼Ğ°Ñ‚Ğ¸Ñ‡ĞµÑĞºĞ¸ ÑĞ¾Ğ·Ğ´Ğ°Ñ‘Ñ‚ Ñ€Ñ‹Ğ±,è‡ªå‹•ã§é­šãŒç™ºç”Ÿ,ìë™ìœ¼ë¡œ ë¬¼ê³ ê¸° ìƒì„±
-ç‚¹å‡»åœºæ™¯ä¸­çš„æ‰è½ç‰©ï¼Œå¯ä»¥æ”¶é›†èµ·æ¥,ç‚¹å‡»åœºæ™¯ä¸­çš„æ‰è½ç‰©ï¼Œå¯ä»¥æ”¶é›†èµ·æ¥,é»æ“Šå ´æ™¯ä¸­çš„æ‰è½ç‰©ï¼Œå¯ä»¥æ”¶é›†èµ·ä¾†,Click dropped items on the screen to collect them,Klicke auf heruntergefallene GegenstÃ¤nde um sie einzusammeln,Cliquez sur les objets tombÃ©s Ã  l'Ã©cran pour les ramasser,Haz clic en los objetos caÃ­dos para recogerlos,ĞĞ°Ğ¶Ğ¸Ğ¼Ğ°Ğ¹Ñ‚Ğµ Ğ½Ğ° Ğ²Ñ‹Ğ¿Ğ°Ğ²ÑˆĞ¸Ğµ Ğ¿Ñ€ĞµĞ´Ğ¼ĞµÑ‚Ñ‹ Ñ‡Ñ‚Ğ¾Ğ±Ñ‹ ÑĞ¾Ğ±Ñ€Ğ°Ñ‚ÑŒ Ğ¸Ñ…,ç”»é¢ã«è½ã¡ãŸã‚¢ã‚¤ãƒ†ãƒ ã‚’ã‚¯ãƒªãƒƒã‚¯ã™ã‚‹ã¨é›†ã‚ã‚‰ã‚Œã¾ã™,í™”ë©´ì— ë–¨ì–´ì§„ ì•„ì´í…œì„ í´ë¦­í•´ ëª¨ì„ ìˆ˜ ìˆìŠµë‹ˆë‹¤
-ç­‰å¾…ä¸€ä¼šï¼Œé±¼ä¼šè‡ªåŠ¨æ‰è½å®ç‰©,ç­‰å¾…ä¸€ä¼šï¼Œé±¼ä¼šè‡ªåŠ¨æ‰è½å®ç‰©,ç­‰å¾…ä¸€æœƒï¼Œé­šæœƒè‡ªå‹•æ‰è½å¯¶ç‰©,Wait a while and fish will drop treasures,Warte kurz dann lassen Fische SchÃ¤tze fallen,Attendez un peu et les poissons lÃ¢cheront des trÃ©sors,Espera un poco y los peces soltarÃ¡n tesoros,ĞŸĞ¾Ğ´Ğ¾Ğ¶Ğ´Ğ¸Ñ‚Ğµ Ğ½ĞµĞ¼Ğ½Ğ¾Ğ³Ğ¾ Ğ¸ Ñ€Ñ‹Ğ±Ñ‹ Ğ½Ğ°Ñ‡Ğ½ÑƒÑ‚ Ñ€Ğ¾Ğ½ÑÑ‚ÑŒ ÑĞ¾ĞºÑ€Ğ¾Ğ²Ğ¸Ñ‰Ğ°,ã—ã°ã‚‰ãå¾…ã¤ã¨é­šãŒå®ç‰©ã‚’è½ã¨ã—ã¾ã™,ì ì‹œ ê¸°ë‹¤ë¦¬ë©´ ë¬¼ê³ ê¸°ê°€ ë³´ë¬¼ì„ ë–¨ì–´ëœ¨ë¦½ë‹ˆë‹¤
-æˆ–è€…æ˜¯æµ·ç¥çš„å®ç‰©,æˆ–è€…æ˜¯æµ·ç¥çš„å®ç‰©,æˆ–è€…æ˜¯æµ·ç¥çš„å¯¶ç‰©,Or the Sea God's treasure,Oder der Schatz des Meergottes,Ou le trÃ©sor du Dieu des mers,O el tesoro del Dios del mar,Ğ˜Ğ»Ğ¸ ÑĞ¾ĞºÑ€Ğ¾Ğ²Ğ¸Ñ‰Ğµ ĞœĞ¾Ñ€ÑĞºĞ¾Ğ³Ğ¾ Ğ±Ğ¾Ğ³Ğ°,ã¾ãŸã¯æµ·ç¥ã®å®ç‰©,ë˜ëŠ” ë°”ë‹¤ì‹ ì˜ ë³´ë¬¼
-å®ç‰©æ”¾å…¥åˆ°æ°”æ³¡æ¡†å†…ï¼Œå°±ä¼šè·å¾—æµ·ç¥è¾¹æ¡†,å®ç‰©æ”¾å…¥åˆ°æ°”æ³¡æ¡†å†…ï¼Œå°±ä¼šè·å¾—æµ·ç¥è¾¹æ¡†,å¯¶ç‰©æ”¾å…¥åˆ°æ°£æ³¡æ¡†å…§ï¼Œå°±æœƒç²å¾—æµ·ç¥é‚Šæ¡†,Put treasures into the bubble slots to get the Sea God frame,Lege SchÃ¤tze in die Blasenfelder um den Meergott-Rahmen zu erhalten,Placez des trÃ©sors dans les bulles pour obtenir le cadre du Dieu des mers,Coloca tesoros en las burbujas para obtener el marco del Dios del mar,ĞŸĞ¾Ğ¼ĞµÑÑ‚Ğ¸Ñ‚Ğµ ÑĞ¾ĞºÑ€Ğ¾Ğ²Ğ¸Ñ‰Ğ° Ğ² Ğ¿ÑƒĞ·Ñ‹Ñ€Ğ¸ Ñ‡Ñ‚Ğ¾Ğ±Ñ‹ Ğ¿Ğ¾Ğ»ÑƒÑ‡Ğ¸Ñ‚ÑŒ Ñ€Ğ°Ğ¼ĞºÑƒ ĞœĞ¾Ñ€ÑĞºĞ¾Ğ³Ğ¾ Ğ±Ğ¾Ğ³Ğ°,å®ç‰©ã‚’ãƒãƒ–ãƒ«æ ã«å…¥ã‚Œã‚‹ã¨æµ·ç¥ã®ãƒ•ãƒ¬ãƒ¼ãƒ ã‚’ç²å¾—,ë³´ë¬¼ì„ ë²„ë¸” ì¹¸ì— ë„£ìœ¼ë©´ ë°”ë‹¤ì‹  í…Œë‘ë¦¬ë¥¼ ì–»ìŠµë‹ˆë‹¤
-è¾¹æ¡†æµ·ç¥å°±ä¼šå‡ºç°ï¼ï¼ï¼,è¾¹æ¡†æµ·ç¥å°±ä¼šå‡ºç°ï¼ï¼ï¼,é‚Šæ¡†æµ·ç¥å°±æœƒå‡ºç¾ï¼ï¼ï¼,The Sea God frame will appear!!!,Der Meergott-Rahmen erscheint!!!,Le cadre du Dieu des mers apparaÃ®tra !!!,Â¡El marco del Dios del mar aparecerÃ¡!,Ğ Ğ°Ğ¼ĞºĞ° ĞœĞ¾Ñ€ÑĞºĞ¾Ğ³Ğ¾ Ğ±Ğ¾Ğ³Ğ° Ğ¿Ğ¾ÑĞ²Ğ¸Ñ‚ÑÑ!!!,æµ·ç¥ã®ãƒ•ãƒ¬ãƒ¼ãƒ ãŒç¾ã‚Œã¾ã™ï¼ï¼ï¼,ë°”ë‹¤ì‹  í…Œë‘ë¦¬ê°€ ë‚˜íƒ€ë‚©ë‹ˆë‹¤!!!
-æŠŠçŠç‘šæ”¾ç½®åœ¨å˜è‰²çš„ç¤çŸ³ä¸Šé¢,æŠŠçŠç‘šæ”¾ç½®åœ¨å˜è‰²çš„ç¤çŸ³ä¸Šé¢,æŠŠçŠç‘šæ”¾ç½®åœ¨è®Šè‰²çš„ç¤çŸ³ä¸Šé¢,Place corals on the discolored rocks,Lege Korallen auf die verfÃ¤rbten Felsen,Placez des coraux sur les rochers colorÃ©s,Coloca corales sobre las rocas decoloradas,Ğ Ğ°Ğ·Ğ¼ĞµÑÑ‚Ğ¸Ñ‚Ğµ ĞºĞ¾Ñ€Ğ°Ğ»Ğ»Ñ‹ Ğ½Ğ° Ğ¸Ğ·Ğ¼ĞµĞ½Ğ¸Ğ²ÑˆĞ¸Ñ… Ñ†Ğ²ĞµÑ‚ ĞºĞ°Ğ¼Ğ½ÑÑ…,è‰²ãŒå¤‰ã‚ã£ãŸå²©ã®ä¸Šã«ã‚µãƒ³ã‚´ã‚’ç½®ãã¾ã™,ìƒ‰ì´ ë³€í•œ ë°”ìœ„ ìœ„ì— ì‚°í˜¸ë¥¼ ë†“ìœ¼ì„¸ìš”
-è§‰å¾—æµ·ç¥ä¸å¥½çœ‹çš„ï¼Œå¯ä»¥åœ¨è®¾ç½®é‡Œå…³æ‰,è§‰å¾—æµ·ç¥ä¸å¥½çœ‹çš„ï¼Œå¯ä»¥åœ¨è®¾ç½®é‡Œå…³æ‰,è¦ºå¾—æµ·ç¥ä¸å¥½çœ‹çš„ï¼Œå¯ä»¥åœ¨è¨­å®šè£¡é—œæ‰,If you do not like the Sea God you can turn it off in Settings,Wenn dir der Meergott nicht gefÃ¤llt kannst du ihn in den Einstellungen ausschalten,Si le Dieu des mers ne vous plaÃ®t pas vous pouvez le dÃ©sactiver dans les rÃ©glages,Si no te gusta el Dios del mar puedes desactivarlo en Ajustes,Ğ•ÑĞ»Ğ¸ Ğ²Ğ°Ğ¼ Ğ½Ğµ Ğ½Ñ€Ğ°Ğ²Ğ¸Ñ‚ÑÑ ĞœĞ¾Ñ€ÑĞºĞ¾Ğ¹ Ğ±Ğ¾Ğ³ ĞµĞ³Ğ¾ Ğ¼Ğ¾Ğ¶Ğ½Ğ¾ Ğ¾Ñ‚ĞºĞ»ÑÑ‡Ğ¸Ñ‚ÑŒ Ğ² Ğ½Ğ°ÑÑ‚Ñ€Ğ¾Ğ¹ĞºĞ°Ñ…,æµ·ç¥ãŒå¥½ã¿ã§ãªã„å ´åˆã¯è¨­å®šã§ã‚ªãƒ•ã«ã§ãã¾ã™,ë°”ë‹¤ì‹ ì´ ë§ˆìŒì— ë“¤ì§€ ì•Šìœ¼ë©´ ì„¤ì •ì—ì„œ ëŒ ìˆ˜ ìˆìŠµë‹ˆë‹¤
-æ¢§é›¨å­,æ¢§é›¨å­,æ¢§é›¨å­,æ¢§é›¨å­,æ¢§é›¨å­,æ¢§é›¨å­,æ¢§é›¨å­,æ¢§é›¨å­,æ¢§é›¨å­,æ¢§é›¨å­
+key,¼òÌåÖĞÎÄ,·±ÌåÖĞÎÄ,English,µÂÓï,·¨Óï,Î÷°àÑÀÓï,¶íÓï,ÈÕÓï,º«Óï
+×ª»»,×ª»»,ŞD“Q,Convert,Konvertieren,Convertir,Convertir,§¬§à§ß§Ó§Ö§â§ä§Ú§â§à§Ó§Ñ§ä§î,‰ä“Q,??
+ÏûºÄ100,ÏûºÄ100,ÏûºÄ100,Cost 100,Kosten 100,Co?t 100,Costo 100,§³§ä§à§Ú§Ş§à§ã§ä§î 100,¥³¥¹¥È100,?? 100
+ÓµÓĞÊıÁ¿£º0,ÓµÓĞÊıÁ¿£º0,“íÓĞ”µÁ¿£º0,Owned: 0,Besitz: 0,Poss¨¦d¨¦ : 0,En propiedad: 0,§£ §ß§Ñ§İ§Ú§é§Ú§Ú: 0,ËùÓĞÊı£º0,?? ?: 0
+ÕıÊ½°æ½âËø¸ü¶àÉºº÷,ÕıÊ½°æ½âËø¸ü¶àÉºº÷,ÕıÊ½°æ½âæi¸ü¶àÉºº÷,Unlock more corals in the full version,Schalte mehr Korallen in der Vollversion frei,D¨¦bloquez plus de coraux dans la version compl¨¨te,Desbloquea m¨¢s corales en la versi¨®n completa,§²§Ñ§Ù§Ò§İ§à§Ü§Ú§â§å§Û§ä§Ö §Ò§à§İ§î§ê§Ö §Ü§à§â§Ñ§İ§İ§à§Ó §Ó §á§à§İ§ß§à§Û §Ó§Ö§â§ã§Ú§Ú,¥Õ¥ë¥Ğ©`¥¸¥ç¥ó¤Ç¤è¤ê¶à¤¯¤Î¥µ¥ó¥´¤ò¥¢¥ó¥í¥Ã¥¯,?? ???? ? ?? ??? ?? ?????
+·Å´ó,·Å´ó,·Å´ó,Zoom In,Vergr??ern,Agrandir,Acercar,§µ§Ó§Ö§İ§Ú§é§Ú§ä§î,’ˆ´ó,??
+ËõĞ¡,ËõĞ¡,¿sĞ¡,Zoom Out,Verkleinern,R¨¦duire,Alejar,§µ§Ş§Ö§ß§î§ê§Ú§ä§î,¿sĞ¡,??
+Ë³Ê±Õë×ª,Ë³Ê±Õë×ª,í˜•rá˜ŞD,Rotate Clockwise,Im Uhrzeigersinn,Rotation horaire,Girar a la derecha,§±§à §é§Ñ§ã§à§Ó§à§Û,•rÓ‹»Ø¤ê,?? ??
+·­×ª,·­×ª,·­ŞD,Flip,Spiegeln,Retourner,Voltear,§°§ä§â§Ñ§Ù§Ú§ä§î,·´Ü,???
+ÄæÊ±Õë×ª,ÄæÊ±Õë×ª,Äæ•rá˜ŞD,Rotate Counterclockwise,Gegen den Uhrzeigersinn,Rotation antihoraire,Girar a la izquierda,§±§â§à§ä§Ú§Ó §é§Ñ§ã§à§Ó§à§Û,·´•rÓ‹»Ø¤ê,??? ??
+¹Ø±Õ,¹Ø±Õ,êPé],Close,Schlie?en,Fermer,Cerrar,§©§Ñ§Ü§â§í§ä§î,é]¤¸¤ë,??
+Âôµô,Âôµô,Ùuµô,Sell,Verkaufen,Vendre,Vender,§±§â§à§Õ§Ñ§ä§î,‰ÓÈ´,??
+°á¼Ò,°á¼Ò,°á¼Ò,Move,Verschieben,D¨¦placer,Mover,§±§Ö§â§Ö§Ş§Ö§ã§ä§Ú§ä§î,ÒÆ„Ó,??
+ÒôĞ§ÒôÁ¿,ÒôĞ§ÒôÁ¿,ÒôĞ§ÒôÁ¿,SFX Volume,SFX-Lautst?rke,Volume des effets,Volumen de efectos,§¤§â§à§Ş§Ü§à§ã§ä§î §ï§æ§æ§Ö§Ü§ä§à§Ó,„¿¹ûÒô¤ÎÒôÁ¿,??? ??
+±³¾°ÒôÁ¿,±³¾°ÒôÁ¿,±³¾°ÒôÁ¿,Music Volume,Musik-Lautst?rke,Volume de la musique,Volumen de m¨²sica,§¤§â§à§Ş§Ü§à§ã§ä§î §Ş§å§Ù§í§Ü§Ú,Òô˜S¤ÎÒôÁ¿,???? ??
+Çå³ı´æµµ,Çå³ı´æµµ,Çå³ı´æ™n,Clear Save Data,Spielstand l?schen,Effacer la sauvegarde,Borrar guardado,§µ§Õ§Ñ§İ§Ú§ä§î §ã§à§ç§â§Ñ§ß§Ö§ß§Ú§Ö,¥»©`¥Ö¥Ç©`¥¿Ï÷³ı,?? ??? ??
+ÓïÑÔ,ÓïÑÔ,ÕZÑÔ,Language,Sprache,Langue,Idioma,§Á§Ù§í§Ü,ÑÔÕZ,??
+¸ĞĞ»Ãûµ¥,¸ĞĞ»Ãûµ¥,¸ĞÖxÃû†Î,Credits,Credits,Cr¨¦dits,Cr¨¦ditos,§´§Ú§ä§â§í,¥¯¥ì¥¸¥Ã¥È,???
+³¡ÉÏÃ»ÓĞÓã£¡,³¡ÉÏÃ»ÓĞÓã£¡,ˆöÉÏ›]ÓĞô~£¡,No fish in the tank!,Keine Fische im Becken!,Aucun poisson dans le bassin !,?No hay peces en el tanque!,§£ §Ñ§Ü§Ó§Ñ§â§Ú§å§Ş§Ö §ß§Ö§ä §â§í§Ò!,Ë®²Û¤Ëô~¤¬¤¤¤Ş¤»¤ó£¡,??? ???? ????!
+¼ÓÈëÍæ¼ÒÉçÇø,¼ÓÈëÍæ¼ÒÉçÇø,¼ÓÈëÍæ¼ÒÉçÈº,Join the Community,Community beitreten,Rejoindre la communaut¨¦,Unirse a la comunidad,§£§ã§ä§å§á§Ú§ä§î §Ó §ã§à§à§Ò§ë§Ö§ã§ä§Ó§à,¥³¥ß¥å¥Ë¥Æ¥£¤Ë²Î¼Ó,???? ??
+ÍË³öÓÎÏ·,ÍË³öÓÎÏ·,ÍË³öß[‘ò,Quit Game,Spiel beenden,Quitter le jeu,Salir del juego,§£§í§Û§ä§Ú §Ú§Ù §Ú§Ô§â§í,¥²©`¥à½KÁË,?? ??
+fz,·ÅÖÃ,·ÅÖÃ,Place,Platzieren,Placer,Colocar,§²§Ñ§Ù§Ş§Ö§ã§ä§Ú§ä§î,ÅäÖÃ,??
+ÏÖÓĞÊıÁ¿£º{0},ÏÖÓĞÊıÁ¿£º{0},¬FÓĞ”µÁ¿£º{0},Owned: {0},Besitz: {0},Poss¨¦d¨¦ : {0},En propiedad: {0},§£ §ß§Ñ§İ§Ú§é§Ú§Ú: {0},Ëù³ÖÊı£º{0},?? ?: {0}
+ĞèÒªÊıÁ¿£º{0},ĞèÒªÊıÁ¿£º{0},ĞèÒª”µÁ¿£º{0},Required: {0},Ben?tigt: {0},Requis : {0},Necesario: {0},§´§â§Ö§Ò§å§Ö§ä§ã§ñ: {0},±ØÒªÊı£º{0},?? ?: {0}
+ÓµÓĞÊıÁ¿£º{0},ÓµÓĞÊıÁ¿£º{0},“íÓĞ”µÁ¿£º{0},Owned: {0},Besitz: {0},Poss¨¦d¨¦ : {0},En propiedad: {0},§£ §ß§Ñ§İ§Ú§é§Ú§Ú: {0},ËùÓĞÊı£º{0},?? ?: {0}
+¿ÉÒÔ·ÅÖÃ{0},¿ÉÒÔ·ÅÖÃ{0},¿ÉÒÔ·ÅÖÃ{0},Can place {0},Verf¨¹gbar: {0},Placeable : {0},Disponible: {0},§®§à§Ø§ß§à §â§Ñ§Ù§Ş§Ö§ã§ä§Ú§ä§î: {0},ÅäÖÃ¿ÉÄÜ {0},?? ?? {0}
+ÒÑ·ÅÖÃ{0},ÒÑ·ÅÖÃ{0},ÒÑ·ÅÖÃ{0},Placed {0},Platziert: {0},Plac¨¦ : {0},Colocado: {0},§²§Ñ§Ù§Ş§Ö§ë§Ö§ß§à: {0},ÅäÖÃœg¤ß {0},?? ?? {0}
+Éºº÷µ÷½Ú,Éºº÷µ÷½Ú,Éºº÷Õ{¹,Adjust Coral,Koralle anpassen,Ajuster le corail,Ajustar coral,§¯§Ñ§ã§ä§â§à§Û§Ü§Ñ §Ü§à§â§Ñ§İ§İ§Ñ,¥µ¥ó¥´Õ{Õû,?? ??
+³öÏÖ¸ÅÂÊ£º,³öÏÖ¸ÅÂÊ£º,³ö¬F¸ÅÂÊ£º,Spawn Rate:,Spawnrate:,Taux de spawn:,Tasa de aparici¨®n:,§¹§Ñ§ã§ä§à§ä§Ñ §á§à§ñ§Ó§İ§Ö§ß§Ú§ñ:,³ö¬FÂÊ£º,?? ??:
+µô±¦Ê±¼ä£º,µô±¦Ê±¼ä£º,µôŒš•rég£º,Drop Interval:,Drop-Intervall:,Intervalle de drop:,Intervalo de ca¨ªda:,§ª§ß§ä§Ö§â§Ó§Ñ§İ §Ó§í§á§Ñ§Õ§Ö§ß§Ú§ñ:,¥É¥í¥Ã¥×ég¸ô£º,?? ??:
+Í£ÁôÊ±¼ä£º,Í£ÁôÊ±¼ä£º,Í£Áô•rég£º,Stay Time:,Verweildauer:,Dur¨¦e de pr¨¦sence:,Tiempo de estancia:,§£§â§Ö§Ş§ñ §á§â§Ö§Ò§í§Ó§Ñ§ß§Ú§ñ:,ÖÍÔÚ•rég£º,?? ??:
+½Ì³Ì,½Ì³Ì,½Ì³Ì,Tutorial,Tutorial,Tutoriel,Tutorial,§µ§é§Ö§Ò§ß§Ú§Ü,¥Á¥å©`¥È¥ê¥¢¥ë,????
+¿ª»ú×ÔÆô¶¯,¿ª»ú×ÔÆô¶¯,é_™C×Ô†¢„Ó,Auto Start,Autostart,D¨¦marrage automatique,Autoinicio,§¡§Ó§ä§à§Ù§Ñ§Ô§â§å§Ù§Ü§Ñ,×Ô„ÓÆğ„Ó,?? ??
+ÉñÃ÷ÏÔÊ¾¿ª¹Ø,ÉñÃ÷ÏÔÊ¾¿ª¹Ø,ÉñÃ÷ï@Ê¾é_êP,Show Deity,Gottheit anzeigen,Afficher la divinit¨¦,Mostrar deidad,§±§à§Ü§Ñ§Ù§í§Ó§Ñ§ä§î §Ò§à§Ø§Ö§ã§ä§Ó§à,Éñ˜”¤ò±íÊ¾,? ??
+¿É·ÅÖÃ,¿É·ÅÖÃ,¿É·ÅÖÃ,Placeable,Platzierbar,Placeable,Colocable,§®§à§Ø§ß§à §â§Ñ§Ù§Ş§Ö§ã§ä§Ú§ä§î,ÅäÖÃ¿ÉÄÜ,?? ??
+ÓãÍ¼¼ø,ÓãÍ¼¼ø,ô~ˆDèa,Fish Journal,Fisch-Enzyklop?die,Journal des poissons,Atlas de peces,§¨§å§â§ß§Ñ§İ §â§í§Ò,ô~‡íèa,??? ??
+ÒÑ·ÅÂú£¡,ÒÑ·ÅÂú£¡,ÒÑ·ÅM£¡,Full!,Voll!,Plein!,?Lleno!,§±§à§İ§ß§à!,œº±­£¡,?? ????!
+ÏÖÓĞ±¦Îï£º,ÏÖÓĞ±¦Îï£º,¬FÓĞŒšÎï£º,Current Treasures:,Aktuelle Sch?tze:,Tr¨¦sors actuels:,Tesoros actuales:,§´§Ö§Ü§å§ë§Ú§Ö §ã§à§Ü§â§à§Ó§Ú§ë§Ñ:,¬FÔÚ¤Î±¦Îï£º,?? ??:
+ĞèÒªµÄ±¦Îï£º,ĞèÒªµÄ±¦Îï£º,ĞèÒªµÄŒšÎï£º,Required Treasures:,Ben?tigte Sch?tze:,Tr¨¦sors requis:,Tesoros necesarios:,§´§â§Ö§Ò§å§Ö§Ş§í§Ö §ã§à§Ü§â§à§Ó§Ú§ë§Ñ:,±ØÒª¤Ê±¦Îï£º,??? ??:
+ÏûºÄ£º,ÏûºÄ£º,ÏûºÄ£º,Cost:,Kosten:,Co?t:,Costo:,§³§ä§à§Ú§Ş§à§ã§ä§î:,¥³¥¹¥È£º,??:
+ÉèÖÃ,ÉèÖÃ,ÔOÖÃ,Settings,Einstellungen,Param¨¨tres,Ajustes,§¯§Ñ§ã§ä§â§à§Û§Ü§Ú,ÔO¶¨,??
+ÊÇ·ñÖÃ¶¥,ÊÇ·ñÖÃ¶¥,ÊÇ·ñÖÃí”,Always on Top,Immer im Vordergrund,Toujours au premier plan,Siempre arriba,§£§ã§Ö§Ô§Õ§Ñ §á§à§Ó§Ö§â§ç,³£¤Ë×îÇ°Ãæ,?? ?? ??
+Ò»¼üËõ·Å,Ò»¼üËõ·Å,Ò»æI¿s·Å,Quick Zoom,Schnellzoom,Zoom rapide,Zoom r¨¢pido,§¢§í§ã§ä§â§à§Ö §Ş§Ñ§ã§ê§ä§Ñ§Ò§Ú§â§à§Ó§Ñ§ß§Ú§Ö,¥¯¥¤¥Ã¥¯¥º©`¥à,?? ?
+Éºº÷Ñ¡Ôñ½çÃæ,Éºº÷Ñ¡Ôñ½çÃæ,Éºº÷ßx“ñ½éÃæ,Coral Selection,Korallenauswahl,S¨¦lection de corail,Selecci¨®n de coral,§£§í§Ò§à§â §Ü§à§â§Ñ§İ§İ§Ñ,¥µ¥ó¥´ßx’k,?? ??
+¶àÓà±¦Îï½»»»,¶àÓà±¦Îï½»»»,¶àğNŒšÎï½»“Q,Excess Treasure Swap,¨¹bersch¨¹ssiger Schatztausch,¨¦change de tr¨¦sors exc¨¦dentaires,Intercambio de tesoros excedentes,§°§Ò§Ş§Ö§ß §İ§Ú§ê§ß§Ú§Ş§Ú §ã§à§Ü§â§à§Ó§Ú§ë§Ñ§Ş§Ú,Óà„±¦Îï½»“Q,?? ?? ??
+Ó¢Óï,Ó¢Óï,Ó¢ÕZ,English,Englisch,Anglais,Ingl¨¦s,§¡§ß§Ô§İ§Ú§Û§ã§Ü§Ú§Û,Ó¢ÕZ,??
+ÈÕÓï,ÈÕÓï,ÈÕÕZ,Japanese,Japanisch,Japonais,Japon¨¦s,§Á§á§à§ß§ã§Ü§Ú§Û,ÈÕ±¾ÕZ,???
+º«Óï,º«Óï,ínÕZ,Korean,Korean,Kor¨¦en,Coreano,§¬§à§â§Ö§Û§ã§Ü§Ú§Û,ín¹úÕZ,???
+µÂÓï,µÂÓï,µÂÕZ,German,Deutsch,Allemand,Alem¨¢n,§¯§Ö§Ş§Ö§è§Ü§Ú§Û,¥É¥¤¥ÄÕZ,???
+·¨Óï,·¨Óï,·¨ÕZ,French,Franz?sisch,Fran?ais,Franc¨¦s,§¶§â§Ñ§ß§è§å§Ù§ã§Ü§Ú§Û,¥Õ¥é¥ó¥¹ÕZ,????
+¶íÓï,¶íÓï,¶íÕZ,Russian,Russisch,Russe,Ruso,§²§å§ã§ã§Ü§Ú§Û,¥í¥·¥¢ÕZ,????
+·±Ìå,·±Ìå,·±ów,Traditional Chinese,Traditionelles Chinesisch,Chinois traditionnel,Chino tradicional,§´§â§Ñ§Õ§Ú§è§Ú§à§ß§ß§í§Û §Ü§Ú§ä§Ñ§Û§ã§Ü§Ú§Û,·±Ìå×Ö,??? ??
+¼òÖĞ,¼òÖĞ,º†ÖĞ,Simplified Chinese,Vereinfachtes Chinesisch,Chinois simplifi¨¦,Chino simplificado,§µ§á§â§à§ë§Ö§ß§ß§í§Û §Ü§Ú§ä§Ñ§Û§ã§Ü§Ú§Û,º†Ìå×Ö,??? ??
+Î÷°àÑÀÓï,Î÷°àÑÀÓï,Î÷°àÑÀÕZ,Spanish,Spanisch,Espagnol,Espa?ol,§ª§ã§á§Ñ§ß§ã§Ü§Ú§Û,¥¹¥Ú¥¤¥óÕZ,????
+Ëæ»ú±¦ÎïÊıÁ¿£º{0},Ëæ»ú±¦ÎïÊıÁ¿£º{0},ëS™CŒšÎï”µÁ¿£º{0},Random Treasures: {0},Zuf?llige Sch?tze: {0},Tr¨¦sors al¨¦atoires : {0},Tesoros aleatorios: {0},§³§İ§å§é§Ñ§Û§ß§í§Ö §ã§à§Ü§â§à§Ó§Ú§ë§Ñ: {0},¥é¥ó¥À¥à±¦Îï£º{0},?? ??: {0}
+·Å´ó,·Å´ó,·Å´ó,Zoom In,Vergr??ern,Agrandir,Acercar,§µ§Ó§Ö§İ§Ú§é§Ú§ä§î,’ˆ´ó,??
+ËõĞ¡,ËõĞ¡,¿sĞ¡,Zoom Out,Verkleinern,R¨¦duire,Alejar,§µ§Ş§Ö§ß§î§ê§Ú§ä§î,¿sĞ¡,??
+ÄæÊ±Õë×ª,ÄæÊ±Õë×ª,Äæ•rá˜ŞD,Rotate Counterclockwise,Gegen den Uhrzeigersinn,Rotation antihoraire,Girar a la izquierda,§±§â§à§ä§Ú§Ó §é§Ñ§ã§à§Ó§à§Û,·´•rÓ‹»Ø¤ê,??? ??
+ÍË³öÓÎÏ·,ÍË³öÓÎÏ·,ÍË³öß[‘ò,Quit Game,Spiel beenden,Quitter le jeu,Salir del juego,§£§í§Û§ä§Ú §Ú§Ù §Ú§Ô§â§í,¥²©`¥à½KÁË,?? ??
+ÉèÖÃ,ÉèÖÃ,ÔOÖÃ,Settings,Einstellungen,Param¨¨tres,Ajustes,§¯§Ñ§ã§ä§â§à§Û§Ü§Ú,ÔO¶¨,??
+ÊÇ·ñÖÃ¶¥,ÊÇ·ñÖÃ¶¥,ÊÇ·ñÖÃí”,Always on Top,Immer im Vordergrund,Toujours au premier plan,Siempre arriba,§£§ã§Ö§Ô§Õ§Ñ §á§à§Ó§Ö§â§ç,³£¤Ë×îÇ°Ãæ,?? ?? ??
+Ò»¼ü\nËõ·Å,Ò»¼üËõ·Å,Ò»æI¿s·Å,Quick Zoom,Schnellzoom,Zoom rapide,Zoom r¨¢pido,§¢§í§ã§ä§â§à§Ö §Ş§Ñ§ã§ê§ä§Ñ§Ò§Ú§â§à§Ó§Ñ§ß§Ú§Ö,¥¯¥¤¥Ã¥¯¥º©`¥à,?? ?
+Éºº÷\nÑ¡Ôñ\n½çÃæ,Éºº÷Ñ¡Ôñ½çÃæ,Éºº÷ßx“ñ½éÃæ,Coral Selection,Korallenauswahl,S¨¦lection de corail,Selecci¨®n de coral,§£§í§Ò§à§â §Ü§à§â§Ñ§İ§İ§Ñ,¥µ¥ó¥´ßx’k,?? ??
+Ëæ»ú±¦ÎïÊıÁ¿£º0,Ëæ»ú±¦ÎïÊıÁ¿£º0,ëS™CŒšÎï”µÁ¿£º0,Random Treasures: 0,Zuf?llige Sch?tze: 0,Tr¨¦sors al¨¦atoires : 0,Tesoros aleatorios: 0,§³§İ§å§é§Ñ§Û§ß§í§Ö §ã§à§Ü§â§à§Ó§Ú§ë§Ñ: 0,¥é¥ó¥À¥à±¦Îï£º0,?? ??: 0
+ÏûºÄ£º,ÏûºÄ£º,ÏûºÄ£º,Cost:,Kosten:,Co?t:,Costo:,§³§ä§à§Ú§Ş§à§ã§ä§î:,¥³¥¹¥È£º,??:
+¶àÓà\n±¦Îï\n½»»»,¶àÓà±¦Îï½»»»,¶àğNŒšÎï½»“Q,Excess Treasure Swap,¨¹bersch¨¹ssiger Schatztausch,¨¦change de tr¨¦sors exc¨¦dentaires,Intercambio de tesoros excedentes,§°§Ò§Ş§Ö§ß §İ§Ú§ê§ß§Ú§Ş§Ú §ã§à§Ü§â§à§Ó§Ú§ë§Ñ§Ş§Ú,Óà„±¦Îï½»“Q,?? ?? ??
+ÊÇ·ñÏÔÊ¾ÉñÃ÷,ÊÇ·ñÏÔÊ¾ÉñÃ÷,ÊÇ·ñï@Ê¾ÉñÃ÷,Show Deity,Gottheit anzeigen,Afficher la divinit¨¦,Mostrar deidad,§±§à§Ü§Ñ§Ù§í§Ó§Ñ§ä§î §Ò§à§Ø§Ö§ã§ä§Ó§à,Éñ˜”¤ò±íÊ¾,? ??
+ÏÂÒ»Ò³,ÏÂÒ»Ò³,ÏÂÒ»í“,Next,Weiter,Suivant,Siguiente,§¥§Ñ§İ§Ö§Ö,´Î¤Ø,??
+ÉÏÒ»Ò³,ÉÏÒ»Ò³,ÉÏÒ»í“,Previous,Zur¨¹ck,Pr¨¦c¨¦dent,Anterior,§¯§Ñ§Ù§Ñ§Õ,Ç°¤Ø,??
+²»Í¬µÄÉº·ÅÔÚÒ»Æğ£¬»á³öÏÖ²»Í¬µÄÓã,²»Í¬µÄÉº·ÅÔÚÒ»Æğ£¬»á³öÏÖ²»Í¬µÄÓã,²»Í¬µÄÉº·ÅÔÚÒ»Æğ£¬•ş³ö¬F²»Í¬µÄô~,Different corals together attract different fish,Verschiedene Korallen zusammen bringen verschiedene Fische hervor,Diff¨¦rents coraux ensemble font appara?tre diff¨¦rents poissons,Corales diferentes juntos atraen peces diferentes,§²§Ñ§Ù§ß§í§Ö §Ü§à§â§Ñ§İ§İ§í §â§ñ§Õ§à§Ş §á§â§Ú§Ó§İ§Ö§Ü§Ñ§ğ§ä §â§Ñ§Ù§ß§í§ç §â§í§Ò,ß`¤¦¥µ¥ó¥´¤òÒ»¾w¤ËÖÃ¤¯¤Èß`¤¦ô~¤¬¬F¤ì¤Ş¤¹,?? ??? ?? ?? ?? ???? ?????
+²»Í¬µÄÓã±¦¿ÉÒÔÂò²»Í¬µÄÉºº÷,²»Í¬µÄÓã±¦¿ÉÒÔÂò²»Í¬µÄÉºº÷,²»Í¬µÄô~Œš¿ÉÒÔÙI²»Í¬µÄÉºº÷,Different fish treasures can buy different corals,Mit verschiedenen Fischsch?tzen kaufst du verschiedene Korallen,Diff¨¦rents tr¨¦sors de poissons ach¨¨tent diff¨¦rents coraux,Diferentes tesoros de peces compran diferentes corales,§²§Ñ§Ù§ß§í§Ö §ã§à§Ü§â§à§Ó§Ú§ë§Ñ §â§í§Ò §á§à§Ü§å§á§Ñ§ğ§ä §â§Ñ§Ù§ß§í§Ö §Ü§à§â§Ñ§İ§İ§í,ß`¤¦ô~¤Î±¦Îï¤Çß`¤¦¥µ¥ó¥´¤òÙI¤¨¤Ş¤¹,?? ??? ??? ?? ??? ? ? ????
+×Ô¶¯²úÉúÓã,×Ô¶¯²úÉúÓã,×Ô„Ó®aÉúô~,Auto-spawns fish,Erzeugt automatisch Fische,G¨¦n¨¨re automatiquement des poissons,Genera peces autom¨¢ticamente,§¡§Ó§ä§à§Ş§Ñ§ä§Ú§é§Ö§ã§Ü§Ú §ã§à§Ù§Õ§Ñ§×§ä §â§í§Ò,×Ô„Ó¤Çô~¤¬°kÉú,???? ??? ??
+µã»÷³¡¾°ÖĞµÄµôÂäÎï£¬¿ÉÒÔÊÕ¼¯ÆğÀ´,µã»÷³¡¾°ÖĞµÄµôÂäÎï£¬¿ÉÒÔÊÕ¼¯ÆğÀ´,üc“ôˆö¾°ÖĞµÄµôÂäÎï£¬¿ÉÒÔÊÕ¼¯Æğí,Click dropped items on the screen to collect them,Klicke auf heruntergefallene Gegenst?nde um sie einzusammeln,Cliquez sur les objets tomb¨¦s ¨¤ l'¨¦cran pour les ramasser,Haz clic en los objetos ca¨ªdos para recogerlos,§¯§Ñ§Ø§Ú§Ş§Ñ§Û§ä§Ö §ß§Ñ §Ó§í§á§Ñ§Ó§ê§Ú§Ö §á§â§Ö§Õ§Ş§Ö§ä§í §é§ä§à§Ò§í §ã§à§Ò§â§Ñ§ä§î §Ú§ç,»­Ãæ¤ËÂä¤Á¤¿¥¢¥¤¥Æ¥à¤ò¥¯¥ê¥Ã¥¯¤¹¤ë¤È¼¯¤á¤é¤ì¤Ş¤¹,??? ??? ???? ??? ?? ? ????
+µÈ´ıÒ»»á£¬Óã»á×Ô¶¯µôÂä±¦Îï,µÈ´ıÒ»»á£¬Óã»á×Ô¶¯µôÂä±¦Îï,µÈ´ıÒ»•ş£¬ô~•ş×Ô„ÓµôÂäŒšÎï,Wait a while and fish will drop treasures,Warte kurz dann lassen Fische Sch?tze fallen,Attendez un peu et les poissons lacheront des tr¨¦sors,Espera un poco y los peces soltar¨¢n tesoros,§±§à§Õ§à§Ø§Õ§Ú§ä§Ö §ß§Ö§Ş§ß§à§Ô§à §Ú §â§í§Ò§í §ß§Ñ§é§ß§å§ä §â§à§ß§ñ§ä§î §ã§à§Ü§â§à§Ó§Ú§ë§Ñ,¤·¤Ğ¤é¤¯´ı¤Ä¤Èô~¤¬±¦Îï¤òÂä¤È¤·¤Ş¤¹,?? ???? ???? ??? ??????
+»òÕßÊÇº£ÉñµÄ±¦Îï,»òÕßÊÇº£ÉñµÄ±¦Îï,»òÕßÊÇº£ÉñµÄŒšÎï,Or the Sea God's treasure,Oder der Schatz des Meergottes,Ou le tr¨¦sor du Dieu des mers,O el tesoro del Dios del mar,§ª§İ§Ú §ã§à§Ü§â§à§Ó§Ú§ë§Ö §®§à§â§ã§Ü§à§Ô§à §Ò§à§Ô§Ñ,¤Ş¤¿¤Ïº£Éñ¤Î±¦Îï,?? ???? ??
+±¦Îï·ÅÈëµ½ÆøÅİ¿òÄÚ£¬¾Í»á»ñµÃº£Éñ±ß¿ò,±¦Îï·ÅÈëµ½ÆøÅİ¿òÄÚ£¬¾Í»á»ñµÃº£Éñ±ß¿ò,ŒšÎï·ÅÈëµ½šâÅİ¿òƒÈ£¬¾Í•ş«@µÃº£Éñß…¿ò,Put treasures into the bubble slots to get the Sea God frame,Lege Sch?tze in die Blasenfelder um den Meergott-Rahmen zu erhalten,Placez des tr¨¦sors dans les bulles pour obtenir le cadre du Dieu des mers,Coloca tesoros en las burbujas para obtener el marco del Dios del mar,§±§à§Ş§Ö§ã§ä§Ú§ä§Ö §ã§à§Ü§â§à§Ó§Ú§ë§Ñ §Ó §á§å§Ù§í§â§Ú §é§ä§à§Ò§í §á§à§İ§å§é§Ú§ä§î §â§Ñ§Ş§Ü§å §®§à§â§ã§Ü§à§Ô§à §Ò§à§Ô§Ñ,±¦Îï¤ò¥Ğ¥Ö¥ë–˜¤ËÈë¤ì¤ë¤Èº£Éñ¤Î¥Õ¥ì©`¥à¤ò«@µÃ,??? ?? ?? ??? ??? ???? ????
+±ß¿òº£Éñ¾Í»á³öÏÖ£¡£¡£¡,±ß¿òº£Éñ¾Í»á³öÏÖ£¡£¡£¡,ß…¿òº£Éñ¾Í•ş³ö¬F£¡£¡£¡,The Sea God frame will appear!!!,Der Meergott-Rahmen erscheint!!!,Le cadre du Dieu des mers appara?tra !!!,?El marco del Dios del mar aparecer¨¢!,§²§Ñ§Ş§Ü§Ñ §®§à§â§ã§Ü§à§Ô§à §Ò§à§Ô§Ñ §á§à§ñ§Ó§Ú§ä§ã§ñ!!!,º£Éñ¤Î¥Õ¥ì©`¥à¤¬¬F¤ì¤Ş¤¹£¡£¡£¡,??? ???? ?????!!!
+°ÑÉºº÷·ÅÖÃÔÚ±äÉ«µÄ½¸Ê¯ÉÏÃæ,°ÑÉºº÷·ÅÖÃÔÚ±äÉ«µÄ½¸Ê¯ÉÏÃæ,°ÑÉºº÷·ÅÖÃÔÚ×ƒÉ«µÄ½¸Ê¯ÉÏÃæ,Place corals on the discolored rocks,Lege Korallen auf die verf?rbten Felsen,Placez des coraux sur les rochers color¨¦s,Coloca corales sobre las rocas decoloradas,§²§Ñ§Ù§Ş§Ö§ã§ä§Ú§ä§Ö §Ü§à§â§Ñ§İ§İ§í §ß§Ñ §Ú§Ù§Ş§Ö§ß§Ú§Ó§ê§Ú§ç §è§Ó§Ö§ä §Ü§Ñ§Ş§ß§ñ§ç,É«¤¬‰ä¤ï¤Ã¤¿ÑÒ¤ÎÉÏ¤Ë¥µ¥ó¥´¤òÖÃ¤­¤Ş¤¹,?? ?? ?? ?? ??? ????
+¾õµÃº£Éñ²»ºÃ¿´µÄ£¬¿ÉÒÔÔÚÉèÖÃÀï¹Øµô,¾õµÃº£Éñ²»ºÃ¿´µÄ£¬¿ÉÒÔÔÚÉèÖÃÀï¹Øµô,ÓXµÃº£Éñ²»ºÃ¿´µÄ£¬¿ÉÒÔÔÚÔO¶¨ÑeêPµô,If you do not like the Sea God you can turn it off in Settings,Wenn dir der Meergott nicht gef?llt kannst du ihn in den Einstellungen ausschalten,Si le Dieu des mers ne vous pla?t pas vous pouvez le d¨¦sactiver dans les r¨¦glages,Si no te gusta el Dios del mar puedes desactivarlo en Ajustes,§¦§ã§İ§Ú §Ó§Ñ§Ş §ß§Ö §ß§â§Ñ§Ó§Ú§ä§ã§ñ §®§à§â§ã§Ü§à§Û §Ò§à§Ô §Ö§Ô§à §Ş§à§Ø§ß§à §à§ä§Ü§İ§ğ§é§Ú§ä§î §Ó §ß§Ñ§ã§ä§â§à§Û§Ü§Ñ§ç,º£Éñ¤¬ºÃ¤ß¤Ç¤Ê¤¤ˆöºÏ¤ÏÔO¶¨¤Ç¥ª¥Õ¤Ë¤Ç¤­¤Ş¤¹,???? ??? ?? ??? ???? ? ? ????
+ÎàÓê×Ó,ÎàÓê×Ó,ÎàÓê×Ó,ÎàÓê×Ó,ÎàÓê×Ó,ÎàÓê×Ó,ÎàÓê×Ó,ÎàÓê×Ó,ÎàÓê×Ó,ÎàÓê×Ó
+ÒôÀÖ¹Ø±Õ,ÒôÀÖ¹Ø±Õ,Òô˜·êPé],Music Off,Musik aus,Musique d¨¦sactiv¨¦e,M¨²sica desactivada,§®§å§Ù§í§Ü§Ñ §Ó§í§Ü§İ§ğ§é§Ö§ß§Ñ,Òô˜S¥ª¥Õ,ƒ3–3ƒ2à4 ‚8¾7‚8‰5
+ÈÎÎñÀ¸,ÈÎÎñÀ¸,¹¤×÷ÁĞ,Taskbar,Taskleiste,Barre des t0‰9ches,Barra de tareas,§±§Ñ§ß§Ö§İ§î §Ù§Ñ§Õ§Ñ§é,¥¿¥¹¥¯¥Ğ©`,ƒ32ƒ2í2 ƒ5è7ƒ2¢7ƒ3Â3
+·µ»Ø,·µ»Ø,·µ»Ø,Back,Zur¨¹ck,Retour,Volver,§¯§Ñ§Ù§Ñ§Õ,‘ø¤ë,‚9°7ƒ0‘9
+ÓÎÏ·,ÓÎÏ·,ß[‘ò,Game,Spiel,Jeu,Juego,§ª§Ô§â§Ñ,¥²©`¥à,‚7İ5ƒ3›9

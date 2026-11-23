@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using UnityEngine.Rendering;
 using Unity.Collections;
 using System;
@@ -97,25 +98,38 @@ public class DesktopWindowController : MonoBehaviour
     RectTransform minimizeButtonRect;
     RectTransform minimizeCanvasRect;
     Vector2 minimizeButtonBaseAnchoredPos;
+    // 进入缩小窗（最小档）前的真实窗口位置：回到正常态时还原。
+    // 只在「点缩到后台进入最小档」时写入，外部最小化（Win+D / 任务栏）不经过这里，不会写进 -32000 之类的脏坐标。
+    Vector2 缩小前窗口位置;
+    float 缩小前窗口档位 = -1f;
+    bool 有缩小前窗口位置;
 #endif
 
     [Header("缩小窗（缩小态显示）")]
-    [Tooltip("最小档时把「缩小窗」整层反向放大到 0.9 档的视觉大小；关掉就按 10% 原样显示")]
+    [Tooltip("最小档时把「缩小窗组」整层反向放大；关掉就按最小档原样显示")]
     public bool 缩小窗最小档放大 = true;
-    RectTransform 缩小窗Rect;
+    [Tooltip("缩小窗屏幕宽度 ≈「0.9 档正常大小」× 本占比（0.35 = 35%，1.0 = 和正常面板一样大）。实际放大 = 占比 × 最高档scaleFactor / 当前档scaleFactor")]
+    [Range(0.15f, 1.2f)] public float 缩小窗目标宽度占比 = 0.35f;
+    RectTransform 缩小窗Rect;   // 缩小窗本体（背景板），鱼的尺寸/游动范围以它为准
+    RectTransform 缩小窗组;     // 缩小窗组根（当前场景是「框」）：显示/隐藏、最小档放大都作用在这一层
     缩小窗游动 缩小窗鱼;
     // 缩小态要收起的正常内容（只关显示，不销毁）
-    GameObject[] 正常世界根;
-    bool[] 正常世界根状态;
+    // 世界侧不用固定名字：鱼/珊瑚生成后都 SetParent(null) 变成独立根，必须按"根 + 有没有渲染器"来收
+    readonly List<GameObject> 正常世界根 = new List<GameObject>();
+    readonly List<bool> 正常世界根状态 = new List<bool>();
+    static readonly string[] 常显根名单 = { "界面ui", "Main Camera", "透明窗口", "EventSystem", "保存游戏", "语言系统", "声音系统" };
+    float 隐藏巡检时间;
     Transform[] 正常面板子级;
     bool[] 正常面板子级状态;
     Image 正常面板底图;
     bool 正常面板底图状态;
     bool 正常内容已隐藏;
-    Transform 一键缩放Trans;
-    int 一键缩放原层级;
+    Transform 一键缩放Trans;      // 按钮本体
+    Transform 一键缩放顶层;        // 按钮在「面板根」下的直接子级（打包版是补偿容器，编辑器里就是按钮自己）
+    int 一键缩放顶层原层级;
 #if !UNITY_EDITOR
-    Vector2 缩小窗基准位置;
+    Vector2 缩小窗基准位置;        // 组根的原始 anchoredPosition
+    Vector3 缩小窗组基准缩放 = Vector3.one;
 #endif
 
     [Header("画面居中")]
@@ -363,12 +377,10 @@ public class DesktopWindowController : MonoBehaviour
 
 #if !UNITY_EDITOR
         MakeProcessDpiAware();
-#endif
-        // 编辑器里也执行：以前编辑器走 CanvasScaler 自己的 ScaleWithScreenSize，
-        // 构建版走 ConstantPixelSize + 本项目公式，两边 UI 大小天然对不上。
-        // 现在两边同一模式、同一公式（windowScale 在编辑器里恒为 1），
-        // 相同画面高度下 UI 才是像素级一致。
+        // 只接管打包版：编辑器 Play 保留场景里「界面ui」自己的 ScaleWithScreenSize，
+        // 点 Play 前后 CanvasScaler 的 uiScaleMode / scaleFactor 不被改写。
         FixCanvasScalers();
+#endif
         CenterCameraOnTarget();
         FitWindowToTarget();
 
@@ -442,58 +454,265 @@ public class DesktopWindowController : MonoBehaviour
             return;
         }
 
+        // 先确定「一键缩放」按钮，以及它在「面板根」下的直接子级：
+        // 打包版按钮被套进运行时补偿容器，编辑器里没有容器，直接就是按钮本身。
+        if (minimizeButton != null)
+        {
+            一键缩放Trans = minimizeButton.transform;
+            一键缩放顶层 = 一键缩放Trans;
+#if !UNITY_EDITOR
+            if (minimizeButtonWrapper != null) 一键缩放顶层 = minimizeButtonWrapper;
+#endif
+            一键缩放顶层原层级 = 一键缩放顶层.GetSiblingIndex();
+        }
+
+        // 主面板根：缩小窗组根和「一键缩放」的共同父级（当前场景是内层「显示面板」）
+        Transform 面板根 = 一键缩放顶层 != null ? 一键缩放顶层.parent : panel.parent;
+
+        // 缩小窗可能被包在自己的组节点里（当前场景：缩小窗 → 框 → 显示面板）。
+        // 往上爬到「面板根」的直接子级：组根被 SetActive(false) 时，缩小窗自己再 active 也渲染不出来。
+        Transform group = panel;
+        while (group.parent != null && group.parent != 面板根) group = group.parent;
+        if (group.parent != 面板根) group = panel.parent;
+
         缩小窗Rect = panel as RectTransform;
-        Transform fish1 = FindDeep(panel, "鱼1");
-        Transform fish2 = FindDeep(panel, "鱼2");
-        Transform frame = FindDeep(panel, "框");
+        缩小窗组 = group as RectTransform;
+        if (缩小窗Rect == null || 缩小窗组 == null)
+        {
+            Debug.LogWarning("[桌面窗口] 「缩小窗」缺少 RectTransform，缩小态的鱼窗不会显示");
+            return;
+        }
 
-        // 运行时关掉射线，别挡住其它按钮
-        Image panelImg = panel.GetComponent<Image>();
-        if (panelImg != null) panelImg.raycastTarget = false;
-        if (fish1 != null) { Image img = fish1.GetComponent<Image>(); if (img != null) img.raycastTarget = false; }
-        if (fish2 != null) { Image img = fish2.GetComponent<Image>(); if (img != null) img.raycastTarget = false; }
-        if (frame != null) { Image img = frame.GetComponent<Image>(); if (img != null) img.raycastTarget = false; }
+        Transform fish1 = FindDeep(group, "鱼1");
+        Transform fish2 = FindDeep(group, "鱼2");
 
-        缩小窗鱼 = panel.GetComponent<缩小窗游动>();
-        if (缩小窗鱼 == null) 缩小窗鱼 = panel.gameObject.AddComponent<缩小窗游动>();
+        // 运行时关掉整组的射线：装饰/鱼/背景板都可能盖在「一键缩放」上面
+        foreach (Graphic g in group.GetComponentsInChildren<Graphic>(true))
+            g.raycastTarget = false;
+
+        // 缩小窗里的操作按钮（缩至任务栏 / 回到游戏场景 / 声音关闭 / 关闭游戏）：按名字找、运行时绑事件
+        绑定缩小窗按钮(group);
+
+        缩小窗鱼 = 缩小窗组.GetComponent<缩小窗游动>();
+        if (缩小窗鱼 == null) 缩小窗鱼 = 缩小窗组.gameObject.AddComponent<缩小窗游动>();
 
         Sprite[] 图库 = CollectFishSprites(ui.transform);
-        缩小窗鱼.初始化(缩小窗Rect, frame as RectTransform, fish1 as RectTransform, fish2 as RectTransform, 图库);
+        // 鱼的尺寸与游动范围都以「缩小窗」本体的矩形为准（组根可能比可视圈更大）
+        缩小窗鱼.初始化(缩小窗Rect, 缩小窗Rect, fish1 as RectTransform, fish2 as RectTransform, 图库);
+
+        // 场景里「缩小窗」背景板自身被摆成了 localScale.x = -1（组根「框」是 +1），
+        // 这个孤立的负号只会把窗里的图和文字镜像；运行时归正（保留 |scale|）。
+        // 「缩小窗」是叶子节点（pivot 居中），归正只镜像它自己的圆底图，不动兄弟节点坐标。
+        // 鱼2 的 -1 也不再参与朝向计算：翻面只按「原画朝向 × 速度方向」算（见 缩小窗游动）。
+        Vector3 本体缩放 = 缩小窗Rect.localScale;
+        if (本体缩放.x < 0f)
+        {
+            本体缩放.x = -本体缩放.x;
+            缩小窗Rect.localScale = 本体缩放;
+        }
+        Vector3 组缩放 = 缩小窗组.localScale;
+        if (组缩放.x < 0f)
+        {
+            组缩放.x = -组缩放.x;
+            缩小窗组.localScale = 组缩放;
+        }
 
         // 缩小态要隐藏的正常内容（只 SetActive，不销毁，不影响存档/对象池）
-        正常世界根 = new[] { GameObject.Find("场景"), GameObject.Find("场景内珊瑚页面UI") };
-        正常世界根状态 = new bool[正常世界根.Length];
-        for (int i = 0; i < 正常世界根.Length; i++)
-            正常世界根状态[i] = 正常世界根[i] != null && 正常世界根[i].activeSelf;
+        // 世界根不写死名字：进缩小态时按“根 + 有渲染器”实时收集（见 隐藏新增世界根）
 
-        Transform panelParent = panel.parent;
-        if (panelParent != null)
+        if (面板根 != null)
         {
             var others = new List<Transform>();
-            foreach (Transform c in panelParent)
+            foreach (Transform c in 面板根)
             {
-                if (c == panel) continue;
-                if (minimizeButton != null && c == minimizeButton.transform) continue;
+                if (c == group) continue;                               // 缩小窗整组保留
+                if (一键缩放顶层 != null && c == 一键缩放顶层) continue; // 「一键缩放」保留
                 others.Add(c);
             }
             正常面板子级 = others.ToArray();
             正常面板子级状态 = new bool[正常面板子级.Length];
 
-            Image bg = panelParent.GetComponent<Image>();
+            Image bg = 面板根.GetComponent<Image>();
             if (bg != null) { 正常面板底图 = bg; 正常面板底图状态 = bg.enabled; }
-        }
-        if (minimizeButton != null)
-        {
-            一键缩放Trans = minimizeButton.transform;
-            一键缩放原层级 = 一键缩放Trans.GetSiblingIndex();
         }
 
 #if !UNITY_EDITOR
-        缩小窗基准位置 = 缩小窗Rect.anchoredPosition;
+        缩小窗基准位置 = 缩小窗组.anchoredPosition;
+        缩小窗组基准缩放 = 缩小窗组.localScale;
 #endif
-        panel.gameObject.SetActive(false);
+        缩小窗组.gameObject.SetActive(false);
         UpdateShrinkWindowCompensation();
-        Debug.Log($"[桌面窗口] 缩小窗已接管：可随机鱼图 {图库.Length} 种，框={(frame != null ? frame.name : "无")}，启动时隐藏");
+        Debug.Log($"[桌面窗口] 缩小窗已接管：组根={group.name}，本体={panel.name}，可随机鱼图 {图库.Length} 种，启动时隐藏");
+    }
+
+    // ==================== 缩小窗里的操作按钮（按名字运行时绑定） ====================
+    // 场景里给「框」加了 4 个按钮：缩至任务栏 / 回到游戏场景 / 声音关闭 / 关闭游戏。
+    // 不改 YAML，只按名字找；节点不存在就跳过（例如场景还没保存时）。
+    bool 静音中;
+    float 静音前BGM = -1f;
+    float 静音前SE = -1f;
+
+    void 绑定缩小窗按钮(Transform 组根)
+    {
+        if (组根 == null) return;
+        int 绑定数 = 0;
+
+        Button 缩至任务栏 = 取缩小窗按钮(组根, "缩至任务栏");
+        if (缩至任务栏 != null) { 缩至任务栏.onClick.AddListener(缩至任务栏点击); 绑定数++; }
+
+        Button 回到游戏场景 = 取缩小窗按钮(组根, "回到游戏场景");
+        if (回到游戏场景 != null) { 回到游戏场景.onClick.AddListener(回到游戏场景点击); 绑定数++; }
+
+        Button 声音关闭 = 取缩小窗按钮(组根, "声音关闭");
+        if (声音关闭 != null) { 声音关闭.onClick.AddListener(声音关闭点击); 绑定数++; }
+
+        Button 关闭游戏 = 取缩小窗按钮(组根, "关闭游戏");
+        if (关闭游戏 != null) { 关闭游戏.onClick.AddListener(关闭游戏点击); 绑定数++; }
+
+        Debug.Log($"[缩小窗] 操作按钮绑定 {绑定数}/4 个（缩至任务栏 / 回到游戏场景 / 声音关闭 / 关闭游戏）");
+    }
+
+    /// <summary>按名字找按钮；找到后单独打开射线（整组在 SetupShrinkWindow 里被统一关过）。</summary>
+    static Button 取缩小窗按钮(Transform 组根, string 名字)
+    {
+        foreach (Transform t in 组根.GetComponentsInChildren<Transform>(true))
+        {
+            if (t.name != 名字) continue;
+            Button btn = t.GetComponent<Button>();
+            if (btn == null) continue;
+            Image img = t.GetComponent<Image>();
+            if (img != null) img.raycastTarget = true;
+            btn.interactable = true;
+            让按钮文字跟随缩放(btn);
+            return btn;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// 这几个按钮的「自定义效果脚本」是 HoverTooltip（hoverScale = 1.5）：
+    /// 它默认只放大圆形背板，并把 TMP 文字按【世界坐标】钉在原地；
+    /// 缩小态整组又被反向放大，世界坐标一失效，文字就会被写到离按钮很远的地方。
+    /// 这里把文字改成缩放目标：跟背板一起放大、永远居中，HoverTooltip 不再碰它的位置。
+    /// </summary>
+    static void 让按钮文字跟随缩放(Button btn)
+    {
+        if (btn == null) return;
+        TMPro.TMP_Text 文字 = btn.GetComponentInChildren<TMPro.TMP_Text>(true);
+        if (文字 != null) 规整按钮文字(文字);
+
+        HoverTooltip 效果 = btn.GetComponent<HoverTooltip>();
+        if (效果 != null && 文字 != null) 效果.让子级跟随缩放(文字.transform);
+    }
+
+    /// <summary>
+    /// 缩小窗按钮文字统一排版（只改运行时组件，不动场景/prefab）：
+    /// 场景里文字矩形 74~115×50~78、字号 30.6~36，而按钮只有 107.26×104.55；
+    /// 本地化后的 4~5 字标签（缩至任务栏 / 回到游戏场景 …）按原矩形会折行，
+    /// 再叠加 (9,-10.2) 之类的偏移，视觉上就是“字跑了、偏下偏右”。
+    /// 这里：丢掉原有多余换行 → 按字数对半断行（4 字 2+2，5 字 2+3）→ 矩形 96×96 居中、字号封顶 30。
+    /// </summary>
+    static void 规整按钮文字(TMPro.TMP_Text 文字)
+    {
+        if (文字 == null) return;
+
+        string 原 = (文字.text ?? "").Replace("\r", "").Trim();
+        int 字数 = 0;
+        foreach (char c in 原) if (c != '\n') 字数++;
+        int 断点 = 字数 >= 4 ? 字数 / 2 : 0;
+
+        var sb = new System.Text.StringBuilder(原.Length + 1);
+        int 已写 = 0;
+        foreach (char c in 原)
+        {
+            if (c == '\n') continue;              // 原串里的换行（含末尾空行）全部丢掉，重新按字数断
+            if (断点 > 0 && 已写 == 断点) sb.Append('\n');
+            sb.Append(c);
+            已写++;
+        }
+        string 目标 = sb.ToString();
+        if (文字.text != 目标) 文字.text = 目标;
+
+        RectTransform rt = 文字.rectTransform;
+        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = Vector2.zero;
+        rt.sizeDelta = new Vector2(96f, 96f);
+
+        文字.enableWordWrapping = false;          // 断行完全由上面的“对半断”控制，避免宽度不足再折一次
+        文字.enableAutoSizing = true;             // 万一某语言更长，自动缩到 96 以内
+        文字.fontSizeMin = 12f;
+        文字.fontSizeMax = 30f;
+        文字.horizontalAlignment = TMPro.HorizontalAlignmentOptions.Center;
+        文字.verticalAlignment = TMPro.VerticalAlignmentOptions.Middle;
+    }
+
+    /// <summary>本地化可能在启动后才写入文字：显示缩小窗时再规整一次（幂等，不会重复改）。</summary>
+    void 刷新缩小窗按钮文字()
+    {
+        if (缩小窗组 == null) return;
+        foreach (Button btn in 缩小窗组.GetComponentsInChildren<Button>(true))
+        {
+            string n = btn.name;
+            if (n != "缩至任务栏" && n != "回到游戏场景" && n != "声音关闭" && n != "关闭游戏") continue;
+            让按钮文字跟随缩放(btn);
+        }
+    }
+
+    /// <summary>缩至任务栏：等价于「一键缩放」在最小档时的第二次点击，直接复用现有状态机。</summary>
+    void 缩至任务栏点击()
+    {
+        Debug.Log("[缩小窗] 缩至任务栏");
+        if (minimizeStage != 1)
+        {
+            Debug.Log("[缩小窗] 缩至任务栏：当前不是最小档，跳过");
+            return;
+        }
+        MinimizeStageClick();   // stage1 → 2（含窗口句柄检查和 minimizeWasIconic 标记）
+    }
+
+    /// <summary>回到游戏场景：放大到最大档、隐藏缩小窗、状态复位成正常档。</summary>
+    void 回到游戏场景点击()
+    {
+        Debug.Log("[缩小窗] 回到游戏场景");
+        minimizeStage = 0;
+        ApplyWindowScale(EffectiveMaxWindowScale);
+        SetShrinkWindowVisible(false);
+    }
+
+    /// <summary>声音关闭：点一次全部静音，再点恢复（沿用 AudioManager 的 BGM/SE 音量，PlayerPrefs 会一起保存）。</summary>
+    void 声音关闭点击()
+    {
+        AudioManager am = AudioManager.Instance;
+        if (am == null)
+        {
+            Debug.LogWarning("[缩小窗] 声音关闭：没找到 AudioManager");
+            return;
+        }
+
+        if (!静音中)
+        {
+            静音前BGM = am.获取BGM音量();
+            静音前SE = am.获取SE音量();
+            am.设置BGM音量(0f);
+            am.设置SE音量(0f);
+            静音中 = true;
+            Debug.Log("[缩小窗] 声音关闭：已静音");
+        }
+        else
+        {
+            am.设置BGM音量(静音前BGM < 0f ? 0.5f : 静音前BGM);
+            am.设置SE音量(静音前SE < 0f ? 0.7f : 静音前SE);
+            静音中 = false;
+            Debug.Log("[缩小窗] 声音关闭：已恢复声音");
+        }
+    }
+
+    /// <summary>关闭游戏：和设置面板「退出游戏」一致。</summary>
+    void 关闭游戏点击()
+    {
+        Debug.Log("[缩小窗] 关闭游戏");
+        Application.Quit();
     }
 
     static Transform FindDeep(Transform root, string name)
@@ -540,29 +759,55 @@ public class DesktopWindowController : MonoBehaviour
     /// <summary>显示/隐藏缩小窗；显示时重新抽两条鱼，并把正常场景/主界面收起来。</summary>
     void SetShrinkWindowVisible(bool visible)
     {
-        if (缩小窗Rect == null) return;
-        bool changed = 缩小窗Rect.gameObject.activeSelf != visible;
-        if (changed) 缩小窗Rect.gameObject.SetActive(visible);
+        if (缩小窗组 == null) return;
+        bool changed = 缩小窗组.gameObject.activeSelf != visible;
+        if (changed) 缩小窗组.gameObject.SetActive(visible);
 
         if (visible)
         {
             SetNormalSceneVisible(false);
-            // 缩小窗放大后可能盖住「一键缩放」按钮，把按钮提到最后一层，保证第二下点得到
-            if (一键缩放Trans != null) 一键缩放Trans.SetAsLastSibling();
+            // 缩小态里已经有操作按钮（缩至任务栏 / 回到游戏场景 / 声音关闭 / 关闭游戏），
+            // 「一键缩放」整层（打包版含补偿容器）直接隐藏，不再需要置顶保证第二下能点到。
+            设置一键缩放可见(false);
             if (缩小窗鱼 != null) 缩小窗鱼.刷新();
+            刷新缩小窗按钮文字();
         }
         else
         {
             SetNormalSceneVisible(true);
-            if (一键缩放Trans != null && 一键缩放Trans.GetSiblingIndex() != 一键缩放原层级)
-                一键缩放Trans.SetSiblingIndex(Mathf.Clamp(一键缩放原层级, 0, 一键缩放Trans.parent.childCount - 1));
+            // 任何回到正常态的路径都从这里恢复「一键缩放」：显示 + 原层级 + 补偿值复位
+            设置一键缩放可见(true);
+            UpdateMinimizeButtonCompensation();
+            // 缩小态里可能拖过窗口：回到场景时放回进入缩小窗前的位置
+            还原缩小前窗口位置();
         }
         UpdateShrinkWindowCompensation();
     }
 
     /// <summary>
-    /// 缩小态时收起正常内容：3D 场景、珊瑚调整 UI、主界面面板底图，
-    /// 以及主面板里除「缩小窗」「一键缩放」之外的所有子级。
+    /// 显示/隐藏「一键缩放」整层。隐藏时用 SetActive(false)，层级不动；
+    /// 恢复时兜底校正回启动时记录的 sibling index（编辑器里是没有补偿容器的按钮本身）。
+    /// </summary>
+    void 设置一键缩放可见(bool visible)
+    {
+        if (一键缩放顶层 == null) return;
+
+        GameObject go = 一键缩放顶层.gameObject;
+        if (visible)
+        {
+            if (!go.activeSelf) go.SetActive(true);
+            if (一键缩放顶层.parent != null && 一键缩放顶层.GetSiblingIndex() != 一键缩放顶层原层级)
+                一键缩放顶层.SetSiblingIndex(Mathf.Clamp(一键缩放顶层原层级, 0, 一键缩放顶层.parent.childCount - 1));
+        }
+        else
+        {
+            if (go.activeSelf) go.SetActive(false);
+        }
+    }
+
+    /// <summary>
+    /// 缩小态时收起正常内容：3D 场景/珊瑚/鱼（含运行时 SetParent(null) 出来的独立根）、
+    /// 珊瑚页面根、主界面面板底图，以及主面板里除「缩小窗组」「一键缩放」之外的所有子级。
     /// 只做 SetActive / enabled 开关，不销毁对象，存档、鱼对象池、计时逻辑都不受影响。
     /// </summary>
     void SetNormalSceneVisible(bool visible)
@@ -570,9 +815,10 @@ public class DesktopWindowController : MonoBehaviour
         if (visible)
         {
             if (!正常内容已隐藏) return;
-            if (正常世界根 != null)
-                for (int i = 0; i < 正常世界根.Length; i++)
-                    if (正常世界根[i] != null) 正常世界根[i].SetActive(正常世界根状态[i]);
+            for (int i = 0; i < 正常世界根.Count; i++)
+                if (正常世界根[i] != null) 正常世界根[i].SetActive(正常世界根状态[i]);
+            正常世界根.Clear();
+            正常世界根状态.Clear();
             if (正常面板子级 != null)
                 for (int i = 0; i < 正常面板子级.Length; i++)
                     if (正常面板子级[i] != null) 正常面板子级[i].gameObject.SetActive(正常面板子级状态[i]);
@@ -582,8 +828,6 @@ public class DesktopWindowController : MonoBehaviour
         else
         {
             if (正常内容已隐藏) return;
-            if (正常世界根 != null)
-                foreach (GameObject g in 正常世界根) if (g != null) g.SetActive(false);
             if (正常面板子级 != null)
                 for (int i = 0; i < 正常面板子级.Length; i++)
                     if (正常面板子级[i] != null)
@@ -597,34 +841,77 @@ public class DesktopWindowController : MonoBehaviour
                 正常面板底图.enabled = false;
             }
             正常内容已隐藏 = true;
+            隐藏新增世界根();
         }
     }
 
     /// <summary>
-    /// 最小档时把整个「缩小窗」反向放大（默认 0.9 / 当前档位 = 9×），
-    /// 并把整块 UI 夹进窗口（根 Canvas）可视范围；其它档位恢复原始尺寸和位置。
+    /// 判断一个场景根在缩小态要不要收起：
+    /// 白名单里的系统根（界面 / 相机 / 窗口控制器 / EventSystem / 存档 / 语言 / 声音）一律保留；
+    /// 其余根只要有渲染器（珊瑚、鱼、场景特效），或就是场景/珊瑚页面根，就收起。
+    /// </summary>
+    static bool 该隐藏世界根(GameObject root)
+    {
+        if (root == null) return false;
+        string n = root.name;
+        for (int i = 0; i < 常显根名单.Length; i++)
+            if (n == 常显根名单[i]) return false;
+        if (root.GetComponentInChildren<Camera>(true) != null) return false;
+        if (root.GetComponentInChildren<DesktopWindowController>(true) != null) return false;
+        if (n == "场景" || n == "场景内珊瑚页面UI") return true;
+        return root.GetComponentInChildren<Renderer>(true) != null;
+    }
+
+    /// <summary>把当前场景里新增/漏掉的世界根收进隐藏清单（缩小态可重复调用）。</summary>
+    void 隐藏新增世界根()
+    {
+        foreach (GameObject root in SceneManager.GetActiveScene().GetRootGameObjects())
+        {
+            if (!该隐藏世界根(root)) continue;
+            if (!root.activeSelf) continue;
+            if (正常世界根.Contains(root)) continue;
+            正常世界根.Add(root);
+            正常世界根状态.Add(true);
+            root.SetActive(false);
+        }
+    }
+
+    /// <summary>
+    /// 最小档时把整个「缩小窗组」（组根：当前场景是「框」）反向放大，
+    /// 放大倍数 = 缩小窗目标宽度占比 × 最高档UI系数 / 当前档UI系数
+    /// （窗口固定时后者就是 0.9/当前档：0.2 档 ≈ 0.35×4.5 = 1.58 倍，0.1 档 ≈ 0.35×9 = 3.15 倍），
+    /// 再把整组夹进窗口（根 Canvas）可视范围；其它档位恢复组根原始缩放和位置。
     /// </summary>
     void UpdateShrinkWindowCompensation()
     {
 #if !UNITY_EDITOR
-        if (缩小窗Rect == null) return;
+        if (缩小窗组 == null) return;
 
         float cur = Mathf.Max(0.01f, windowScale);
         bool atMin = cur <= EffectiveMinWindowScale + 0.0001f;
-        float factor = (缩小窗最小档放大 && atMin) ? Mathf.Clamp(EffectiveMaxWindowScale / cur, 1f, 20f) : 1f;
+        float factor = 1f;
+        if (缩小窗最小档放大 && atMin)
+        {
+            // 屏幕像素 = 本地尺寸 × scaleFactor × 缩放倍数，
+            // 所以 倍数 = 占比 × (最高档 scaleFactor / 当前档 scaleFactor)
+            float sfNow = Mathf.Max(0.0001f, TargetScaleFactor());
+            float sfMax = CanvasBaseScaleFactor(new Vector2(1920f, UiDesignHeight)) * UiBaseScaleRatio * EffectiveMaxWindowScale;
+            factor = Mathf.Clamp(缩小窗目标宽度占比 * (sfMax / sfNow), 0.2f, 20f);
+        }
 
-        if (!Mathf.Approximately(缩小窗Rect.localScale.x, factor))
-            缩小窗Rect.localScale = new Vector3(factor, factor, 1f);
+        Vector3 target = new Vector3(缩小窗组基准缩放.x * factor, 缩小窗组基准缩放.y * factor, 缩小窗组基准缩放.z);
+        if (缩小窗组.localScale != target)
+            缩小窗组.localScale = target;
 
         Vector2 pos = 缩小窗基准位置;
         if (factor > 1.0001f)
         {
-            Canvas ownCanvas = 缩小窗Rect.GetComponentInParent<Canvas>(true);
+            Canvas ownCanvas = 缩小窗组.GetComponentInParent<Canvas>(true);
             RectTransform canvasRect = ownCanvas != null ? ownCanvas.rootCanvas.transform as RectTransform : null;
             if (canvasRect != null)
             {
                 Vector3[] corners = new Vector3[4];
-                缩小窗Rect.GetWorldCorners(corners);
+                缩小窗组.GetWorldCorners(corners);
                 Vector2 cMin = canvasRect.InverseTransformPoint(corners[0]);
                 Vector2 cMax = canvasRect.InverseTransformPoint(corners[2]);
                 Rect cr = canvasRect.rect;
@@ -639,13 +926,13 @@ public class DesktopWindowController : MonoBehaviour
                 if (Mathf.Abs(dx) > 0.01f || Mathf.Abs(dy) > 0.01f)
                 {
                     Vector3 world = canvasRect.TransformVector(new Vector3(dx, dy, 0f));
-                    Vector3 parentLocal = 缩小窗Rect.parent.InverseTransformVector(world);
+                    Vector3 parentLocal = 缩小窗组.parent.InverseTransformVector(world);
                     pos += new Vector2(parentLocal.x, parentLocal.y);
                 }
             }
         }
-        if (缩小窗Rect.anchoredPosition != pos)
-            缩小窗Rect.anchoredPosition = pos;
+        if (缩小窗组.anchoredPosition != pos)
+            缩小窗组.anchoredPosition = pos;
 #endif
     }
 
@@ -700,6 +987,8 @@ public class DesktopWindowController : MonoBehaviour
     {
 #if !UNITY_EDITOR
         if (minimizeButtonWrapper == null || minimizeButtonRect == null) return;
+        // 缩小态里整层已隐藏：不对隐藏节点做缩放/钳制，恢复显示时再由 SetShrinkWindowVisible(false) 调一次
+        if (一键缩放顶层 != null && !一键缩放顶层.gameObject.activeSelf) return;
 
         float cur = Mathf.Max(0.01f, windowScale);
         bool atMin = cur <= EffectiveMinWindowScale + 0.0001f;
@@ -1424,6 +1713,13 @@ public class DesktopWindowController : MonoBehaviour
         // 从任务栏恢复：保持最小档并把相机/Canvas 同步回来
         CheckMinimizeRestore();
 
+        // 缩小态兜底：鱼/珊瑚运行中还会生成或从池里激活，每 0.5 秒把新出现的世界根补收一次
+        if (正常内容已隐藏 && Time.unscaledTime - 隐藏巡检时间 >= 0.5f)
+        {
+            隐藏巡检时间 = Time.unscaledTime;
+            隐藏新增世界根();
+        }
+
         // 点击诊断：按下时一次性打印“坐标是否偏 / 是否被别的 Graphic 挡住 / 输入有没有到”
         if (debugClickLog && Input.GetMouseButtonDown(0)) LogClickDiagnostics();
 
@@ -1646,6 +1942,7 @@ public class DesktopWindowController : MonoBehaviour
             Debug.Log($"[桌面窗口] 缩到后台(1/2)：编辑器内没有真实窗口，跳过缩到最小档（{EffectiveMinWindowScale:F2}）");
             minimizeStage = 1;
 #else
+            记录缩小前窗口位置();
             ApplyWindowScale(EffectiveMinWindowScale);
             minimizeStage = 1;
             Debug.Log($"[桌面窗口] 缩到后台(1/2)：已缩到最小档 {EffectiveMinWindowScale:F2}");
@@ -2035,7 +2332,9 @@ public class DesktopWindowController : MonoBehaviour
     {
 #if !UNITY_EDITOR
         if (hwnd == IntPtr.Zero || !IsWindow(hwnd)) return;
+        if (IsIconic(hwnd)) return;                     // 最小化时 GetWindowRect 是 -32000，别写进存档
         Vector2 p = GetWindowPosition();
+        if (p.x <= -30000f || p.y <= -30000f) return;
         PlayerPrefs.SetFloat(WindowPosXKey, p.x);
         PlayerPrefs.SetFloat(WindowPosYKey, p.y);
         PlayerPrefs.SetFloat(WindowScalePrefKey, windowScale);
@@ -2096,6 +2395,8 @@ public class DesktopWindowController : MonoBehaviour
             }
 
             Vector2 p = GetWindowPosition();
+            // 最小化（Win+D / 缩到任务栏）时 GetWindowRect 返回 -32000 之类的哨兵坐标，不能写进存档
+            if (IsIconic(hwnd) || p.x <= -30000f || p.y <= -30000f) continue;
             bool moved = Mathf.Abs(p.x - lastPos.x) > 1f || Mathf.Abs(p.y - lastPos.y) > 1f;
             bool zoomed = Mathf.Abs(windowScale - lastScale) > 0.0001f;
             if (!moved && !zoomed) continue;
@@ -2167,6 +2468,46 @@ public class DesktopWindowController : MonoBehaviour
             Vector2 p = ClampWindowPosToWorkArea(x, y);
             SetWindowPos(hwnd, IntPtr.Zero, (int)p.x, (int)p.y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
         }
+#endif
+    }
+
+    /// <summary>
+    /// 进入缩小窗（最小档）时记下真实窗口位置和档位。
+    /// 缩小态里窗口仍可拖动（HandleWindowDrag 走 WM_NCLBUTTONDOWN），所以返回正常态时要能放回去。
+    /// 只在这里记录：外部最小化 / Win+D / 任务栏恢复都不经过本函数，不会把 -32000 之类的坐标写进来。
+    /// </summary>
+    void 记录缩小前窗口位置()
+    {
+#if !UNITY_EDITOR
+        if (hwnd == IntPtr.Zero) hwnd = GetActiveWindow();
+        if (hwnd == IntPtr.Zero || !IsWindow(hwnd)) return;
+        if (IsIconic(hwnd)) return;                     // 窗口本来就最小化时拿到的是脏坐标，宁可不记
+
+        Vector2 p = GetWindowPosition();
+        if (p.x <= -30000f || p.y <= -30000f) return;    // 最小化窗口的哨兵坐标
+
+        缩小前窗口位置 = p;
+        缩小前窗口档位 = windowScale;
+        有缩小前窗口位置 = true;
+        Debug.Log($"[桌面窗口] 记下缩小前窗口位置 ({p.x:F0},{p.y:F0}) 档位={缩小前窗口档位:F2}");
+#endif
+    }
+
+    /// <summary>
+    /// 回到正常态（回到游戏场景 / 任务栏恢复 / 滚轮放大退出缩小态）时，把窗口放回进入缩小窗前的位置。
+    /// 走 SetWindowPosition → ClampWindowPosToWorkArea：按【目标矩形最近的显示器】取工作区，
+    /// 副屏坐标不会被 SPI_GETWORKAREA（只返回主屏）夹回主屏；只有该屏工作区变小才会夹到屏内。
+    /// </summary>
+    void 还原缩小前窗口位置()
+    {
+#if !UNITY_EDITOR
+        if (!有缩小前窗口位置) return;
+        有缩小前窗口位置 = false;
+        if (hwnd == IntPtr.Zero || !IsWindow(hwnd)) return;
+
+        Vector2 now = GetWindowPosition();
+        SetWindowPosition(缩小前窗口位置.x, 缩小前窗口位置.y);
+        Debug.Log($"[桌面窗口] 还原缩小前窗口位置: ({now.x:F0},{now.y:F0}) → ({缩小前窗口位置.x:F0},{缩小前窗口位置.y:F0})");
 #endif
     }
 }

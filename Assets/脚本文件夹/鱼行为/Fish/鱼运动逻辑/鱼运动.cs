@@ -14,7 +14,7 @@ public class 鱼运动 : MonoBehaviour
 
     public static void RegisterFishDrop(string name) { if(!string.IsNullOrEmpty(name)) droppedFishNames.Add(name); }
     public static bool HasFishDropped(string name) { return !string.IsNullOrEmpty(name) && droppedFishNames.Contains(name); }
-    public static void ResetCodex() { appearedFishNames.Clear(); droppedFishNames.Clear(); }
+    public static void ResetCodex() { appearedFishNames.Clear(); droppedFishNames.Clear(); recentFishNames.Clear(); }
 
     [Header("移动设置")]
     [Tooltip("鱼的移动速度")]
@@ -206,6 +206,29 @@ public class 鱼运动 : MonoBehaviour
     public static bool HasFishAppeared(string name)
     {
         return !string.IsNullOrEmpty(name) && appearedFishNames.Contains(name);
+    }
+
+    // ==================== 最近出现的鱼（缩小窗展示用） ====================
+    // 只记录"实际生成"的顺序（最近优先，允许同种鱼重复）；同一条鱼在池里被复用/重复生成时，
+    // 按最近一次出现算（插到队首）。读档时 GameStats.Restore → RegisterFish 只是补图鉴，
+    // 不经过这里，所以不会把旧存档里的鱼误当成"最近出现"。
+    static readonly List<string> recentFishNames = new List<string>();
+    const int RecentFishLimit = 8;
+
+    /// <summary>鱼生成/复用出来时登记鱼种（传预制体名）。最多保留 8 条，最近的排最前，允许重复。</summary>
+    public static void RegisterAppearance(string prefabName)
+    {
+        if (string.IsNullOrEmpty(prefabName)) return;
+        recentFishNames.Insert(0, prefabName);
+        if (recentFishNames.Count > RecentFishLimit)
+            recentFishNames.RemoveRange(RecentFishLimit, recentFishNames.Count - RecentFishLimit);
+    }
+
+    /// <summary>取最近出现的鱼种（最近的排最前，最多 count 个）。</summary>
+    public static List<string> GetRecentAppearances(int count)
+    {
+        if (count <= 0 || recentFishNames.Count == 0) return new List<string>();
+        return recentFishNames.GetRange(0, Mathf.Min(count, recentFishNames.Count));
     }
 
     // ==================== 生命周期 ====================

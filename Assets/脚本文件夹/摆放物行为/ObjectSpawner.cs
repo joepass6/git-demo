@@ -650,6 +650,10 @@ public class ObjectSpawner : MonoBehaviour
         string cleanName = prefab.name.Replace("(Clone)", "").Trim();
         obj.name = $"{cleanName} [{spawnEntries[kindIndex].kindId}]";
 
+        // 缩小窗展示用：记录"最近出现的鱼种"（预制体名，去重、最近优先）
+        if (fishComp != null || obj.GetComponentInChildren<fishAnimator>(true) != null)
+            鱼运动.RegisterAppearance(cleanName);
+
         spawnedObjects.Add(obj);
 
         // 图鉴收集：鱼生成出来就标记为已发现

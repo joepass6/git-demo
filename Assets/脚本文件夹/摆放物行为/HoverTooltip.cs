@@ -528,6 +528,38 @@ public class HoverTooltip : MonoBehaviour
         for (int i = 0; i < _entries.Count; i++) ApplyTarget(_entries[i], _currentMultiplier);
     }
 
+    /// <summary>
+    /// 把某个直接子级从“悬停时按世界坐标钉住”改成“跟着父级一起缩放”。
+    /// 缩小窗的 4 个圆形按钮用：文字和圆形背板一起放大，悬停/点击后仍然居中。
+    /// 只改 scaleTargets 不够 —— Awake 早就跑过，_entries 里还留着“钉住”记录，要一起改。
+    /// </summary>
+    public void 让子级跟随缩放(Transform 子级)
+    {
+        if (子级 == null) return;
+        if (scaleTargets == null) scaleTargets = new List<Transform>();
+        if (!scaleTargets.Contains(子级)) scaleTargets.Add(子级);
+
+        if (_entries == null) return; // Awake 还没跑：之后按 scaleTargets 重建时会自动带上它
+
+        for (int i = 0; i < _entries.Count; i++)
+        {
+            var e = _entries[i];
+            for (int j = e.children.Count - 1; j >= 0; j--)
+                if (e.children[j].transform == 子级) e.children.RemoveAt(j);
+        }
+
+        for (int i = 0; i < _entries.Count; i++)
+            if (_entries[i].transform == 子级) return; // 已经是缩放目标
+
+        _entries.Add(new ScaleEntry
+        {
+            transform = 子级,
+            typeLabel = DescribeType(子级),
+            originalScale = 子级.localScale,
+            inheritsFromAncestor = true   // 父级已是缩放目标，自己只继承，避免叠乘
+        });
+    }
+
     /// <summary>诊断用：把缩放目标与被钉住子级的当前值拼成一行</summary>
     public string DumpScaleState()
     {

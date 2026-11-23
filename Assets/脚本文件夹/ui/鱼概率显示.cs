@@ -14,7 +14,7 @@ public class FishJournalPage : MonoBehaviour
     public ObjectSpawner spawner;
 
     [Header("可选 UI 绑定（留空自动扫）")]
-    public Image fishImage;                    // 鱼图（挂在自己身上的那个 Image）
+    public Image fishImage;                    // 鱼图（本格 鱼N 节点上的 Image；手动绑定优先保留）
     public TextMeshProUGUI probabilityText;   // 出现概率
     public TextMeshProUGUI stayTimeText;      // 停留时间
     public TextMeshProUGUI catchTimeText;     // 掉宝时间
@@ -77,8 +77,10 @@ public class FishJournalPage : MonoBehaviour
 
     void AutoBind()
     {
-        // fishImage 就是挂在自己身上的那个 Image 组件
-        if (fishImage == null) fishImage = GetComponent<Image>();
+        // 鱼图：Inspector 里已手动绑定且确实属于本格时，绝不重新查找；
+        // 只有为空、被销毁、或明显绑到了别的格子（如误拖 3页/鱼4 的 Image）时，
+        // 才回退到本格自己的 Image（结构：Image 在 鱼N 节点，本组件在 鱼N/容器）。
+        if (!属于本格(fishImage)) fishImage = 本格鱼图();
         if (probabilityText == null) probabilityText = FindTmp(new[] { "概率", "几率" });
         if (stayTimeText == null)    stayTimeText    = FindTmp(new[] { "停留", "存在" });
         if (catchTimeText == null)   catchTimeText   = FindTmp(new[] { "捕鱼", "筑宝", "掉宝", "掉落" });
@@ -94,6 +96,31 @@ public class FishJournalPage : MonoBehaviour
             var m = Regex.Match(gameObject.name, @"\d+");
             if (m.Success) pageNumberText.text = m.Value;
         }
+    }
+
+    /// <summary>
+    /// 判断 fishImage 是否属于本格：本格节点是父级（鱼N），
+    /// Image 允许挂在鱼N 自身或其子节点（不含别的鱼N）。
+    /// 没有父级结构时不做限制，保留原有绑定。
+    /// </summary>
+    bool 属于本格(Image img)
+    {
+        if (img == null) return false;
+        Transform 本格 = transform.parent;
+        if (本格 == null) return true;
+        return img.transform == 本格 || img.transform.IsChildOf(本格);
+    }
+
+    /// <summary>本格自己的鱼图：优先 鱼N 节点上的 Image，再退回本组件所在节点。</summary>
+    Image 本格鱼图()
+    {
+        Transform 本格 = transform.parent;
+        if (本格 != null)
+        {
+            Image img = 本格.GetComponent<Image>();
+            if (img != null) return img;
+        }
+        return GetComponent<Image>();
     }
 
     TextMeshProUGUI FindTmp(string[] kws)
@@ -163,8 +190,16 @@ public class FishJournalPage : MonoBehaviour
         if (fishImage != null)
         {
             // 不管有没有发现，sprite 都设成鱼的图（保证有图可显示/变黑）
-            if (fish.fishSprite != null)
-                fishImage.sprite = fish.fishSprite;
+            Sprite 图 = fish.fishSprite;
+            if (图 == null)
+            {
+                // fishSprite 没填时回退到预制体自带的 SpriteRenderer 首帧，
+                // 避免沿用可能被别格写脏的 sprite（如 3页/鱼4 被 2页/鱼4 覆盖）。
+                SpriteRenderer sr = fishPrefab.GetComponentInChildren<SpriteRenderer>(true);
+                if (sr != null) 图 = sr.sprite;
+            }
+            if (图 != null)
+                fishImage.sprite = 图;
             else if (fishImage.sprite == null)
                 fishImage.enabled = false;
 
