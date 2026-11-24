@@ -9,6 +9,7 @@ public class fishAnimator : MonoBehaviour
     public bool 移动中 = true;//是闲置吗？如果这值是true那么它就是闲置状态，如果它是false时，那它就是移动状态，它的默认值就是true
     public float timekey = 0;//命名一个变量，需要一个值来配合计时器的工作，将它命名为“时间键”用来代表当前的时间进度，默认值设置为0
     private Animator ani;//private变量是私有变量，其他脚本无法看到，类型是Animator(动画控制器)
+    private int lastMoveState = -1;//上次写入 Animator 的状态（-1 未初始化，0=闲置，1=移动），状态没变就不重复写
     // Start is called before the first frame update
     void Start()
     {
@@ -27,25 +28,14 @@ public class fishAnimator : MonoBehaviour
         {
             timekey = 0;
             timer = Random.Range(2, 5);
-            if (移动中)//if（isIdle）的情况下
-            {
-                移动中 = false;//也就是isidle不等于true时
-            }
-            else
-            {
-                移动中 = true;
-            }
+            移动中 = !移动中;//切换闲置/移动状态
         }
-        int ran = Random.Range(0, 2);
-        //首先需要先确定是闲置状态，还是移动状态
-        if (移动中)//这种写法就相当于if（isidle==true）
+        //只在状态真正变化时才写 Animator，避免每条鱼每帧一次原生调用
+        int state = 移动中 ? 0 : 1;
+        if (state != lastMoveState)
         {
-            ani.SetBool("移动中", false);//也就是设置ani的bool值，在动画控制器中已经设置过了
-        }
-        else//相当于执行与if中相反的事件，可以理解为如果和否则
-        {
-            ani.SetBool("移动中", true);
-            //在u
+            lastMoveState = state;
+            if (ani != null) ani.SetBool("移动中", state == 1);//移动中=true 时 SetBool(false)，反之亦然
         }
     }
 }

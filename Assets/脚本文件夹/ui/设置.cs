@@ -21,6 +21,9 @@
  [Header("窗口控制器")]
  public DesktopWindowController windowController;
 
+ [Header("关闭设置菜单时一并收起的补充子页面（可选；语言选择/教程/名单会自动处理）")]
+ public GameObject[] 关闭时一并收起;
+
  IEnumerator Start()
  {
      // 等 AudioManager 初始化好（它挂在另一物体上，执行顺序不确定）
@@ -96,6 +99,34 @@
  void OnEnable()
  {
      BindFallbackTexts();
+ }
+
+ // 设置菜单（设置页面）关闭时，把它内部打开过的子页面一起收起，避免下次打开时还停在上次的状态。
+ // 各页面自己的「关闭」按钮行为不变：只在父级菜单关闭时做级联收起。
+ void OnDisable()
+ {
+     if (!gameObject.scene.isLoaded) return; // 退出播放/卸载场景时不处理
+     收起设置子页面();
+ }
+
+ void 收起设置子页面()
+ {
+     // 语言选择：有独立「关闭」按钮，单页逻辑照旧，这里只在父级收起时一并关掉
+     if (LocalizationManager.Instance != null)
+         LocalizationManager.Instance.CloseLanguagePanel();
+
+     // 教程页 / 感谢名单：交给它们自己的状态机收起，避免布尔状态和实际显示不一致
+     教程与感谢名单UI.收起所有();
+
+     // 手动拖进来的补充子页面
+     if (关闭时一并收起 != null)
+     {
+         for (int i = 0; i < 关闭时一并收起.Length; i++)
+         {
+             GameObject go = 关闭时一并收起[i];
+             if (go != null && go != gameObject) go.SetActive(false);
+         }
+     }
  }
 
  void BindFallbackTexts()

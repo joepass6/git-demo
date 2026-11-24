@@ -40,6 +40,9 @@ public class DragAndPlaceSystem : MonoBehaviour
              "可用菜单 Tools/珊瑚/扫描气泡需求文本 自动填充。")]
     public List<宝物需求> 需求列表 = new List<宝物需求>();
 
+    [Tooltip("珊瑚需求数字文本（『现有宝物』数值 / 『宝物条件』数字）的字号放大倍数：1 = 原设计字号，1.25 = 放大 25%")]
+    [Range(1f, 2f)] public float 需求文本字号放大 = 1.25f;
+
     // 旧版单条配置：已并入 需求列表，只用于老场景/旧预制体反序列化后的自动迁移，不再显示在 Inspector。
     [HideInInspector] public TextMeshProUGUI coralCountText;
     [HideInInspector] public TextMeshProUGUI costText;
@@ -168,6 +171,13 @@ public class DragAndPlaceSystem : MonoBehaviour
     private readonly Dictionary<TextMeshProUGUI, DropItemCounterUI> counterCache = new Dictionary<TextMeshProUGUI, DropItemCounterUI>();
     private List<宝物需求> effectiveRequirements;
     private readonly Dictionary<TextMeshProUGUI, Color> requirementTextColors = new Dictionary<TextMeshProUGUI, Color>();
+
+    /// <summary>需求文本的原始设计字号（只在第一次遇到时记录，之后一律 设计值 × 放大倍数，避免每帧叠乘）。</summary>
+    private readonly Dictionary<TextMeshProUGUI, float> 需求文本设计字号 = new Dictionary<TextMeshProUGUI, float>();
+
+    /// <summary>每个需求数值文本所在「框」里需要一起放大的前缀标签（『现有宝物：』『需要的宝物：』）。</summary>
+    private readonly Dictionary<TextMeshProUGUI, TextMeshProUGUI[]> 需求标签缓存 =
+        new Dictionary<TextMeshProUGUI, TextMeshProUGUI[]>();
 
     /// <summary>正在播放“数量不足”反馈的文本 → 动画基准（字号/位置/变暗色）。
     /// 连续触发时靠它先把上一次动画恢复到基准，再从头播，保证每次都从原始字号起跳。</summary>
@@ -632,10 +642,71 @@ public class DragAndPlaceSystem : MonoBehaviour
             var r = reqs[i];
             if (r == null) continue;
             // 随便放版：需求文本一律按满足显示（不因缺资源变暗），和"不限条件"的实际行为一致
-            bool ok = 自由摆放 || ResolveCount(r) >= ResolveCost(r);
-            ApplyOneColor(r.coralCountText, ok);
-            ApplyOneColor(r.costText, ok);
+            // 需求文本不再按数量不足变黑：始终维持原色，不足提示靠整块抖动 + 数字放大变红
+            ApplyOneColor(r.coralCountText, true);
+            ApplyOneColor(r.costText, true);
+
+            // 需求数字与相邻前缀标签统一放大（基准=首次记录的设计字号）
+            ApplyRequirementFontScale(r.coralCountText);
+            ApplyRequirementFontScale(r.costText);
+            ApplyRequirementLabelFontScale(r);
         }
+    }
+
+    /// <summary>
+    /// 把单个需求文本按「设计字号 × 需求文本字号放大」写入 fontSize。
+    /// 设计字号只记录一次；反馈动画期间交给协程（其 baseFontSize 就是放大后的值），避免互相覆盖。
+    /// TMP 开着 Auto Size 时布局会把 fontSize 写回，这里直接关掉，否则放大不生效。
+    /// </summary>
+    void ApplyRequirementFontScale(TextMeshProUGUI text)
+    {
+        if (text == null) return;
+        if (requirementFeedback.ContainsKey(text)) return;
+
+        float design;
+        if (!需求文本设计字号.TryGetValue(text, out design))
+        {
+            design = text.fontSize;
+            需求文本设计字号[text] = design;
+        }
+
+        float scale = Mathf.Max(1f, 需求文本字号放大);
+        if (scale <= 1.0001f) return; // 1 倍保持原状（含原本的 Auto Size 行为）
+
+        float target = design * scale;
+        if (text.enableAutoSizing) text.enableAutoSizing = false;
+        if (!Mathf.Approximately(text.fontSize, target)) text.fontSize = target;
+    }
+
+    /// <summary>
+    /// 同一个「框」里的前缀标签（『现有宝物：』『需要的宝物：』）跟随数值文本一起放大。
+    /// 结果按数值文本缓存，避免每帧 GetComponentsInChildren 分配。
+    /// </summary>
+    void ApplyRequirementLabelFontScale(宝物需求 r)
+    {
+        if (r == null || r.coralCountText == null) return;
+
+        TextMeshProUGUI[] labels;
+        if (!需求标签缓存.TryGetValue(r.coralCountText, out labels))
+        {
+            Transform scope = r.coralCountText.transform.parent;
+            if (scope == null) return;
+            var all = scope.GetComponentsInChildren<TextMeshProUGUI>(true);
+            var list = new List<TextMeshProUGUI>();
+            for (int i = 0; i < all.Length; i++)
+            {
+                var t = all[i];
+                if (t == null || t == r.coralCountText || t == r.costText) continue;
+                if (t.text == null) continue;
+                if (!t.text.Contains("现有宝物") && !t.text.Contains("需要的宝物")) continue;
+                list.Add(t);
+            }
+            labels = list.ToArray();
+            需求标签缓存[r.coralCountText] = labels;
+        }
+
+        for (int i = 0; i < labels.Length; i++)
+            ApplyRequirementFontScale(labels[i]);
     }
 
     void ApplyOneColor(TextMeshProUGUI text, bool ok)
@@ -710,7 +781,8 @@ public class DragAndPlaceSystem : MonoBehaviour
             original = text.color;
             requirementTextColors[text] = original;
         }
-        Color dim = Color.Lerp(original, Color.black, darkenAmount);
+        // 需求文本不做「变黑」收尾：动画起止都回到原色，只保留放大 + 变红的提示
+        Color dim = original;
 
         // TMP 开了 Auto Size 时，每帧布局都会重算并写回 fontSize，直接改字号不生效。
         // 处理：播放期间临时关掉自动字号（当前 fontSize 就是自动算出的实际字号，作为基准），

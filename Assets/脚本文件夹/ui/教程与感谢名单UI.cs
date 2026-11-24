@@ -336,6 +336,17 @@ public class 教程与感谢名单UI : MonoBehaviour
         if (名单面板 != null) 名单面板.gameObject.SetActive(false);
     }
 
+    /// <summary>
+    /// 设置菜单关闭时级联收起：教程页 + 感谢名单。
+    /// 各页面自己的「关闭」按钮 / 再点入口收起的单页行为保持不变，这里只做父级关闭时的一次性收起。
+    /// </summary>
+    public static void 收起所有()
+    {
+        if (实例 == null) return;
+        实例.关闭教程("设置菜单关闭");
+        实例.关闭名单();
+    }
+
     // ==================== 防“点到面板里就误关” ====================
 
     /// <summary>

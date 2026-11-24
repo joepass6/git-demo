@@ -10,6 +10,7 @@ public class UIFollower : MonoBehaviour
 
     private RectTransform rectTransform;
     private Canvas canvas;
+    private Camera cachedMainCam;
 
     /// <summary>
     /// 把“相对父矩形轴心(pivot)”的局部坐标换算成子节点的 anchoredPosition。
@@ -43,7 +44,13 @@ public class UIFollower : MonoBehaviour
         // 2. 用渲染这块画布的相机做世界→屏幕投影，和画布保持一致，缩放/分辨率变化时才不会偏
         Camera projCam = (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay && canvas.worldCamera != null)
             ? canvas.worldCamera
-            : Camera.main;
+            : cachedMainCam;
+        if (projCam == null)
+        {
+            // Camera.main 内部要做 Tag 查找，缓存一次；相机被销毁时会自动变 null 并重新取
+            cachedMainCam = Camera.main;
+            projCam = cachedMainCam;
+        }
         if (projCam == null) return;
 
         // 3. 获取目标在世界空间中的位置（加上世界单位偏移，随缩放一起缩放）

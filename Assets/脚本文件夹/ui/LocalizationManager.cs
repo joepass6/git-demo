@@ -89,6 +89,7 @@ public class LocalizationManager : MonoBehaviour
     public Button closeButton;
 
     readonly List<LocalizedText> registeredTexts = new List<LocalizedText>();
+    int lastSweepCount; // 上次 ApplyAll 时补刷的非注册文本数量（仅用于日志）
     Dictionary<Language, TMP_FontAsset> fontDict;
 
     // 表名 -> ( key -> ( 语言 -> 文案 ) )
@@ -124,7 +125,8 @@ public class LocalizationManager : MonoBehaviour
     void Start()
     {
         BindLanguageButtons();
-        BindPanelControls();
+        // 只在启动时强制隐藏一次；延迟补绑轮次绝不能再隐藏，否则玩家刚点开的面板会被关掉
+        BindPanelControls(true);
         ApplyAll();
 
         // 语言面板若是运行后才实例化/激活的，Start 时会找不到按钮：延迟多补绑几轮
@@ -178,7 +180,7 @@ public class LocalizationManager : MonoBehaviour
         LanguageChanged?.Invoke(lang);
         OnLanguageChangedStatic?.Invoke(lang);
 
-        Debug.Log($"[多语言] 已切换为 {lang}，刷新了 {registeredTexts.Count} 个文本，" +
+        Debug.Log($"[多语言] 已切换为 {lang}，注册表 {registeredTexts.Count} 个 + 可见补刷 {lastSweepCount} 个，" +
                   $"字体={(GetFont(lang) != null ? GetFont(lang).name : "未配置(保持原字体)")}");
 
         if (registeredTexts.Count == 0)
@@ -217,6 +219,10 @@ public class LocalizationManager : MonoBehaviour
     public string GetText(string table, string key, string fallback = null)
     {
         if (tables == null || string.IsNullOrEmpty(key)) return fallback;
+
+        // 容错：key 前后多余的空白（包括场景里误存成 " c41" 这类）不应导致查表失败
+        key = key.Trim();
+        if (key.Length == 0) return fallback;
 
         Dictionary<Language, string> cells = null;
 
@@ -268,6 +274,8 @@ public class LocalizationManager : MonoBehaviour
     public bool Exists(string table, string key)
     {
         if (tables == null || string.IsNullOrEmpty(table) || string.IsNullOrEmpty(key)) return false;
+        key = key.Trim();
+        if (key.Length == 0) return false;
         return tables.TryGetValue(table.Trim(), out var t) && t.ContainsKey(key);
     }
 
@@ -275,6 +283,8 @@ public class LocalizationManager : MonoBehaviour
     public bool Exists(string key)
     {
         if (tables == null || string.IsNullOrEmpty(key)) return false;
+        key = key.Trim();
+        if (key.Length == 0) return false;
         foreach (var t in tables.Values) if (t.ContainsKey(key)) return true;
         return false;
     }
@@ -918,6 +928,28 @@ public class LocalizationManager : MonoBehaviour
                 }
             }
         }
+
+        // 兜底：注册表可能漏掉部分文本（例如常驻面板在 LocalizationManager 之前 OnEnable，
+        // 或面板被脚本反复隐藏/显示导致反注册），这里对当前可见的 LocalizedText 全量补刷一遍，
+        // 保证切语言后界面上看得见的文字一定跟着变。隐藏页面保持原逻辑，在 OnEnable 注册时刷新。
+        lastSweepCount = RefreshAllActiveLocalizedTexts();
+    }
+
+    /// <summary>把当前激活层级里的 LocalizedText 全部刷一遍（跳过注册表里刚刷过的），返回补刷数量</summary>
+    int RefreshAllActiveLocalizedTexts()
+    {
+        int count = 0;
+        var all = FindObjectsOfType<LocalizedText>(true);
+        for (int i = 0; i < all.Length; i++)
+        {
+            LocalizedText t = all[i];
+            if (t == null) continue;
+            if (!t.gameObject.activeInHierarchy) continue;
+            if (registeredTexts.Contains(t)) continue; // 注册表里刚刷过
+            t.Refresh();
+            count++;
+        }
+        return count;
     }
 
     /// <summary>
@@ -959,7 +991,12 @@ public class LocalizationManager : MonoBehaviour
             if (boundButtonIds.Add(btn.GetInstanceID()))
             {
                 Language target = lang.Value; // 闭包捕获固定值
-                btn.onClick.AddListener(() => SetLanguage(target));
+                string buttonName = node.name; // 不要捕获 Transform，面板销毁后取名字会空引用
+                btn.onClick.AddListener(() =>
+                {
+                    Debug.Log($"[多语言] 点击语言按钮: {buttonName} -> {target}");
+                    SetLanguage(target);
+                });
                 newlyBound++;
                 details.Append($"  已绑定: {node.name} -> {target}（按钮物体:{btn.name}）\n");
             }
@@ -1013,7 +1050,7 @@ public class LocalizationManager : MonoBehaviour
     /// languageEntryButton 留空 → 搜名字含"语言"/"Language"/"切换语言"的外部 Button
     /// closeButton 只绑手动拖的（不自动搜，避免误绑面板里的子按钮）
     /// </summary>
-    void BindPanelControls()
+    void BindPanelControls(bool 启动时隐藏面板 = false)
     {
         // ===== 1. 自动找 languagePanel（如果没手动拖）=====
         if (languagePanel == null)
@@ -1045,8 +1082,8 @@ public class LocalizationManager : MonoBehaviour
             }
         }
 
-        // ===== 2. 强制默认隐藏语言面板（如果找到了）=====
-        if (languagePanel != null && languagePanel.activeSelf)
+        // ===== 2. 启动时强制默认隐藏语言面板（之后延迟补绑不再重复隐藏）=====
+        if (启动时隐藏面板 && languagePanel != null && languagePanel.activeSelf)
         {
             languagePanel.SetActive(false);
             Debug.Log($"[多语言] 语言面板默认隐藏: {languagePanel.name}");
@@ -1133,7 +1170,18 @@ public class LocalizationManager : MonoBehaviour
     /// <summary>打开 languagePanel（SetActive(true)）</summary>
     public void OpenLanguagePanel()
     {
-        if (languagePanel != null) languagePanel.SetActive(true);
+        if (languagePanel == null) return;
+
+        // 自愈：每次打开都补一次按钮绑定/标签本地化，避免运行时监听被清掉、或标签 key 为空导致点了没反应
+        BindLanguageButtons();
+
+        // 语言面板和设置页里的音量滑条区域重叠；把入口节点提到同级最后，
+        // 让面板渲染（以及射线检测）盖在滑条之上，避免底部按钮点不到。只改运行时顺序，不动场景。
+        Transform entry = languagePanel.transform.parent;
+        if (entry != null && entry.parent != null) entry.SetAsLastSibling();
+
+        languagePanel.SetActive(true);
+        Debug.Log($"[多语言] 打开语言面板: {languagePanel.name}");
     }
 
     /// <summary>切换 languagePanel 开关</summary>

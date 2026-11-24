@@ -66,9 +66,11 @@ public class DesktopWindowController : MonoBehaviour
     ///
     /// 【必须乘 windowScale】否则滚轮缩放时相机 orthoSize 变了、UI 却纹丝不动：
     ///   世界像素/单位 = (texH/2) / orthoSize = (texH/2) / (baseOrtho/windowScale) ∝ windowScale
-    ///   UI 像素/设计单位 = scaleFactor = texH/UiDesignHeight × 0.94 × windowScale ∝ windowScale
+    ///   UI 像素/设计单位 = scaleFactor = texH/UiDesignHeight × UiBaseScaleRatio × windowScale ∝ windowScale
     /// 两者同比例变化，滚轮时 UI 与场景才会同步放大/缩小。
     /// 注意 texH 是窗口 RT 高度（窗口尺寸固定，不随滚轮变），所以 windowScale 是唯一的联动因子。
+    ///
+    /// 珊瑚需求文本的字号放大改在 珊瑚放置.cs 的「需求文本字号放大」里单独处理，不动全局系数。
     /// </summary>
     const float UiBaseScaleRatio = 0.94f;
 
@@ -286,6 +288,8 @@ public class DesktopWindowController : MonoBehaviour
     // 性能计数：每 300 帧打一条，用户回传日志即可判断卡顿是否来自上屏
     int presentFrameCount;
     float presentAccumMs;
+    //复用同一个 Stopwatch，避免每帧 StartNew 产生一个小对象（上屏链路每帧都会走）
+    static readonly System.Diagnostics.Stopwatch s_presentWatch = new System.Diagnostics.Stopwatch();
     float lastRepairTime;
 
     // 公开的 RT 尺寸（供其他脚本做 Screen→RT 坐标转换）
@@ -1778,7 +1782,7 @@ public class DesktopWindowController : MonoBehaviour
     {
         if (hwnd == IntPtr.Zero || !IsWindow(hwnd)) return;
 
-        var watch = System.Diagnostics.Stopwatch.StartNew();
+        s_presentWatch.Restart();
 
         if (premulMat != null && rtPremul != null && rtPremul2 != null && rt != null)
         {
@@ -1852,8 +1856,8 @@ public class DesktopWindowController : MonoBehaviour
             Debug.LogWarning("[桌面窗口] UpdateLayeredWindow 失败");
 
         // 上屏耗时自测：每 300 帧一条，用户回传日志即可判断卡顿是否来自这条管线
-        watch.Stop();
-        presentAccumMs += (float)watch.Elapsed.TotalMilliseconds;
+        s_presentWatch.Stop();
+        presentAccumMs += (float)s_presentWatch.Elapsed.TotalMilliseconds;
         presentFrameCount++;
         if (presentFrameCount >= 300)
         {
