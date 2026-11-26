@@ -210,6 +210,18 @@ public class DesktopWindowController : MonoBehaviour
     const string ClockNudgeXKey = "ClockNudgeOffsetX";
     const string ClockNudgeYKey = "ClockNudgeOffsetY";
 
+    // UI 锚定点：场景里的空物体「ui锚定点」，在场景中移动它即可整体平移「显示面板」整组
+    const string UiAnchorName = "ui锚定点";
+    RectTransform uiAnchorPanel;
+    Transform uiAnchorTarget;
+    bool uiAnchorResolved;
+    bool uiAnchorCalibrated;
+    Vector2 uiAnchorScenePos;        // 标定时的场景 anchoredPosition（基准）
+    Vector2 uiAnchorInitialProjected; // 标定时的锚点投影（画布坐标）
+    Vector3 uiAnchorLastWorld;
+    float uiAnchorLastScale = -1f;
+    int uiAnchorLastTexW, uiAnchorLastTexH;
+
     // Canvas 缓存（避免热路径反复 FindObjectsOfType）
     List<Canvas> cachedCanvases = new List<Canvas>();
     const float CanvasCacheRefreshInterval = 5f;  // 每 5 秒刷新一次缓存（运行时新建的 UI 也能被捕获）
@@ -729,6 +741,140 @@ public class DesktopWindowController : MonoBehaviour
             if (hit != null) return hit;
         }
         return null;
+    }
+
+    /// <summary>
+    /// 解析「ui锚定点」与「显示面板」。锚定点在「场景」根下，可能未激活，
+    /// 所以用 Resources.FindObjectsOfTypeAll 全量找一次（排除预制体资产）。
+    /// 找不到只打一条日志并退回场景初始位置，不每帧刷屏。
+    /// </summary>
+    void ResolveUiAnchor()
+    {
+        uiAnchorResolved = true;
+
+        GameObject ui = GameObject.Find("界面ui");
+        if (ui != null)
+        {
+            // 从「珊瑚界面」往上找最外层的「显示面板」，且必须是带 Canvas 的整组根，
+            // 避免 FindDeep 命中内层同名容器（358×333）导致只移动局部。
+            Transform coral = FindDeep(ui.transform, "珊瑚界面");
+            Transform t = coral;
+            while (t != null && t != ui.transform)
+            {
+                if (t.name == "显示面板" && t.GetComponent<Canvas>() != null)
+                    uiAnchorPanel = t as RectTransform;
+                t = t.parent;
+            }
+
+            // 兜底：界面ui 直接子级里带 Canvas 的「显示面板」
+            if (uiAnchorPanel == null)
+            {
+                for (int i = 0; i < ui.transform.childCount; i++)
+                {
+                    Transform c = ui.transform.GetChild(i);
+                    if (c.name == "显示面板" && c.GetComponent<Canvas>() != null)
+                    {
+                        uiAnchorPanel = c as RectTransform;
+                        break;
+                    }
+                }
+            }
+        }
+
+        Transform[] all = Resources.FindObjectsOfTypeAll<Transform>();
+        for (int i = 0; i < all.Length; i++)
+        {
+            Transform t = all[i];
+            if (t == null || t.name != UiAnchorName) continue;
+            if (!t.gameObject.scene.IsValid()) continue; // 排除预制体资产
+            uiAnchorTarget = t;
+            break;
+        }
+
+        if (uiAnchorTarget == null || uiAnchorPanel == null)
+        {
+            Debug.Log("[桌面窗口] 未找到「ui锚定点」或「显示面板」，显示面板沿用场景初始位置");
+            return;
+        }
+
+        Debug.Log($"[桌面窗口] UI 锚定: {PathOf(uiAnchorTarget)} → {PathOf(uiAnchorPanel)}（InstanceID={uiAnchorPanel.GetInstanceID()}, size={uiAnchorPanel.rect.size}, anchored={uiAnchorPanel.anchoredPosition}, canvas={uiAnchorPanel.GetComponent<Canvas>() != null}）");
+    }
+
+    static string PathOf(Transform t)
+    {
+        if (t == null) return "(null)";
+        string p = t.name;
+        Transform cur = t.parent;
+        while (cur != null) { p = cur.name + "/" + p; cur = cur.parent; }
+        return p;
+    }
+
+    /// <summary>
+    /// 「显示面板」跟随「ui锚定点」：世界点 → 屏幕 → RT（复用 ScreenToRenderTexturePoint）
+    /// → 画布局部坐标。只在锚点世界位置 / 画布 scaleFactor / RT 尺寸变化时写 anchoredPosition，
+    /// 避免无谓的布局重建；首次以场景现有布局为基准，保证不动锚点时 UI 不跳变。
+    /// </summary>
+    void UpdateUiAnchorFollow()
+    {
+        if (!uiAnchorResolved) ResolveUiAnchor();
+        if (!uiAnchorResolved) return;
+        if (uiAnchorTarget == null || uiAnchorPanel == null) return;
+
+        RectTransform parent = uiAnchorPanel.parent as RectTransform;
+        if (parent == null) return;
+
+        Canvas rootCanvas = parent.GetComponentInParent<Canvas>();
+        if (rootCanvas == null) rootCanvas = parent.GetComponent<Canvas>();
+        float sf = rootCanvas != null ? rootCanvas.scaleFactor : 1f;
+
+        Vector3 wp = uiAnchorTarget.position;
+        if (uiAnchorCalibrated &&
+            wp == uiAnchorLastWorld &&
+            Mathf.Approximately(sf, uiAnchorLastScale) &&
+            uiAnchorLastTexW == RTWidth && uiAnchorLastTexH == RTHeight)
+            return;
+
+        bool overlay = rootCanvas != null && rootCanvas.renderMode == RenderMode.ScreenSpaceOverlay;
+        Camera projCam = (!overlay && rootCanvas != null && rootCanvas.worldCamera != null)
+            ? rootCanvas.worldCamera : Camera.main;
+        if (projCam == null) return;
+
+        Vector3 sp = projCam.WorldToScreenPoint(wp);
+        if (sp.z < 0f) return; // 锚点在相机背面，保持上一帧位置
+
+        Vector2 rt = ScreenToRenderTexturePoint(new Vector2(sp.x, sp.y));
+        Vector2 local;
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, rt, overlay ? null : projCam, out local))
+            return;
+
+        Vector2 anchored = UIFollower.LocalPointToAnchoredPosition(parent, uiAnchorPanel, local);
+        if (!uiAnchorCalibrated)
+        {
+            // 窗口在 Start 里还会被 SetWindowPos 改尺寸；尺寸未稳定时标定会把尺寸变化
+            // 误算成锚点位移，表现为一启动 UI 就整体跑掉。这里等 Screen 与 RT 一致再标定。
+            if (RTWidth > 0 && Screen.width != RTWidth) return;
+            uiAnchorScenePos = uiAnchorPanel.anchoredPosition;
+            uiAnchorInitialProjected = anchored;
+            uiAnchorCalibrated = true;
+            Debug.Log($"[桌面窗口] UI 锚定已就绪: 锚点世界坐标={wp}, 场景 anchored={uiAnchorScenePos}, 初始投影={uiAnchorInitialProjected}");
+            return;
+        }
+
+        // 以「场景基准 + 锚点投影位移」计算：窗口尺寸/缩放变化不会把 UI 推走，
+        // 只有真正移动「ui锚定点」才整体平移这一组。
+        Vector2 target = uiAnchorScenePos + (anchored - uiAnchorInitialProjected);
+        if (uiAnchorPanel.anchoredPosition != target)
+            uiAnchorPanel.anchoredPosition = target;
+
+        uiAnchorLastWorld = wp;
+        uiAnchorLastScale = sf;
+        uiAnchorLastTexW = RTWidth;
+        uiAnchorLastTexH = RTHeight;
+    }
+
+    void LateUpdate()
+    {
+        UpdateUiAnchorFollow();
     }
 
     /// <summary>
