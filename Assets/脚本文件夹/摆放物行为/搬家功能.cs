@@ -340,21 +340,9 @@ public class MoveSystem : MonoBehaviour
     void UpdateSpawnerPos()
     {
         if (mainCam == null) return;
-        Vector3 screen = Input.mousePosition;
-#if UNITY_EDITOR
+        // 统一走 DesktopWindowController 的唯一 Screen→RT 换算入口（编辑器里等价于不换算）
+        Vector2 screen = DesktopWindowController.ScreenToRenderTexturePoint(Input.mousePosition);
         Vector3 world = mainCam.ScreenToWorldPoint(new Vector3(screen.x, screen.y, mainCam.WorldToScreenPoint(transform.position).z));
-#else
-        float sw = Screen.width, sh = Screen.height;
-        float rw = DesktopWindowController.RTWidth > 0 ? DesktopWindowController.RTWidth : mainCam.pixelWidth;
-        float rh = DesktopWindowController.RTHeight > 0 ? DesktopWindowController.RTHeight : mainCam.pixelHeight;
-        Vector2 scaled = new Vector2(screen.x, screen.y);
-        if (sw > 0 && sh > 0 && rw > 0 && rh > 0)
-        {
-            scaled.x = screen.x * rw / sw;
-            scaled.y = screen.y * rh / sh;
-        }
-        Vector3 world = mainCam.ScreenToWorldPoint(new Vector3(scaled.x, scaled.y, mainCam.WorldToScreenPoint(transform.position).z));
-#endif
         transform.position = new Vector3(world.x, world.y, zDepth);
     }
 

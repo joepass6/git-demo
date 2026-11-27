@@ -308,6 +308,9 @@ public class 鱼运动 : MonoBehaviour
             鱼运动 oldest = aliveFish.Dequeue();
             if (oldest != null && oldest != this) oldest.ReturnToPool();
         }
+
+        已初始化 = true;
+        已补偿隐藏世代 = s_隐藏世代;
     }
 
     // 到时回池逻辑已移到 Update 中用 lifeEndTime 绝对时间戳判断
@@ -319,6 +322,66 @@ public class 鱼运动 : MonoBehaviour
     private static Dictionary<GameObject, Queue<鱼运动>> fishPools = new Dictionary<GameObject, Queue<鱼运动>>();
     private GameObject sourcePrefab;   // 来源预制体（回池分组用，池化生成时记录）
     private float lifeEndTime;         // 存活结束的绝对时间戳（Time.time + 存活秒数）
+
+    // ==================== 缩小窗隐藏期间的产出补偿 ====================
+    // 最小档会把「场景」整根 SetActive(false)，鱼的 Update 停止，掉落计时与寿命计时都停摆。
+    // 恢复时按隐藏时长补回计时，并在原位补发掉落物（隐藏期间不生成任何可见物体）。
+    static float s_隐藏开始 = -1f;
+    static float s_上次隐藏时长;
+    static int s_隐藏世代;
+
+    const int 恢复最多补发 = 3;       // 单条鱼一次恢复最多补发 3 个，避免恢复瞬间爆量
+    const int 整次恢复最多补发 = 12;  // 一次恢复全场合计上限，防止鱼多时一次性堆满屏
+    static int s_补发帧 = -1;
+    static int s_补发数;
+    bool 已初始化;
+    int 已补偿隐藏世代 = -1;
+
+    public static void 记录隐藏开始()
+    {
+        if (s_隐藏开始 < 0f) s_隐藏开始 = Time.unscaledTime;
+    }
+
+    public static void 记录隐藏结束()
+    {
+        if (s_隐藏开始 < 0f) return;
+        s_上次隐藏时长 = Time.unscaledTime - s_隐藏开始;
+        s_隐藏开始 = -1f;
+        s_隐藏世代++;
+    }
+
+    private void OnEnable()
+    {
+        // Start/InitFish 之前的首次启用不算（已初始化=false）
+        if (已初始化) 应用隐藏补偿();
+    }
+
+    void 应用隐藏补偿()
+    {
+        if (已补偿隐藏世代 == s_隐藏世代) return;
+        已补偿隐藏世代 = s_隐藏世代;
+
+        float 隐藏秒 = s_上次隐藏时长;
+        if (隐藏秒 <= 0.1f) return;
+
+        // 寿命顺延：不因隐藏期间“超时”而被回池（否则恢复瞬间鱼先消失，补发也丢了）
+        if (lifeEndTime > 0f) lifeEndTime += 隐藏秒;
+
+        // 掉落计时补回
+        dropTimer += 隐藏秒;
+        if (dropInterval <= 0.01f) return;
+
+        int 次 = Mathf.FloorToInt(dropTimer / dropInterval);
+        if (次 <= 0) return;
+
+        dropTimer -= 次 * dropInterval;
+        // 不在 OnEnable 当帧生成：等相机/视口恢复一帧后再补发，落点才正确
+        待补发掉落 = Mathf.Min(次, 恢复最多补发);
+        待补发起始帧 = Time.frameCount;
+    }
+
+    int 待补发掉落;
+    int 待补发起始帧;
 
     /// <summary>
     /// 从池里取一条同预制体的鱼（池空则新实例化），重置状态后启用
@@ -404,6 +467,23 @@ public class 鱼运动 : MonoBehaviour
 
         // 本体的 sortingLayer/order 可能被子类动态改（椭圆轨道/轨道环绕的遮挡换层），每帧同步给粒子
         同步特效排序();
+
+        // 缩小窗恢复后的补发掉落（延后一帧，等相机/视口恢复）
+        if (待补发掉落 > 0 && Time.frameCount > 待补发起始帧 + 1)
+        {
+            int n = 待补发掉落;
+            待补发掉落 = 0;
+            if (s_补发帧 != Time.frameCount)
+            {
+                s_补发帧 = Time.frameCount;
+                s_补发数 = 0;
+            }
+            for (int i = 0; i < n && s_补发数 < 整次恢复最多补发; i++)
+            {
+                s_补发数++;
+                Drop();
+            }
+        }
 
         // 到期回池（用绝对时间戳，支持 ExtendLife 动态延长/缩短）
         if (lifeEndTime > 0f && Time.time >= lifeEndTime)
@@ -596,6 +676,8 @@ public class 鱼运动 : MonoBehaviour
     /// </summary>
     private void HandleClickInput()
     {
+        // 开场视频播放期间不接受世界点击
+        if (开场视频.播放中) return;
 #if !UNITY_EDITOR
         if (!Input.GetMouseButtonDown(0)) return;
 

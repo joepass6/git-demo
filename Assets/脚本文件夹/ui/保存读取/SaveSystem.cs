@@ -415,7 +415,27 @@ public class SaveSystem : MonoBehaviour
             Debug.Log($"[保存系统] 🪸 扫描完成: 主动登记 {scanFromRegistry} + AllSpawners兜底 {scanFromAll} = 玩家珊瑚 {scanPass} 个");
 
             string json = JsonUtility.ToJson(data, true);
-            File.WriteAllText(savePath, json);
+            // 原子写入：先写临时文件再替换，退出被强制结束时也不会留下半截 save.json
+            string tmpPath = savePath + ".tmp";
+            File.WriteAllText(tmpPath, json);
+            try
+            {
+                if (File.Exists(savePath))
+                {
+                    string bak = savePath + ".bak";
+                    File.Replace(tmpPath, savePath, bak, true);
+                }
+                else
+                {
+                    File.Move(tmpPath, savePath);
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[保存系统] 原子替换失败，退回直接写入：{e.Message}");
+                File.WriteAllText(savePath, json);
+                try { if (File.Exists(tmpPath)) File.Delete(tmpPath); } catch { }
+            }
 
             // 5. 同步 Steam 云存档（Steam 不可用时自动跳过，异常也不影响本地）
             try { SteamCloudStorage.UploadFromLocal(savePath); }
@@ -602,8 +622,13 @@ public class SaveSystem : MonoBehaviour
         finally
         {
             isLoading = false;
+            // 开场遮罩用的就绪信号：无论成功、无存档还是异常，都视为“读档这一步结束了”
+            首次读档完成 = true;
         }
     }
+
+    /// <summary>首次自动读档是否已经结束（成功/无存档/异常都算结束，供开场遮罩判断就绪）。</summary>
+    public static bool 首次读档完成 { get; private set; }
 
     // ==================== 工具方法 ====================
 

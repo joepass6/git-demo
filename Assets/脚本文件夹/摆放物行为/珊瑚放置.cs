@@ -172,8 +172,11 @@ public class DragAndPlaceSystem : MonoBehaviour
     private List<宝物需求> effectiveRequirements;
     private readonly Dictionary<TextMeshProUGUI, Color> requirementTextColors = new Dictionary<TextMeshProUGUI, Color>();
 
-    /// <summary>需求文本的原始设计字号（只在第一次遇到时记录，之后一律 设计值 × 放大倍数，避免每帧叠乘）。</summary>
-    private readonly Dictionary<TextMeshProUGUI, float> 需求文本设计字号 = new Dictionary<TextMeshProUGUI, float>();
+    /// <summary>前缀标签的最小放大倍数：用户反馈「需要的宝物」还是太小，标签至少放大到 1.5 倍。</summary>
+    private const float 标签最小放大 = 1.5f;
+
+    /// <summary>已打印过实测字号的文本，保证只打一次不刷屏。</summary>
+    private static readonly HashSet<TextMeshProUGUI> 已记录字号 = new HashSet<TextMeshProUGUI>();
 
     /// <summary>每个需求数值文本所在「框」里需要一起放大的前缀标签（『现有宝物：』『需要的宝物：』）。</summary>
     private readonly Dictionary<TextMeshProUGUI, TextMeshProUGUI[]> 需求标签缓存 =
@@ -647,8 +650,8 @@ public class DragAndPlaceSystem : MonoBehaviour
             ApplyOneColor(r.costText, true);
 
             // 需求数字与相邻前缀标签统一放大（基准=首次记录的设计字号）
-            ApplyRequirementFontScale(r.coralCountText);
-            ApplyRequirementFontScale(r.costText);
+            ApplyRequirementFontScale(r.coralCountText, 需求文本字号放大);
+            ApplyRequirementFontScale(r.costText, 需求文本字号放大);
             ApplyRequirementLabelFontScale(r);
         }
     }
@@ -658,24 +661,32 @@ public class DragAndPlaceSystem : MonoBehaviour
     /// 设计字号只记录一次；反馈动画期间交给协程（其 baseFontSize 就是放大后的值），避免互相覆盖。
     /// TMP 开着 Auto Size 时布局会把 fontSize 写回，这里直接关掉，否则放大不生效。
     /// </summary>
-    void ApplyRequirementFontScale(TextMeshProUGUI text)
+    void ApplyRequirementFontScale(TextMeshProUGUI text, float 倍数)
     {
         if (text == null) return;
         if (requirementFeedback.ContainsKey(text)) return;
 
-        float design;
-        if (!需求文本设计字号.TryGetValue(text, out design))
-        {
-            design = text.fontSize;
-            需求文本设计字号[text] = design;
-        }
-
-        float scale = Mathf.Max(1f, 需求文本字号放大);
+        float scale = Mathf.Max(1f, 倍数);
         if (scale <= 1.0001f) return; // 1 倍保持原状（含原本的 Auto Size 行为）
 
-        float target = design * scale;
-        if (text.enableAutoSizing) text.enableAutoSizing = false;
-        if (!Mathf.Approximately(text.fontSize, target)) text.fontSize = target;
+        // 实测日志：每个文本只打一次，直接给出设计字号 / AutoSize / 目标字号 / 所在路径
+        if (已记录字号.Add(text))
+        {
+            float design = text.fontSize;
+            Debug.Log($"[需求字号] {text.name} 路径={取路径(text.transform)} 设计={design:F2} auto={text.enableAutoSizing} min={text.fontSizeMin:F2} max={text.fontSizeMax:F2} active={text.isActiveAndEnabled} → 目标={design * scale:F2}（×{scale:F2}）");
+        }
+
+        // 统一入口：只登记倍数，由 LocalizationManager 负责写入 fontSize；
+        // 这样后续切语言/重新绑定走 FitToBox 时不会把字号写回设计值。
+        LocalizationManager.SetFontScale(text, scale);
+    }
+
+    static string 取路径(Transform t)
+    {
+        if (t == null) return "";
+        var sb = new System.Text.StringBuilder(t.name);
+        for (Transform p = t.parent; p != null; p = p.parent) sb.Insert(0, p.name + "/");
+        return sb.ToString();
     }
 
     /// <summary>
@@ -697,16 +708,35 @@ public class DragAndPlaceSystem : MonoBehaviour
             {
                 var t = all[i];
                 if (t == null || t == r.coralCountText || t == r.costText) continue;
-                if (t.text == null) continue;
-                if (!t.text.Contains("现有宝物") && !t.text.Contains("需要的宝物")) continue;
+                if (!IsRequirementLabel(t)) continue;
                 list.Add(t);
             }
             labels = list.ToArray();
             需求标签缓存[r.coralCountText] = labels;
         }
 
+        // 标签比数字再大一档：用户反馈「需要的宝物」明显偏小，至少放大到 1.5 倍
+        float 标签倍数 = Mathf.Max(Mathf.Max(1f, 需求文本字号放大), 标签最小放大);
         for (int i = 0; i < labels.Length; i++)
-            ApplyRequirementFontScale(labels[i]);
+            ApplyRequirementFontScale(labels[i], 标签倍数);
+    }
+
+    /// <summary>
+    /// 需求框里的前缀标签（『现有宝物：』『需要的宝物：』及其本地化后的写法）。
+    /// 场景节点名固定为「现有宝物 / 需要宝物」，本地化只改 TMP 文本，所以按名字判定跨语言稳定；
+    /// 再保留中文关键词，并补一个「以冒号结尾」的兜底（中/日/韩/英的标签都以冒号结尾）。
+    /// </summary>
+    static bool IsRequirementLabel(TextMeshProUGUI t)
+    {
+        string n = t.name;
+        if (!string.IsNullOrEmpty(n) && n.Contains("宝物")) return true;
+
+        string s = t.text;
+        if (string.IsNullOrEmpty(s)) return false;
+        if (s.Contains("需要的宝物") || s.Contains("现有宝物")) return true;
+
+        s = s.TrimEnd();
+        return s.EndsWith("：") || s.EndsWith(":");
     }
 
     void ApplyOneColor(TextMeshProUGUI text, bool ok)

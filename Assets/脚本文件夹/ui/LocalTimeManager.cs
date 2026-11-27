@@ -177,16 +177,25 @@ public class LocalTimeManager : MonoBehaviour
         var rt = pair.button.GetComponent<RectTransform>();
         if (rt != null)
         {
+            // 与 CustomGraphicRaycaster / 鱼点击 / 珊瑚拖拽同一口径：
+            // Input.mousePosition 是窗口 Screen 坐标，而画面渲染在固定尺寸的 RT 里，
+            // 两者尺寸不一致时必须先换算，否则这里会算出按钮外的点而静默 return。
+            Vector2 rtPos = DesktopWindowController.ScreenToRenderTexturePoint(Input.mousePosition);
+
+            Canvas cvs = pair.button.GetComponentInParent<Canvas>();
+            Camera cam = null;
+            if (cvs != null && cvs.renderMode != RenderMode.ScreenSpaceOverlay)
+                cam = cvs.worldCamera != null ? cvs.worldCamera : Camera.main;
+
             Vector2 localPoint;
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                rt, Input.mousePosition,
-                pair.button.GetComponentInParent<Canvas>()?.worldCamera,
-                out localPoint);
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(rt, rtPos, cam, out localPoint);
             if (!rt.rect.Contains(localPoint))
             {
                 // 鼠标松开的位置不在按钮自己的矩形里 → 这是 UI 穿透，忽略
+                Debug.LogWarning($"[面板按钮] {pair.button.name} 点击验证被拦：screen={Input.mousePosition} rt={rtPos} local={localPoint} rect={rt.rect}");
                 return;
             }
+            Debug.Log($"[面板按钮] {pair.button.name} 点击验证通过（已换算 screen→rt）");
         }
         // ==============================================
 

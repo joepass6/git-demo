@@ -116,7 +116,15 @@ public class SteamManager : MonoBehaviour
     {
         if (s_instance != this) return;
         s_instance = null;
-        if (Initialized) SteamAPI.Shutdown();
+        if (Initialized)
+        {
+            // SteamAPI.Shutdown 是同步原生调用，个别环境下会长时间阻塞；
+            // 这里打点用于定位，超时由 安全退出 守护线程兜底。
+            Debug.Log("[Steamworks] 开始 Shutdown");
+            try { SteamAPI.Shutdown(); }
+            catch (System.Exception e) { Debug.LogWarning($"[Steamworks] Shutdown 异常：{e.Message}"); }
+            Debug.Log("[Steamworks] Shutdown 完成");
+        }
         Initialized = false;
     }
 #else

@@ -185,9 +185,57 @@ public class AudioManager : MonoBehaviour
         if (BGM播放器.clip == clip && BGM播放器.isPlaying) return;
 
         BGM播放器.volume = Bgm音量;
+        // 窗口在任务栏期间只换曲目不播放，等恢复窗口时再 UnPause
+        if (任务栏暂停中)
+        {
+            BGM播放器.clip = clip;
+            BGM播放器.loop = true;
+            return;
+        }
+
         BGM播放器.clip = clip;
         BGM播放器.loop = true;
         BGM播放器.Play();
+    }
+
+    // ==================== 任务栏最小化：暂停/恢复 BGM ====================
+
+    bool 任务栏暂停中;
+
+    /// <summary>
+    /// 窗口被最小化到任务栏时暂停 BGM（保留播放进度）。
+    /// 只有"原本有声在播"才记录暂停；玩家已把音乐关掉（音量 0）或本来没在播时不介入。
+    /// </summary>
+    public void 暂停BGM_任务栏()
+    {
+        if (BGM播放器 == null) return;
+        if (Bgm音量 <= 0.0001f) { 任务栏暂停中 = false; return; }
+        if (!BGM播放器.isPlaying) { 任务栏暂停中 = false; return; }
+
+        BGM播放器.Pause();
+        任务栏暂停中 = true;
+        Debug.Log("[音乐] 窗口已缩到任务栏，BGM 已暂停（恢复窗口时继续）");
+    }
+
+    /// <summary>
+    /// 从任务栏恢复时继续播放。只在暂停前"原本在播且未静音"的情况下才恢复，
+    /// 玩家此前关掉音乐（音量 0）时保持静音，不会被这段逻辑重新打开。
+    /// </summary>
+    public void 恢复BGM_任务栏()
+    {
+        if (!任务栏暂停中) return;
+        任务栏暂停中 = false;
+
+        if (BGM播放器 == null) return;
+        if (Bgm音量 <= 0.0001f)
+        {
+            Debug.Log("[音乐] 窗口已恢复，但音乐处于关闭状态，保持静音");
+            return;
+        }
+        if (BGM播放器.clip == null) return;
+
+        BGM播放器.UnPause();
+        Debug.Log("[音乐] 窗口已恢复，BGM 继续播放");
     }
 
     // ==================== 对外：供 Slider.onValueChanged 绑定 ====================

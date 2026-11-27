@@ -94,6 +94,8 @@ public class DesktopWindowController : MonoBehaviour
     int minimizeStage = 0;
 #if !UNITY_EDITOR
     bool minimizeWasIconic = false;
+    // 任务栏最小化状态（用于暂停/恢复 BGM）：与按钮两段式状态无关，Win+D / 标题栏最小化也算
+    bool 上次任务栏最小化 = false;
     // 「一键缩放」按钮的补偿容器：最小档时整层反向放大，避免 10% 缩放下按钮小到点不到。
     // 放在按钮的父级，不动按钮自己的 localScale —— HoverTooltip 悬停放大用的是按钮自身，互不覆盖。
     RectTransform minimizeButtonWrapper;
@@ -140,7 +142,8 @@ public class DesktopWindowController : MonoBehaviour
 
     [Header("窗口贴合场景")]
     public bool fitWindowToTarget = true;
-    [Range(0.3f, 1f)] public float fitHeightRatio = 0.75f;
+    [Tooltip("窗口正方形边长 = 屏幕高 × 本比例（与缩放档位无关，滚轮只改画面缩放）")]
+    [Range(0.3f, 1f)] public float fitHeightRatio = 0.85f;
     public bool useManualFitSize = false;
     public Vector2 manualFitSize = new Vector2(7f, 10f);
     [Tooltip("自动贴合只统计塔主体周围这个半径内的 Sprite，排除远处大图")]
@@ -161,10 +164,12 @@ public class DesktopWindowController : MonoBehaviour
     // 0.62 是上一版默认（正方形改版前），也一起迁移到 0.75。
     const float LegacyFitHeightRatio = 0.438f;
     const float LegacyFitHeightRatio2 = 0.62f;
-    const float DefaultFitHeightRatio = 0.75f;
+    const float LegacyFitHeightRatio3 = 0.75f; // 上一版正方形默认，迁移到 0.85
+    const float DefaultFitHeightRatio = 0.85f;
     float EffectiveFitHeightRatio =>
         (Mathf.Abs(fitHeightRatio - LegacyFitHeightRatio) < 0.001f ||
-         Mathf.Abs(fitHeightRatio - LegacyFitHeightRatio2) < 0.001f)
+         Mathf.Abs(fitHeightRatio - LegacyFitHeightRatio2) < 0.001f ||
+         Mathf.Abs(fitHeightRatio - LegacyFitHeightRatio3) < 0.001f)
             ? DefaultFitHeightRatio
             : fitHeightRatio;
 
@@ -965,6 +970,8 @@ public class DesktopWindowController : MonoBehaviour
         if (visible)
         {
             if (!正常内容已隐藏) return;
+            // 先结算隐藏时长，再恢复激活：鱼的 OnEnable 会据此补回掉落计时
+            鱼运动.记录隐藏结束();
             for (int i = 0; i < 正常世界根.Count; i++)
                 if (正常世界根[i] != null) 正常世界根[i].SetActive(正常世界根状态[i]);
             正常世界根.Clear();
@@ -978,6 +985,8 @@ public class DesktopWindowController : MonoBehaviour
         else
         {
             if (正常内容已隐藏) return;
+            // 记录隐藏开始：最小档/任务栏期间鱼被失活，Update 停摆，恢复时按这段时长补偿产出
+            鱼运动.记录隐藏开始();
             if (正常面板子级 != null)
                 for (int i = 0; i < 正常面板子级.Length; i++)
                     if (正常面板子级[i] != null)
@@ -1021,7 +1030,9 @@ public class DesktopWindowController : MonoBehaviour
             if (!root.activeSelf) continue;
             if (正常世界根.Contains(root)) continue;
             正常世界根.Add(root);
-            正常世界根状态.Add(true);
+            // 记录真实状态：玩家手动隐藏的根（如「神明」开关关掉）恢复时保持隐藏，
+            // 不能再无条件记为 true，否则缩小窗回来会把神明强行显示出来。
+            正常世界根状态.Add(root.activeSelf);
             root.SetActive(false);
         }
     }
@@ -1829,6 +1840,7 @@ public class DesktopWindowController : MonoBehaviour
 
     void OnDestroy()
     {
+        Debug.Log("[桌面窗口] OnDestroy 开始");
 #if !UNITY_EDITOR
         transparentReady = false;
 #endif
@@ -1840,6 +1852,7 @@ public class DesktopWindowController : MonoBehaviour
         frameReady = false;
         if (premulMat != null) { Destroy(premulMat); premulMat = null; }
         if (readback != null) { Destroy(readback); readback = null; }
+        Debug.Log("[桌面窗口] OnDestroy 完成");
     }
 
     // ==================== Update ====================
@@ -1862,6 +1875,9 @@ public class DesktopWindowController : MonoBehaviour
 
         // 从任务栏恢复：保持最小档并把相机/Canvas 同步回来
         CheckMinimizeRestore();
+
+        // 任务栏最小化时暂停 BGM，恢复窗口时继续（最小档 0.1 窗口仍可见，不暂停）
+        同步任务栏音乐();
 
         // 缩小态兜底：鱼/珊瑚运行中还会生成或从池里激活，每 0.5 秒把新出现的世界根补收一次
         if (正常内容已隐藏 && Time.unscaledTime - 隐藏巡检时间 >= 0.5f)
@@ -2151,6 +2167,28 @@ public class DesktopWindowController : MonoBehaviour
         minimizeStage = 0;
         lastRepairTime = 0f; // 让下一次 Update 立刻跑一次窗口样式自愈
         Debug.Log($"[桌面窗口] 从任务栏恢复：放大到最大档 {EffectiveMaxWindowScale:F2}，状态复位为正常（下次点击先缩小）");
+#endif
+    }
+
+    /// <summary>
+    /// 按真实窗口状态（IsIconic）同步 BGM：
+    /// 进任务栏 → 暂停；回到桌面 → 继续。
+    /// 只认操作系统的最小化状态，0.1 最小档（窗口仍可见）不算，因此不会误停。
+    /// </summary>
+    void 同步任务栏音乐()
+    {
+#if !UNITY_EDITOR
+        if (hwnd == IntPtr.Zero) hwnd = GetActiveWindow();
+        if (hwnd == IntPtr.Zero || !IsWindow(hwnd)) return;
+
+        bool iconic = IsIconic(hwnd);
+        if (iconic == 上次任务栏最小化) return;
+        上次任务栏最小化 = iconic;
+
+        AudioManager am = AudioManager.Instance;
+        if (am == null) return;
+        if (iconic) am.暂停BGM_任务栏();
+        else am.恢复BGM_任务栏();
 #endif
     }
 

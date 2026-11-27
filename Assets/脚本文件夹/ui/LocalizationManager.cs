@@ -336,9 +336,43 @@ public class LocalizationManager : MonoBehaviour
     /// 避免文字跑出框外。以设计师当前字号为上限，只缩小不放大，不改排版不删文字。
     /// 设计师已手动开启 Auto Size 的文本保持其设置不动。
     /// </summary>
+    /// <summary>
+    /// 登记「这段文字要在设计字号上放大 N 倍」。之后无论切语言、重新绑定还是 FitToBox，
+    /// 都统一由这里按 设计字号 × 倍数 写入 fontSize，避免被 FitToBox 写回设计值。
+    /// </summary>
+    public static void SetFontScale(TMP_Text tmp, float scale)
+    {
+        if (tmp == null) return;
+        float 倍数 = Mathf.Max(1f, scale);
+        强制字号倍数[tmp] = 倍数;
+        if (倍数 <= 1.0001f) { FitToBox(tmp); return; }
+        ApplyScaledFont(tmp, 倍数);
+    }
+
+    static void ApplyScaledFont(TMP_Text tmp, float scale)
+    {
+        float baseSize;
+        if (!fitBaseFontSizes.TryGetValue(tmp, out baseSize) || baseSize <= 0f)
+        {
+            baseSize = tmp.fontSize > 0f ? tmp.fontSize : 36f;
+            fitBaseFontSizes[tmp] = baseSize;
+        }
+
+        float target = baseSize * Mathf.Max(1f, scale);
+        if (tmp.enableAutoSizing) tmp.enableAutoSizing = false;
+        if (!Mathf.Approximately(tmp.fontSize, target)) tmp.fontSize = target;
+    }
+
     public static void FitToBox(TMP_Text tmp)
     {
         if (tmp == null) return;
+
+        // 已被需求文本等系统登记过放大：统一按 设计字号 × 倍数 写入，优先于“放得下就保持”
+        if (强制字号倍数.TryGetValue(tmp, out float 强制倍数) && 强制倍数 > 1.0001f)
+        {
+            ApplyScaledFont(tmp, 强制倍数);
+            return;
+        }
 
         // 设计师手动开了 Auto Size：尊重原设置
         if (tmp.enableAutoSizing) { tmp.ForceMeshUpdate(); return; }
@@ -376,6 +410,8 @@ public class LocalizationManager : MonoBehaviour
 
     // FitToBox 的基准字号（仅运行时缓存，不写回场景）
     static readonly Dictionary<TMP_Text, float> fitBaseFontSizes = new Dictionary<TMP_Text, float>();
+    // 需求文本等系统登记的放大倍数：FitToBox 时统一沿用，避免被写回设计字号
+    static readonly Dictionary<TMP_Text, float> 强制字号倍数 = new Dictionary<TMP_Text, float>();
 
     void RefreshDynamicLabel(TMP_Text tmp, string table, string key, object[] args)
     {

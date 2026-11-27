@@ -44,8 +44,8 @@ public class 鱼运动_固定位置 : 鱼运动
         s.y = sy;
         transform.localScale = s;
 
-        // 点击允许转向
-        if (turnOnClick && Input.GetMouseButtonDown(0))
+        // 点击允许转向（开场视频播放期间不接受）
+        if (turnOnClick && !开场视频.播放中 && Input.GetMouseButtonDown(0))
         {
             Vector3 world = DesktopWindowController.ScreenToWorldPointCorrect(Camera.main, Input.mousePosition);
             world.z = 0f;
